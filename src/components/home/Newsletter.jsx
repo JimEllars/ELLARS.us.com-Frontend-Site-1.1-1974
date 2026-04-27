@@ -18,9 +18,7 @@ const Newsletter = () => {
             className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-gold-base transition-colors rounded-sm" 
             required 
           />
-          <button type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-gold-bright transition-colors rounded-sm shadow-xl">
-            Join
-          </button>
+          <button type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-gold-bright transition-colors rounded-sm shadow-xl">Join The Inner Circle</button>
         </form>
       </div>
     </section>

@@ -17,7 +17,7 @@ const FALLBACK_POSTS = [
     slug: 'california-floor',
     title: { rendered: "Post-Labor Economics: The California Floor" },
     excerpt: { rendered: "As AI and automation accelerate, traditional wage models will fail. We must replace bloated welfare with algorithmic stability." },
-    content: { rendered: "<p>A modernized Negative Income Tax for the 23rd District...</p>" },
+    content: { rendered: "<p>A modernized Negative Income Tax for national infrastructure...</p>" },
     date: '2025-09-12T14:30:00',
     acf: { episode_number: "044", read_time: "18 Min Watch", category_label: "Policy" },
     _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800' }] }

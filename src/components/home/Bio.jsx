@@ -46,7 +46,7 @@ const Bio = () => {
               <div className="bg-black/50 border border-white/5 p-8 rounded-sm sm:col-span-2">
                 <SafeIcon name="Target" className="w-8 h-8 text-white mb-6" />
                 <div className="font-editorial font-black text-2xl text-white mb-2">The Mission</div>
-                <div className="text-sm text-text-muted">Applying private-sector rigor to modernize California's 23rd District.</div>
+                <div className="text-sm text-text-muted">Applying private-sector rigor to modernize the foundation of the American working class.</div>
               </div>
             </div>
           </div>

@@ -11,7 +11,7 @@ const Footer = () => {
             <span className="font-editorial font-black text-2xl tracking-tighter text-white block mb-2">
               JAMES <span className="text-gradient-gold">ELLARS</span>
             </span>
-            <span className="text-text-muted text-sm">Builder of Systems. Challenger of the Status Quo.</span>
+            <span className="text-text-muted text-sm">James Ellars // Systems & Strategy</span>
           </div>
           
           <div className="flex space-x-8">
