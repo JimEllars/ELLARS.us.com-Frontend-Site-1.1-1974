@@ -17,7 +17,7 @@ const Expertise = () => {
             <SafeIcon name="Share2" className="w-5 h-5 text-gold-base" /> <span>Global Logistics</span>
           </div>
           <div className="flex items-center space-x-2 text-white font-editorial font-bold tracking-widest text-sm uppercase">
-            <SafeIcon name="MapPin" className="w-5 h-5 text-gold-base" /> <span>Civic Architecture</span>
+            <SafeIcon name="MapPin" className="w-5 h-5 text-gold-base" /> <span>Community Leadership</span>
           </div>
         </div>
       </div>

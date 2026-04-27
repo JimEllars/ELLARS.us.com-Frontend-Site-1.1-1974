@@ -19,7 +19,7 @@ const Navbar = () => {
           <Link to="/" className="font-editorial font-black text-2xl tracking-tighter text-white leading-none">
             JAMES <span className="text-gradient-gold">ELLARS</span>
           </Link>
-          <span className="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Systems Innovator • Civic Architect</span>
+          <span className="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Business Development • Community Leader</span>
         </div>
         
         <div className="hidden lg:flex space-x-10 font-editorial font-bold text-[11px] uppercase tracking-[0.2em]">
@@ -35,7 +35,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="btn-gold hidden sm:flex">Join The Inner Circle</button>
+          <button className="btn-gold hidden sm:flex">Join the Newsletter</button>
           <button 
             className="lg:hidden text-white hover:text-gold-base transition-colors"
             onClick={() => setIsOpen(!isOpen)}
@@ -57,7 +57,7 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <button className="btn-gold w-full">Join The Inner Circle</button>
+          <button className="btn-gold w-full">Join the Newsletter</button>
         </div>
       )}
     </nav>

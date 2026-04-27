@@ -27,7 +27,7 @@ const Hero = () => {
               Watch the Rants
             </a>
             <a href="#/platform" className="btn-gold flex items-center justify-center group">
-              Explore Manifesto <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              Explore Platform <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
         </div>

@@ -14,7 +14,7 @@ const Platform = () => {
       title: "END THE SIPHON ECONOMY",
       icon: "Shield",
       status: "Active Deployment",
-      color: "text-yellow-electric",
+      color: "text-gold-base",
       description: "Structural reinvestment mandates for multinational extraction within regional geography."
     },
     {
@@ -39,7 +39,7 @@ const Platform = () => {
         <div className="text-center mb-20">
           <span className="font-editorial text-[10px] text-phthalo-glow uppercase tracking-widest font-bold block mb-4">Operational Directives</span>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-            THE <span className="text-electric-gold">MANIFESTO.</span>
+            THE <span className="text-electric-gold">PLATFORM.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl mx-auto text-lg font-light">
             A architectural manual for the modernization of civic infrastructure.
@@ -55,9 +55,9 @@ const Platform = () => {
                 </div>
                 <span className="text-[10px] text-white uppercase tracking-widest font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric hover:drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] transition-colors uppercase tracking-tight">{m.title}</h2>
+              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-gold-base hover:drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] transition-colors uppercase tracking-tight">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light">{m.description}</p>
-              <div className="mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-gold-base opacity-0 group-hover:opacity-100 transition-opacity">
                 Access Documentation <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
               </div>
             </div>
