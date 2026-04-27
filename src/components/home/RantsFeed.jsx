@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 
@@ -27,7 +28,7 @@ const RantsFeed = () => {
               Unfiltered technical analysis on the shifting tides of economics and community leadership.
             </p>
           </div>
-          <a href="#/rants" className="btn-gold hidden md:inline-flex">View Entire Archive</a>
+          <Link to="/rants" className="btn-gold hidden md:inline-flex">View Entire Archive</Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
