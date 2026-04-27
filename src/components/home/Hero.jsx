@@ -1,10 +1,17 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 
 const Hero = () => {
   return (
     <header className="relative min-h-[95vh] flex items-center pt-24 pb-12 overflow-hidden bg-grid">
-      <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-16 items-center relative z-10 w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-16 items-center relative z-10 w-full"
+      >
         
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="inline-flex items-center space-x-3 mb-8 border border-purple-neon/30 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.15)]">
@@ -23,12 +30,12 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
-            <a href="#/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gradient-to-r hover:from-phthalo-glow hover:to-purple-neon hover:text-white hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
+            <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gradient-to-r hover:from-phthalo-glow hover:to-purple-neon hover:text-white hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
               Watch the Rants
-            </a>
-            <a href="#/platform" className="btn-gold flex items-center justify-center group">
+            </Link>
+            <Link to="/platform" className="btn-gold flex items-center justify-center group">
               Explore Platform <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
         
@@ -50,7 +57,7 @@ const Hero = () => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </header>
   );
 };

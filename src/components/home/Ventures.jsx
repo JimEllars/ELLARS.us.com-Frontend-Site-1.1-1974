@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 
 const Ventures = () => {
@@ -26,7 +27,12 @@ const Ventures = () => {
 
   return (
     <section className="py-24 bg-void border-y border-white/5 relative z-10">
-      <div className="max-w-7xl mx-auto px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-7xl mx-auto px-6"
+      >
         <div className="mb-16 text-center">
           <span className="font-editorial text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-4">Current Operations</span>
           <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-gradient-gold">VENTURES</span></h2>
@@ -58,7 +64,7 @@ const Ventures = () => {
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };
