@@ -27,7 +27,7 @@ const FALLBACK_POSTS = [
     slug: 'politicians-future',
     title: { rendered: "Why Politicians Cannot Build The Future" },
     excerpt: { rendered: "The era of the career orator is over. The logistical challenges of the 2030s require leaders who have actually scaled systems." },
-    content: { rendered: "<p>Scaling private sector rigor to civic architecture...</p>" },
+    content: { rendered: "<p>Scaling private sector rigor to community leadership...</p>" },
     date: '2025-09-10T09:15:00',
     acf: { episode_number: "043", read_time: "9 Min Watch", category_label: "Leadership" },
     _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=800' }] }

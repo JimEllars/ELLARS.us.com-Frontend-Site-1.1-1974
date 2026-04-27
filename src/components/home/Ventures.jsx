@@ -5,18 +5,19 @@ const Ventures = () => {
   const ventures = [
     {
       title: "AXiM Systems",
+      link: "https://axim.us.com",
       description: "Enterprise automation and civic infrastructure solutions.",
       icon: "Cpu",
       accent: "text-purple-neon"
     },
     {
-      title: "The Signal Podcast",
+      title: "ELLARS Rants",
       description: "Long-form audio discourse on the intersection of technology and human equity.",
       icon: "Mic",
       accent: "text-electric-gold"
     },
     {
-      title: "Ellars Rants",
+      title: "View Media",
       description: "Unfiltered video briefings on post-labor economics and institutional decay.",
       icon: "Video",
       accent: "text-phthalo-glow"
@@ -32,18 +33,30 @@ const Ventures = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {ventures.map((v, idx) => (
-            <div key={idx} className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5">
-              <div className={`w-16 h-16 mb-8 flex items-center justify-center rounded-sm bg-white/5 border border-white/10 ${v.accent} shadow-sm transition-transform group-hover:scale-110`}>
-                <SafeIcon name={v.icon} className="w-8 h-8" />
+                    {ventures.map((v, idx) => {
+            const CardContent = (
+              <>
+                <div className={`w-16 h-16 mb-8 flex items-center justify-center rounded-sm bg-white/5 border border-white/10 ${v.accent} shadow-sm transition-transform group-hover:scale-110`}>
+                  <SafeIcon name={v.icon} className="w-8 h-8" />
+                </div>
+                <h3 className="font-editorial font-black text-2xl text-white mb-4 uppercase tracking-tight">{v.title}</h3>
+                <p className="text-text-muted leading-relaxed font-light flex-grow">{v.description}</p>
+                <div className={`mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest ${v.accent} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                  Access Protocol <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
+                </div>
+              </>
+            );
+
+            return v.link ? (
+              <a href={v.link} key={idx} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5 block">
+                {CardContent}
+              </a>
+            ) : (
+              <div key={idx} className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5">
+                {CardContent}
               </div>
-              <h3 className="font-editorial font-black text-2xl text-white mb-4 uppercase tracking-tight">{v.title}</h3>
-              <p className="text-text-muted leading-relaxed font-light flex-grow">{v.description}</p>
-              <div className={`mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest ${v.accent} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                Access Protocol <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
