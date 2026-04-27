@@ -9,7 +9,7 @@ const FALLBACK_POSTS = [
     excerpt: { rendered: "How mega-corporations exploit regional geography and labor pools without reinvesting in the communities that sustain them." },
     content: { rendered: "<p>The mathematical framework required to stop the extraction of local wealth...</p>" },
     date: '2025-09-15T10:00:00',
-    acf: { episode_number: "045", read_time: "12 Min Watch", category_label: "Economics" },
+    acf: { episode_number: "045", read_time: "12 Min Watch", category_label: "Video" },
     _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=800' }] }
   },
   {
@@ -19,7 +19,7 @@ const FALLBACK_POSTS = [
     excerpt: { rendered: "As AI and automation accelerate, traditional wage models will fail. We must replace bloated welfare with algorithmic stability." },
     content: { rendered: "<p>A modernized Negative Income Tax for national infrastructure...</p>" },
     date: '2025-09-12T14:30:00',
-    acf: { episode_number: "044", read_time: "18 Min Watch", category_label: "Policy" },
+    acf: { episode_number: "044", read_time: "18 Min Watch", category_label: "Audio" },
     _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800' }] }
   },
   {
@@ -29,7 +29,7 @@ const FALLBACK_POSTS = [
     excerpt: { rendered: "The era of the career orator is over. The logistical challenges of the 2030s require leaders who have actually scaled systems." },
     content: { rendered: "<p>Scaling private sector rigor to community leadership...</p>" },
     date: '2025-09-10T09:15:00',
-    acf: { episode_number: "043", read_time: "9 Min Watch", category_label: "Leadership" },
+    acf: { episode_number: "043", read_time: "9 Min Watch", category_label: "Dispatch" },
     _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=800' }] }
   }
 ];

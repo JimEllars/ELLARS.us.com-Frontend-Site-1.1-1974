@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
+import { Helmet } from 'react-helmet-async';
 
 const RantsArchive = () => {
   const [posts, setPosts] = useState([]);
@@ -18,8 +19,19 @@ const RantsArchive = () => {
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'DISPATCH'];
 
+
+  const filteredPosts = posts.filter(post => {
+    if (activeFilter === 'ALL') return true;
+    return post.acf?.category_label?.toUpperCase() === activeFilter;
+  });
+
   return (
+
     <div className="pt-32 pb-20 min-h-screen bg-grid">
+      <Helmet>
+        <title>Rants Archive | James Ellars</title>
+        <meta name="description" content="The official hub for the Ellars Rants show. High-resolution analysis on economics, technology, and the future of civic infrastructure." />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="max-w-2xl">
@@ -55,7 +67,7 @@ const RantsArchive = () => {
               </div>
             ))
           ) : (
-            posts.map((post, index) => (
+            filteredPosts.map((post, index) => (
               <article key={post.id} className="interactive-card group flex flex-col h-full rounded-sm overflow-hidden">
                 <div className="aspect-video bg-black relative overflow-hidden border-b border-white/5">
                    <img 

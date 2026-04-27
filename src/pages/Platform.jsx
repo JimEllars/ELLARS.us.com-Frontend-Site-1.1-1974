@@ -1,5 +1,7 @@
 import React from 'react';
 import SafeIcon from '@/common/SafeIcon';
+import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
   const modules = [
@@ -33,8 +35,27 @@ const Platform = () => {
     }
   ];
 
+  const containerVariant = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariant = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  };
+
   return (
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay">
+      <Helmet>
+        <title>The Platform | James Ellars</title>
+        <meta name="description" content="An architectural manual for the modernization of civic infrastructure." />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
           <span className="font-editorial text-[10px] text-phthalo-glow uppercase tracking-widest font-bold block mb-4">Operational Directives</span>
@@ -46,9 +67,9 @@ const Platform = () => {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <div key={idx} className="interactive-card p-10 rounded-sm group">
+            <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
@@ -60,9 +81,9 @@ const Platform = () => {
               <div className="mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-gold-base opacity-0 group-hover:opacity-100 transition-opacity">
                 Access Documentation <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

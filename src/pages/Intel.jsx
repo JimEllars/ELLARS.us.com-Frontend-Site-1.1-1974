@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import React, { useEffect, useState } from 'react';
 import { getLatestPosts } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
@@ -18,6 +19,10 @@ const Intel = () => {
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-grid">
+      <Helmet>
+        <title>Intel Archive | James Ellars</title>
+        <meta name="description" content="Technical breakdowns and strategic blueprints for the modernization of American civic infrastructure." />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="mb-16">
           <div className="inline-flex items-center space-x-2 border border-yellow-electric/30 rounded-sm px-3 py-1 mb-6 bg-yellow-electric/10 shadow-[0_0_15px_rgba(251,191,36,0.15)]">
