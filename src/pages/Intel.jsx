@@ -29,7 +29,7 @@ const Intel = () => {
             <span className="opacity-50 uppercase">Dispatches.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl text-lg font-light leading-relaxed">
-            Technical breakdowns and strategic blueprints for the modernization of California's 23rd District.
+            Technical breakdowns and strategic blueprints for the modernization of American civic infrastructure.
           </p>
         </header>
 

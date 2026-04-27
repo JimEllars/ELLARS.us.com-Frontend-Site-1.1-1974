@@ -15,11 +15,11 @@ const Hero = () => {
           <h1 className="font-editorial font-black text-5xl md:text-7xl lg:text-[85px] leading-[0.95] text-white mb-8">
             COMMUNITY. <br />
             POLITICS. <br />
-            <span className="text-electric-gold">CONSCIOUS IDEAS.</span>
+            <span className="text-electric-gold drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">CONSCIOUS IDEAS.</span>
           </h1>
           
           <p className="text-xl md:text-2xl font-light text-text-muted mb-12 max-w-2xl leading-relaxed">
-            Leading the modernization of California's 23rd District through <span className="text-white font-medium">private-sector rigor</span> and algorithmic economic equity.
+            Leading the modernization of American civic infrastructure through <span className="text-white font-medium">private-sector rigor</span> and algorithmic economic equity.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
@@ -27,7 +27,7 @@ const Hero = () => {
               Watch the Rants
             </a>
             <a href="#/platform" className="btn-gold flex items-center justify-center group">
-              Explore Blueprint <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              Explore Manifesto <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
         </div>

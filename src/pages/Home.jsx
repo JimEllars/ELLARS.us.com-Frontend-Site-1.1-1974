@@ -1,5 +1,6 @@
 import React from 'react';
 import Hero from '@/components/home/Hero';
+import Ventures from '@/components/home/Ventures';
 import Expertise from '@/components/home/Expertise';
 import RantsFeed from '@/components/home/RantsFeed';
 import Podcast from '@/components/home/Podcast';
@@ -10,6 +11,7 @@ const Home = () => {
   return (
     <div className="w-full">
       <Hero />
+      <Ventures />
       <Expertise />
       <RantsFeed />
       <Podcast />
