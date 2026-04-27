@@ -8,6 +8,8 @@ export default {
     extend: {
       colors: {
         void: '#050505',
+        purple: { neon: '#a855f7', deep: '#4c1d95' },
+        yellow: { electric: '#fbbf24' },
         panel: '#0a0a0a',
         surface: '#121212',
         phthalo: {

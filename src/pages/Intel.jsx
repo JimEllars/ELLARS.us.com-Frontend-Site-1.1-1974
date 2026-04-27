@@ -20,9 +20,9 @@ const Intel = () => {
     <div className="pt-32 pb-20 min-h-screen bg-grid">
       <div className="max-w-7xl mx-auto px-6">
         <header className="mb-16">
-          <div className="inline-flex items-center space-x-2 border border-gold-base/20 rounded-sm px-3 py-1 mb-6 bg-gold-base/5">
-            <SafeIcon name="Terminal" className="w-3 h-3 text-gold-base" />
-            <span className="font-editorial text-[10px] text-gold-base uppercase tracking-widest font-bold">Transmission Archive</span>
+          <div className="inline-flex items-center space-x-2 border border-yellow-electric/30 rounded-sm px-3 py-1 mb-6 bg-yellow-electric/10 shadow-[0_0_15px_rgba(251,191,36,0.15)]">
+            <SafeIcon name="Terminal" className="w-3 h-3 text-yellow-electric" />
+            <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">Transmission Archive</span>
           </div>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
             ELLARS <span className="text-electric-gold">RANTS:</span> <br />

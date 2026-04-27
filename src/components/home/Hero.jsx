@@ -7,8 +7,8 @@ const Hero = () => {
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-16 items-center relative z-10 w-full">
         
         <div className="lg:col-span-7 order-2 lg:order-1">
-          <div className="inline-flex items-center space-x-3 mb-8 border border-white/10 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-gold-bright animate-pulse"></span>
+          <div className="inline-flex items-center space-x-3 mb-8 border border-purple-neon/30 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+            <span className="w-2 h-2 rounded-full bg-purple-neon animate-pulse"></span>
             <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">Systems Innovator & Strategist</span>
           </div>
           
@@ -23,7 +23,7 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
-            <a href="#/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gold-bright transition-all duration-300 text-center rounded-sm shadow-xl">
+            <a href="#/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gradient-to-r hover:from-phthalo-glow hover:to-purple-neon hover:text-white hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
               Watch the Rants
             </a>
             <a href="#/platform" className="btn-gold flex items-center justify-center group">

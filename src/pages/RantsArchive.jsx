@@ -37,7 +37,7 @@ const RantsArchive = () => {
               <button 
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-6 py-2 font-editorial text-[10px] uppercase tracking-widest font-bold rounded-sm transition-all ${activeFilter === f ? 'bg-gold-base text-black' : 'text-gray-400 hover:text-white'}`}
+                className={`px-6 py-2 font-editorial text-[10px] uppercase tracking-widest font-bold rounded-sm transition-all ${activeFilter === f ? 'bg-gradient-to-r from-phthalo-glow to-purple-neon text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] border-transparent' : 'text-gray-400 hover:text-white'}`}
               >
                 {f}
               </button>
@@ -64,16 +64,16 @@ const RantsArchive = () => {
                     className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000 grayscale group-hover:grayscale-0"
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="w-16 h-16 bg-gold-base/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(197,160,89,0.4)]">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-electric to-purple-neon opacity-90 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(197,160,89,0.4)]">
                       <SafeIcon name="Play" className="w-6 h-6 text-black ml-1" />
                     </div>
                   </div>
                   <div className="absolute top-4 left-4 glass-panel px-3 py-1">
-                    <span className="font-editorial text-[10px] text-gold-base uppercase tracking-widest font-bold">EP {post.acf?.episode_number || `04${5-index}`}</span>
+                    <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">EP {post.acf?.episode_number || `04${5-index}`}</span>
                   </div>
                 </div>
                 <div className="p-8 flex flex-col flex-grow">
-                  <h3 className="font-editorial font-bold text-xl text-white mb-4 group-hover:text-gold-base transition-colors line-clamp-2">
+                  <h3 className="font-editorial font-bold text-xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-2">
                     {stripHtml(post.title.rendered)}
                   </h3>
                   <p className="text-text-muted text-sm leading-relaxed line-clamp-3 mb-6">
