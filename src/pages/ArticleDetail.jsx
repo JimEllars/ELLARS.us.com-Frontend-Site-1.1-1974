@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
-import { getPostBySlug, formatDate } from '@/lib/api';
+import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 
 const ArticleDetail = () => {
@@ -25,6 +26,10 @@ const ArticleDetail = () => {
 
   return (
     <div className="pt-24 min-h-screen">
+      <Helmet>
+        <title>{post.title.rendered} | James Ellars</title>
+        <meta name="description" content={stripHtml(post.excerpt.rendered)} />
+      </Helmet>
       <div className="relative h-[60vh] overflow-hidden">
         <img 
           src={imageUrl} 

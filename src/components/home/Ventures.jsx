@@ -25,6 +25,21 @@ const Ventures = () => {
     }
   ];
 
+  const containerVariant = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariant = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  };
+
   return (
     <section className="py-24 bg-void border-y border-white/5 relative z-10">
       <motion.div
@@ -38,7 +53,7 @@ const Ventures = () => {
           <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-gradient-gold">VENTURES</span></h2>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-3 gap-8">
                     {ventures.map((v, idx) => {
             const CardContent = (
               <>
@@ -53,17 +68,21 @@ const Ventures = () => {
               </>
             );
 
-            return v.link ? (
-              <a href={v.link} key={idx} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5 block">
-                {CardContent}
-              </a>
-            ) : (
-              <div key={idx} className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5">
-                {CardContent}
-              </div>
+            return (
+              <motion.div variants={itemVariant} key={idx}>
+                {v.link ? (
+                  <a href={v.link} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5 block">
+                    {CardContent}
+                  </a>
+                ) : (
+                  <div className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5">
+                    {CardContent}
+                  </div>
+                )}
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </motion.div>
     </section>
   );

@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import React from 'react';
 import Hero from '@/components/home/Hero';
 import Ventures from '@/components/home/Ventures';
@@ -10,6 +11,10 @@ import Newsletter from '@/components/home/Newsletter';
 const Home = () => {
   return (
     <div className="w-full">
+      <Helmet>
+        <title>James Ellars | The Blueprint</title>
+        <meta name="description" content="Enterprise-level influencer and thought-leader platform for James Ellars." />
+      </Helmet>
       <Hero />
       <Ventures />
       <Expertise />
