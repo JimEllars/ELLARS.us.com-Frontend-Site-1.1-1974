@@ -24,7 +24,7 @@ function App() {
           <Route path="/rants" element={<RantsArchive />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <ToastContainer />
+        <ToastContainer position="bottom-right" />
       </Layout>
     </Router>
     </HelmetProvider>

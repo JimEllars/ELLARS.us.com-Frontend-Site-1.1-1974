@@ -20,10 +20,12 @@ const RantsArchive = () => {
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'DISPATCH'];
 
 
-  const filteredPosts = posts.filter(post => {
-    if (activeFilter === 'ALL') return true;
-    return post.acf?.category_label?.toUpperCase() === activeFilter;
-  });
+  const filteredPosts = activeFilter === 'ALL'
+  ? posts
+  : posts.filter(post => post.acf?.category_label?.toUpperCase() === activeFilter);
+
+
+
 
   return (
 
