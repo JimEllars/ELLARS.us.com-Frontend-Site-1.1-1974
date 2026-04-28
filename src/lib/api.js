@@ -1,4 +1,4 @@
-const WP_API_URL = 'https://wp.ellars.us.com/wp-json/wp/v2';
+const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
 
 // Fallback data for development and reliability
 const FALLBACK_POSTS = [

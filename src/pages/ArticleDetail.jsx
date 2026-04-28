@@ -27,8 +27,11 @@ const ArticleDetail = () => {
   return (
     <div className="pt-24 min-h-screen">
       <Helmet>
-        <title>{post.title.rendered} | James Ellars</title>
+        <title>{stripHtml(post.title.rendered)} | James Ellars</title>
         <meta name="description" content={stripHtml(post.excerpt.rendered)} />
+        <meta property="og:title" content={stripHtml(post.title.rendered)} />
+        <meta property="og:description" content={stripHtml(post.excerpt.rendered)} />
+        <meta property="og:image" content={imageUrl} />
       </Helmet>
       <div className="relative h-[60vh] overflow-hidden">
         <img 
