@@ -9,27 +9,12 @@ const Newsletter = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API delay
+    // Simulate API call
     setTimeout(() => {
-      toast.success("Transmission Received. Welcome to the Vanguard.", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        style: {
-          background: '#050505',
-          border: '1px solid rgba(255,255,255,0.1)',
-          color: '#ffffff',
-          fontFamily: 'Inter, sans-serif'
-        }
-      });
+      toast.success("Transmission Received. Welcome to the Vanguard.", { theme: "dark" });
       setEmail('');
       setIsSubmitting(false);
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -48,16 +33,12 @@ const Newsletter = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="YOUR EMAIL ADDRESS" 
-            className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-gold-base transition-colors rounded-sm disabled:opacity-50"
+            className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-gold-base transition-colors rounded-sm"
             required 
             disabled={isSubmitting}
           />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-gold-bright transition-colors rounded-sm shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
-          >
-            {isSubmitting ? 'TRANSMITTING...' : 'Join the Newsletter'}
+          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-gold-bright transition-colors rounded-sm shadow-xl disabled:opacity-50">
+            {isSubmitting ? 'ENCRYPTING...' : 'Join the Newsletter'}
           </button>
         </form>
       </div>
