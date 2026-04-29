@@ -26,12 +26,14 @@
 
   /* Electric Highlight Effect */
   .text-electric-gold {
-    color: #fbbf24;
-    text-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(197, 160, 89, 0.2);
+    -webkit-text-stroke: 1px #050505;
+    color: #fde047;
+    text-shadow: 0 0 10px rgba(253, 224, 71, 0.6), 0 0 20px rgba(253, 224, 71, 0.4), 0 0 40px rgba(253, 224, 71, 0.2);
   }
 
   .text-neon-purple {
-    color: #a855f7;
+    -webkit-text-stroke: 1px #050505;
+    color: #c084fc;
     text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
   }
 

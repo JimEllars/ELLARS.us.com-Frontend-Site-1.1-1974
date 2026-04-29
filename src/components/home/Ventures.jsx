@@ -71,11 +71,11 @@ const Ventures = () => {
             return (
               <motion.div variants={itemVariant} key={idx}>
                 {v.link ? (
-                  <a href={v.link} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5 block">
+                  <a href={v.link} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface  block">
                     {CardContent}
                   </a>
                 ) : (
-                  <div className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface border border-white/5">
+                  <div className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface ">
                     {CardContent}
                   </div>
                 )}

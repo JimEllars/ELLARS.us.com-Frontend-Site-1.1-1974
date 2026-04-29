@@ -104,7 +104,7 @@ const About = () => {
           className="grid md:grid-cols-3 gap-6"
         >
           {historyData.map((item, index) => (
-            <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm border border-white/5 relative overflow-hidden group">
+            <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm  relative overflow-hidden group">
                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-electric-gold to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="text-electric-gold font-editorial text-sm font-bold tracking-widest mb-2">{item.year}</div>
               <h4 className="text-white font-editorial text-xl font-bold mb-1">{item.role}</h4>
@@ -132,7 +132,7 @@ const About = () => {
           className="grid md:grid-cols-3 gap-6"
         >
           {philosophyData.map((item, index) => (
-            <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm border border-white/5 relative group">
+            <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm  relative group">
                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-electric-gold/20 transition-colors duration-500">
                   <SafeIcon name={item.icon} className="w-6 h-6 text-white group-hover:text-electric-gold transition-colors duration-500" />
                </div>

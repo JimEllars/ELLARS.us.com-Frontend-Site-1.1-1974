@@ -4,7 +4,7 @@ import { getLatestPosts } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
 import SafeIcon from '@/common/SafeIcon';
 
-const Intel = () => {
+const Articles = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +20,7 @@ const Intel = () => {
   return (
     <div className="pt-32 pb-20 min-h-screen bg-grid">
       <Helmet>
-        <title>Intel Archive | James Ellars</title>
+        <title>Articles | James Ellars</title>
         <meta name="description" content="Technical breakdowns and strategic blueprints for the modernization of American civic infrastructure." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
@@ -30,7 +30,7 @@ const Intel = () => {
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">Transmission Archive</span>
           </div>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-            ELLARS <span className="text-electric-gold">RANTS:</span> <br />
+            ARTICLES <br />
             <span className="opacity-50 uppercase">Dispatches.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl text-lg font-light leading-relaxed">
@@ -56,4 +56,4 @@ const Intel = () => {
   );
 };
 
-export default Intel;
+export default Articles;
