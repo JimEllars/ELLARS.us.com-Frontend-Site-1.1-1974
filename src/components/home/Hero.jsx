@@ -14,15 +14,15 @@ const Hero = () => {
       >
         
         <div className="lg:col-span-7 order-2 lg:order-1">
-          <div className="inline-flex items-center space-x-3 mb-8 border border-purple-neon/30 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.15)]">
-            <span className="w-2 h-2 rounded-full bg-purple-neon animate-pulse"></span>
+          <div className="inline-flex items-center space-x-3 mb-8 border border-white/20 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
             <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">UNITED STATES OF AMERICA</span>
           </div>
           
           <h1 className="font-editorial font-black text-5xl md:text-7xl lg:text-[85px] leading-[0.95] text-white mb-8">
             COMMUNITY. <br />
             POLITICS. <br />
-            <span className="text-electric-gold drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">CONSCIOUS IDEAS.</span>
+            <span className="text-electric-gold">CONSCIOUS IDEAS.</span>
           </h1>
           
           <p className="text-xl md:text-2xl font-light text-text-muted mb-12 max-w-2xl leading-relaxed">

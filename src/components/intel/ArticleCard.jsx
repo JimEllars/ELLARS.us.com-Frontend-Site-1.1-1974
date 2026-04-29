@@ -23,7 +23,7 @@ const ArticleCard = ({ post }) => {
       
       <div className="p-8 flex flex-col flex-grow">
         <div className="flex items-center space-x-2 text-[10px] text-yellow-electric font-bold uppercase tracking-widest mb-4">
-          <SafeIcon name="Calendar" className="w-3 h-3 text-purple-neon" />
+          <SafeIcon name="Calendar" className="w-3 h-3 text-gray-500" />
           <span>{formatDate(post.date)}</span>
         </div>
         
