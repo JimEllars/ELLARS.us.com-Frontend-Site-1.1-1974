@@ -9,19 +9,19 @@ const Ventures = () => {
       link: "https://axim.us.com",
       description: "Enterprise automation and civic infrastructure solutions.",
       icon: "Cpu",
-      accent: "text-purple-neon"
+      accent: "text-yellow-electric"
     },
     {
       title: "ELLARS Rants",
       description: "Long-form audio discourse on the intersection of technology and human equity.",
       icon: "Mic",
-      accent: "text-electric-gold"
+      accent: "text-yellow-electric"
     },
     {
       title: "View Media",
       description: "Unfiltered video briefings on post-labor economics and institutional decay.",
       icon: "Video",
-      accent: "text-phthalo-glow"
+      accent: "text-white"
     }
   ];
 

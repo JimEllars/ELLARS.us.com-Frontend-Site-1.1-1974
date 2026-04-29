@@ -26,16 +26,10 @@
 
   /* Electric Highlight Effect */
   .text-electric-gold {
-    -webkit-text-stroke: 1px #050505;
     color: #fde047;
-    text-shadow: 0 0 10px rgba(253, 224, 71, 0.6), 0 0 20px rgba(253, 224, 71, 0.4), 0 0 40px rgba(253, 224, 71, 0.2);
   }
 
-  .text-neon-purple {
-    -webkit-text-stroke: 1px #050505;
-    color: #c084fc;
-    text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-  }
+
 
   .text-gradient-phthalo {
     @apply bg-gradient-to-br from-[#4ade80] via-phthalo-glow to-phthalo-base bg-clip-text text-transparent;
@@ -73,22 +67,19 @@
   }
 
   .interactive-card:hover {
-    @apply -translate-y-2 border-purple-neon/40 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(168,85,247,0.3),0_0_15px_rgba(0,143,122,0.4)];
+    @apply -translate-y-2 border-yellow-electric shadow-2xl;
   }
 
   .interactive-card:hover::before {
-    background: linear-gradient(90deg, #008f7a, #a855f7, transparent);
+    background: #fde047;
   }
 
   .btn-gold {
-    @apply bg-transparent text-gold-base border border-gold-base px-8 py-3 font-editorial font-bold uppercase tracking-widest text-xs transition-all duration-300 relative overflow-hidden inline-flex items-center justify-center rounded-sm;
+    @apply bg-transparent text-yellow-electric border border-yellow-electric px-8 py-3 font-editorial font-bold uppercase tracking-widest text-xs transition-all duration-300 inline-flex items-center justify-center rounded-none;
   }
 
   .btn-gold:hover {
-    @apply shadow-[0_0_20px_rgba(251,191,36,0.3)];
-    background: linear-gradient(90deg, #050505, #fbbf24);
-    color: #050505;
-    border-color: #fbbf24;
+    @apply bg-yellow-electric text-void;
   }
 }
 
