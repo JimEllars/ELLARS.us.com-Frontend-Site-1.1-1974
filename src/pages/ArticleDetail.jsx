@@ -20,7 +20,7 @@ const ArticleDetail = () => {
   }, [slug]);
 
   if (loading) return <div className="pt-40 text-center font-editorial text-gold-base animate-pulse">DECRYPTING TRANSMISSION...</div>;
-  if (!post) return <div className="pt-40 text-center text-white">404: Intel Not Found</div>;
+  if (!post) return <div className="pt-40 text-center text-white">404: Article Not Found</div>;
 
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200';
 
@@ -42,9 +42,9 @@ const ArticleDetail = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full p-10 md:p-20">
           <div className="max-w-4xl mx-auto">
-            <Link to="/intel" className="inline-flex items-center space-x-2 text-gold-base mb-8 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold">
+            <Link to="/articles" className="inline-flex items-center space-x-2 text-gold-base mb-8 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold">
               <SafeIcon name="ArrowLeft" className="w-4 h-4" />
-              <span>Back to Intel</span>
+              <span>Back to Articles</span>
             </Link>
             <h1 className="font-editorial font-black text-4xl md:text-6xl text-white mb-6 leading-tight">
               {post.title.rendered}

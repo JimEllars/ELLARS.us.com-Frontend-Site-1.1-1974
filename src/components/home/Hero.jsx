@@ -16,7 +16,7 @@ const Hero = () => {
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="inline-flex items-center space-x-3 mb-8 border border-purple-neon/30 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.15)]">
             <span className="w-2 h-2 rounded-full bg-purple-neon animate-pulse"></span>
-            <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">Systems Innovator & Strategist</span>
+            <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">UNITED STATES OF AMERICA</span>
           </div>
           
           <h1 className="font-editorial font-black text-5xl md:text-7xl lg:text-[85px] leading-[0.95] text-white mb-8">
@@ -31,7 +31,7 @@ const Hero = () => {
           
           <div className="flex flex-col sm:flex-row gap-6">
             <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gradient-to-r hover:from-phthalo-glow hover:to-purple-neon hover:text-white hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
-              Watch the Rants
+              Listen to Rants
             </Link>
             <Link to="/platform" className="btn-gold flex items-center justify-center group">
               Explore Platform <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
