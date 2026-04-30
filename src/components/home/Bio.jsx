@@ -19,7 +19,7 @@ const Bio = () => {
                   James Ellars is a business development specialist and systems strategist with over 15 years of experience executing high-stakes transitions in the private sector.
                 </p>
                 <p>
-                  Specializing in logistics networks, renewable energy infrastructure, and SaaS integrations, James has built his reputation on identifying inefficiencies and architecting solutions that drive immense value. 
+                  Specializing in logistics networks, renewable energy infrastructure, and SaaS integrations, James has built his reputation on identifying inefficiencies and designing solutions that drive immense value.
                 </p>
                 <p>
                   Today, he is applying that rigorous, ROI-focused methodology to the greatest challenge of our time: civic infrastructure and economic sovereignty for the American working class.

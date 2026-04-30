@@ -9,7 +9,7 @@ const Platform = () => {
       title: "THE CALIFORNIA FLOOR",
       icon: "Database",
       status: "Priority Alpha",
-      color: "text-white",
+      color: "text-yellow-electric",
       description: "A modernized Negative Income Tax establishing an algorithmic baseline of stability for national infrastructure."
     },
     {
@@ -23,14 +23,14 @@ const Platform = () => {
       title: "CONSTITUTIONAL INTEGRITY",
       icon: "Lock",
       status: "Core Protocol",
-      color: "text-white",
+      color: "text-yellow-electric",
       description: "Patching governance vulnerabilities through strict term limits and capital-policy decoupling."
     },
     {
-      title: "LOGISTICS ARCHITECTURE",
+      title: "LOGISTICS INFRASTRUCTURE",
       icon: "Map",
       status: "Beta Phase",
-      color: "text-white",
+      color: "text-yellow-electric",
       description: "Modernizing physical networks via decentralized energy grids and automated logistics hubs."
     }
   ];
@@ -54,7 +54,7 @@ const Platform = () => {
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay">
       <Helmet>
         <title>The Platform | James Ellars</title>
-        <meta name="description" content="An architectural manual for the modernization of civic infrastructure." />
+        <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
@@ -63,7 +63,7 @@ const Platform = () => {
             THE <span className="text-electric-gold">PLATFORM.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl mx-auto text-lg font-light">
-            A architectural manual for the modernization of civic infrastructure.
+            A technical manual for the modernization of civic infrastructure.
           </p>
         </div>
 
@@ -74,11 +74,11 @@ const Platform = () => {
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
                 </div>
-                <span className="text-[10px] text-white uppercase tracking-widest font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
+                <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
               <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light">{m.description}</p>
-              <div className="mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-8 pt-6 border-t border-phthalo-deep flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
                 Access Documentation <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
               </div>
             </motion.div>
