@@ -53,6 +53,7 @@ const Platform = () => {
   return (
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay">
       <Helmet>
+        <meta name="robots" content="index, follow" />
         <title>The Platform | James Ellars</title>
         <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
       </Helmet>
@@ -71,10 +72,10 @@ const Platform = () => {
           {modules.map((m, idx) => (
             <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group">
               <div className="flex items-start justify-between mb-8">
-                <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
+                <div className="w-16 h-16 bg-surface border border-phthalo-deep flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
                 </div>
-                <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
+                <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-phthalo-deep h-fit">{m.status}</span>
               </div>
               <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light">{m.description}</p>

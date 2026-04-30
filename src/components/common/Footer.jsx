@@ -15,14 +15,14 @@ const Footer = () => {
           </div>
           
           <div className="flex space-x-8">
-            <a href="#" className="text-text-muted hover:text-white transition-colors">
+            <a href="https://twitter.com/ellars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
               <SafeIcon name="Twitter" className="w-6 h-6" />
             </a>
-            <a href="#" className="text-text-muted hover:text-white transition-colors">
-              <SafeIcon name="Linkedin" className="w-6 h-6" />
+            <a href="https://www.instagram.com/ellarsjames" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
+              <SafeIcon name="Instagram" className="w-6 h-6" />
             </a>
-            <a href="#" className="text-white hover:text-gold-base transition-colors">
-              <SafeIcon name="Youtube" className="w-6 h-6" />
+            <a href="https://www.tiktok.com/@ellars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
+              <SafeIcon name="Video" className="w-6 h-6" />
             </a>
           </div>
         </div>

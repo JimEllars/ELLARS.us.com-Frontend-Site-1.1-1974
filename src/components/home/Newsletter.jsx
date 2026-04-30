@@ -22,7 +22,7 @@ const Newsletter = () => {
       <div className="max-w-4xl mx-auto px-6 text-center">
         <span className="font-editorial text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-6">Strategic Access</span>
         <h2 className="font-editorial font-black text-4xl md:text-6xl text-white mb-8">
-          JOIN THE <span className="text-electric-gold">VANGUARD.</span>
+          JOIN THE <span className="text-electric-gold">NEWSLETTER.</span>
         </h2>
         <p className="text-xl text-text-muted font-light mb-12 max-w-2xl mx-auto">
           Gain exclusive access to technical dispatches and strategic insight before public release.

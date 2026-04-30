@@ -12,6 +12,7 @@ const Home = () => {
   return (
     <div className="w-full">
       <Helmet>
+        <meta name="robots" content="index, follow" />
         <title>James Ellars | The Blueprint</title>
         <meta name="description" content="Enterprise-level influencer and thought-leader platform for James Ellars." />
       </Helmet>

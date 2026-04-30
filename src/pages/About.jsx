@@ -59,6 +59,24 @@ const About = () => {
   return (
     <div className="pt-32 pb-20 min-h-screen bg-void bg-grid">
       <Helmet>
+        <meta name="robots" content="index, follow" />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Person",
+              "name": "James Ellars",
+              "jobTitle": "Community Leader",
+              "url": "https://ellars.us.com",
+              "sameAs": [
+                "https://twitter.com/ellars",
+                "https://www.instagram.com/ellarsjames",
+                "https://www.tiktok.com/@ellars"
+              ]
+            }
+          `}
+        </script>
+
         <title>The Candidate | James Ellars</title>
         <meta name="description" content="James Ellars - Built for Results. Operational History and Core Philosophy." />
       </Helmet>
