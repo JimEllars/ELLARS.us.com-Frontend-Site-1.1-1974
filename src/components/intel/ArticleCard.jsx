@@ -4,16 +4,22 @@ import SafeIcon from '@/common/SafeIcon';
 import { stripHtml, formatDate } from '@/lib/api';
 
 const ArticleCard = ({ post }) => {
-  const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800';
+  const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
   return (
     <article className="interactive-card group flex flex-col h-full rounded-sm overflow-hidden">
       <Link to={`/intel/${post.slug}`} className="block relative aspect-video overflow-hidden border-b border-white/5">
-        <img 
-          src={imageUrl} 
-          alt={post.title.rendered} 
-          className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-80 group-hover:opacity-100"
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={post.title.rendered}
+            className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-80 group-hover:opacity-100"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-surface group-hover:scale-105 transition-transform duration-700">
+            <SafeIcon name="Terminal" className="w-12 h-12 text-yellow-electric opacity-80 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
         <div className="absolute top-4 left-4 glass-panel px-3 py-1">
           <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">
             {post.acf?.category_label || 'Dispatch'}

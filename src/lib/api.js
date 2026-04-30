@@ -39,7 +39,12 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
     if (categoryId) url += `&categories=${categoryId}`;
     
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     if (!res.ok) throw new Error('WP API Offline');
     return await res.json();
   } catch (error) {
@@ -50,7 +55,12 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 
 export async function getPostBySlug(slug) {
   try {
-    const res = await fetch(`${WP_API_URL}/posts?slug=${slug}&_embed`);
+    const res = await fetch(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     const data = await res.json();
     return data[0] || FALLBACK_POSTS.find(p => p.slug === slug);
   } catch (error) {
