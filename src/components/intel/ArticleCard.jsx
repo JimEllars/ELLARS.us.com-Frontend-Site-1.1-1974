@@ -8,7 +8,7 @@ const ArticleCard = ({ post }) => {
 
   return (
     <article className="interactive-card group flex flex-col h-full rounded-sm overflow-hidden">
-      <Link to={`/intel/${post.slug}`} className="block relative aspect-video overflow-hidden border-b border-white/5">
+      <Link to={`/intel/${post.slug}`} className="block relative aspect-video overflow-hidden border-b border-phthalo-deep">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -41,7 +41,7 @@ const ArticleCard = ({ post }) => {
           {stripHtml(post.excerpt.rendered)}
         </p>
         
-        <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between text-gray-500">
+        <div className="mt-auto pt-6 border-t border-phthalo-deep flex items-center justify-between text-gray-500">
           <span className="text-[10px] font-editorial font-bold uppercase tracking-widest">
             {post.acf?.read_time || '8 Min Read'}
           </span>

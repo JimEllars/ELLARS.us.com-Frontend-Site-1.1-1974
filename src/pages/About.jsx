@@ -89,7 +89,7 @@ const About = () => {
 
       {/* Operational History */}
       <section className="max-w-7xl mx-auto px-6 mb-32">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 border-b border-phthalo-deep pb-4">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="Briefcase" className="w-6 h-6 mr-4 text-electric-gold" />
             Operational History
@@ -108,7 +108,7 @@ const About = () => {
                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-electric-gold to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="text-electric-gold font-editorial text-sm font-bold tracking-widest mb-2">{item.year}</div>
               <h4 className="text-white font-editorial text-xl font-bold mb-1">{item.role}</h4>
-              <div className="text-gray-400 text-xs uppercase tracking-wider mb-4 pb-4 border-b border-white/10">{item.company}</div>
+              <div className="text-gray-400 text-xs uppercase tracking-wider mb-4 pb-4 border-b border-phthalo-deep">{item.company}</div>
               <p className="text-text-muted font-light text-sm leading-relaxed">{item.description}</p>
             </motion.div>
           ))}
@@ -117,7 +117,7 @@ const About = () => {
 
       {/* Core Philosophy */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 border-b border-phthalo-deep pb-4">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="Compass" className="w-6 h-6 mr-4 text-electric-gold" />
             Core Philosophy

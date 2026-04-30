@@ -22,7 +22,7 @@ const TopLoader = () => {
       {loading && (
         <motion.div
           initial={{ opacity: 0, width: "0%" }}
-          animate={{ opacity: 1, width: "100%", transition: { duration: 0.6, ease: "easeInOut" } }}
+          animate={{ opacity: [0.5, 1, 0.5], width: "100%", transition: { opacity: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }, width: { duration: 0.6, ease: "easeInOut" } } }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
           className="fixed top-0 left-0 h-[2px] bg-yellow-electric z-[9999]"
         />

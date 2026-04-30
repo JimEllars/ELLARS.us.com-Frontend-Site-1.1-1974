@@ -64,7 +64,7 @@ const ArticleDetail = () => {
           dangerouslySetInnerHTML={{ __html: post.content.rendered }}
         />
         
-        <div className="mt-20 pt-10 border-t border-white/10 flex justify-between items-center">
+        <div className="mt-20 pt-10 border-t border-phthalo-deep flex justify-between items-center">
           <div className="flex space-x-4">
             <button className="p-3 bg-white/5 border border-white/10 hover:border-gold-base transition-colors rounded-sm">
               <SafeIcon name="Share2" className="w-5 h-5 text-gold-base" />
