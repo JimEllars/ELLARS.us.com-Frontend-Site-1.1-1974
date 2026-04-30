@@ -72,6 +72,7 @@ const About = () => {
               "@type": "Person",
               "name": "James Ellars",
               "jobTitle": "Community Leader & Business Development Specialist",
+              "description": "Building Strong and Healthy Communities through Forward-Thinking Systems and Infrastructure.",
               "url": "https://ellars.us.com",
               "sameAs": [
                 "https://www.instagram.com/ellarsjames",
