@@ -10,7 +10,7 @@ const FALLBACK_POSTS = [
     content: { rendered: "<p>The mathematical framework required to stop the extraction of local wealth...</p>" },
     date: '2025-09-15T10:00:00',
     acf: { episode_number: "045", read_time: "12 Min Read", category_label: "Dispatch" },
-    _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=800' }] }
+    _embedded: {}
   },
   {
     id: 102,
@@ -19,8 +19,8 @@ const FALLBACK_POSTS = [
     excerpt: { rendered: "As AI and automation accelerate, traditional wage models will fail. We must replace bloated welfare with algorithmic stability." },
     content: { rendered: "<p>A modernized Negative Income Tax for national infrastructure...</p>" },
     date: '2025-09-12T14:30:00',
-    acf: { episode_number: "044", read_time: "18 Min Read", category_label: "Technical Briefing" },
-    _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800' }] }
+    acf: { episode_number: "044", read_time: "18 Min Read", category_label: "Business Briefing" },
+    _embedded: {}
   },
   {
     id: 103,
@@ -30,7 +30,7 @@ const FALLBACK_POSTS = [
     content: { rendered: "<p>Scaling private sector rigor to community leadership...</p>" },
     date: '2025-09-10T09:15:00',
     acf: { episode_number: "043", read_time: "9 Min Read", category_label: "Dispatch" },
-    _embedded: { 'wp:featuredmedia': [{ source_url: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=800' }] }
+    _embedded: {}
   }
 ];
 
@@ -83,15 +83,25 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 
 export async function getPostBySlug(slug) {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const res = await fetch(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error('WP API Offline');
+
     const data = await res.json();
     return data[0] || FALLBACK_POSTS.find(p => p.slug === slug);
   } catch (error) {
+    console.warn("API Error, utilizing fallback protocol for post:", error.message);
     return FALLBACK_POSTS.find(p => p.slug === slug);
   }
 }

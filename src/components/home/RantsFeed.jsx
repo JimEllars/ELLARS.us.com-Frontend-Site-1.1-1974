@@ -25,7 +25,7 @@ const RantsFeed = () => {
               ELLARS <span className="text-electric-gold">RANTS.</span>
             </h2>
             <p className="text-lg text-text-muted font-light leading-relaxed">
-              Unfiltered technical analysis on the shifting tides of economics and community leadership.
+              Unfiltered analysis on the shifting tides of economics and community leadership.
             </p>
           </div>
           <Link to="/rants" className="btn-gold hidden md:inline-flex">View Entire Archive</Link>
