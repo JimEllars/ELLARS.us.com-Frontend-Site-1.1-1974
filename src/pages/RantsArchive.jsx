@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import { Helmet } from 'react-helmet-async';
 
 const RantsArchive = () => {
+  const { setIsLoading } = useLoader();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('ALL');
 
   useEffect(() => {
     async function load() {
+      setIsLoading(true);
       const data = await getLatestPosts(12);
       setPosts(data);
       setLoading(false);
+      setIsLoading(false);
     }
     load();
   }, []);

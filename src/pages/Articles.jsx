@@ -1,18 +1,22 @@
 import { Helmet } from 'react-helmet-async';
 import React, { useEffect, useState } from 'react';
+import { useLoader } from '@/components/Layout';
 import { getLatestPosts } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
 import SafeIcon from '@/common/SafeIcon';
 
 const Articles = () => {
+  const { setIsLoading } = useLoader();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
+      setIsLoading(true);
       const data = await getLatestPosts(12);
       setPosts(data);
       setLoading(false);
+      setIsLoading(false);
     }
     load();
   }, []);

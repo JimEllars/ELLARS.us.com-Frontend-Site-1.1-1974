@@ -15,7 +15,7 @@ const Hero = () => {
         
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="inline-flex items-center space-x-3 mb-8 border border-white/20 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-phthalo-glow animate-pulse"></span>
             <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">UNITED STATES OF AMERICA</span>
           </div>
           

@@ -21,7 +21,7 @@ const Ventures = () => {
       title: "View Media",
       description: "Unfiltered video briefings on post-labor economics and institutional decay.",
       icon: "Video",
-      accent: "text-white"
+      accent: "text-purple-neon"
     }
   ];
 
