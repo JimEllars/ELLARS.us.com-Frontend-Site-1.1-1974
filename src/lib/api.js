@@ -34,19 +34,47 @@ const FALLBACK_POSTS = [
   }
 ];
 
+const POSTS_CACHE = {
+  data: null,
+  timestamp: null,
+  CACHE_DURATION: 1000 * 60 * 5 // 5 minutes
+};
+
 export async function getLatestPosts(limit = 10, categoryId = null) {
+  const cacheKey = `${limit}-${categoryId}`;
+
+  if (!POSTS_CACHE[cacheKey]) {
+    POSTS_CACHE[cacheKey] = { data: null, timestamp: null };
+  }
+
+  const now = Date.now();
+  if (POSTS_CACHE[cacheKey].data && POSTS_CACHE[cacheKey].timestamp && (now - POSTS_CACHE[cacheKey].timestamp < POSTS_CACHE.CACHE_DURATION)) {
+    return POSTS_CACHE[cacheKey].data;
+  }
+
   try {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
     if (categoryId) url += `&categories=${categoryId}`;
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
     const res = await fetch(url, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
     if (!res.ok) throw new Error('WP API Offline');
-    return await res.json();
+
+    const data = await res.json();
+    POSTS_CACHE[cacheKey].data = data;
+    POSTS_CACHE[cacheKey].timestamp = now;
+    return data;
   } catch (error) {
     console.warn("API Error, utilizing fallback protocol:", error.message);
     return FALLBACK_POSTS.slice(0, limit);
