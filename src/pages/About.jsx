@@ -82,7 +82,7 @@ const About = () => {
             BUILT FOR <span className="text-white">RESULTS.</span>
           </h2>
           <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed">
-            The logistical challenges of the 2030s require leaders who have actually scaled systems. We do not need career orators; we need architects of efficiency.
+            The logistical challenges of the 2030s require leaders who have actually scaled systems. We do not need career orators; we need Community Leaders.
           </p>
         </motion.div>
       </section>
