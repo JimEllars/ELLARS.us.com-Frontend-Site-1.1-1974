@@ -35,6 +35,7 @@ const RantsArchive = () => {
 
     <div className="pt-32 pb-20 min-h-screen bg-grid">
       <Helmet>
+        <meta name="robots" content="index, follow" />
         <title>Rants Archive | James Ellars</title>
         <meta name="description" content="The official hub for the Ellars Rants show. High-resolution analysis on economics, technology, and the future of civic infrastructure." />
       </Helmet>

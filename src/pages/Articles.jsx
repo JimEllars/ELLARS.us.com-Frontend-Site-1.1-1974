@@ -24,6 +24,7 @@ const Articles = () => {
   return (
     <div className="pt-32 pb-20 min-h-screen bg-grid">
       <Helmet>
+        <meta name="robots" content="index, follow" />
         <title>Articles | James Ellars</title>
         <meta name="description" content="Technical breakdowns and strategic blueprints for the modernization of American civic infrastructure." />
       </Helmet>
@@ -45,10 +46,10 @@ const Articles = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
             Array(6).fill(0).map((_, i) => (
-              <div key={i} className="interactive-card p-8 min-h-[400px] animate-pulse">
-                <div className="aspect-video bg-white/5 mb-6"></div>
-                <div className="w-full h-8 bg-white/10 mb-4"></div>
-                <div className="w-full h-20 bg-white/5"></div>
+              <div key={i} className="interactive-card p-8 min-h-[400px] animate-pulse bg-yellow-electric/5 border border-yellow-electric/20">
+                <div className="aspect-video bg-yellow-electric/20 mb-6"></div>
+                <div className="w-full h-8 bg-yellow-electric/30 mb-4"></div>
+                <div className="w-full h-20 bg-yellow-electric/20"></div>
               </div>
             ))
           ) : (

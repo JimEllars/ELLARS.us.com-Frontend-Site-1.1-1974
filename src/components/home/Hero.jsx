@@ -44,9 +44,9 @@ const Hero = () => {
             <div className="aspect-[3/4] overflow-hidden rounded-sm glass-panel p-2 relative group shadow-2xl">
               <div className="w-full h-full relative overflow-hidden bg-black rounded-sm">
                 <img 
-                  src="https://ellars.us.com/wp-content/uploads/2025/09/1694476488157.webp" 
+                  src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp"
                   alt="James Ellars" 
-                  className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 opacity-90 group-hover:opacity-100"
+                  className="w-full h-full object-cover grayscale contrast-125  group-hover:scale-105 transition-all duration-1000 opacity-90 group-hover:opacity-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
               </div>

@@ -50,7 +50,7 @@ const Ventures = () => {
       >
         <div className="mb-16 text-center">
           <span className="font-editorial text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-4">Current Operations</span>
-          <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-gradient-gold">VENTURES</span></h2>
+          <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-gradient-gold">PROJECTS</span></h2>
         </div>
 
         <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-3 gap-8">
@@ -63,7 +63,7 @@ const Ventures = () => {
                 <h3 className="font-editorial font-black text-2xl text-white mb-4 uppercase tracking-tight">{v.title}</h3>
                 <p className="text-text-muted leading-relaxed font-light flex-grow">{v.description}</p>
                 <div className={`mt-8 pt-6 border-t border-white/5 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest ${v.accent} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                  Access Protocol <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
+                  Learn More <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
                 </div>
               </>
             );
