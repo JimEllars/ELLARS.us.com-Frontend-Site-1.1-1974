@@ -56,7 +56,8 @@ const About = () => {
                 "https://www.instagram.com/ellarsjames",
                 "https://www.tiktok.com/@ellars",
                 "https://twitter.com/ellars"
-              ]
+              ],
+              "family": "Raised as the 4th of 6 children."
             }
           `}
         </script>
@@ -70,7 +71,7 @@ const About = () => {
           transition={{ duration: 0.8 }}
           className="text-center md:text-left"
         >
-          <div className="inline-flex items-center space-x-2 border border-yellow-electric/30 rounded-sm px-3 py-1 mb-6 bg-yellow-electric/10 shadow-[0_0_15px_rgba(251,191,36,0.15)]">
+          <div className="inline-flex items-center space-x-2 border border-yellow-electric/30 rounded-sm px-3 py-1 mb-6 bg-yellow-electric/10">
             <SafeIcon name="Target" className="w-3 h-3 text-yellow-electric" />
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">Profile Overview</span>
           </div>
@@ -85,9 +86,9 @@ const About = () => {
 
       {/* Personal Infrastructure */}
       <section className="max-w-7xl mx-auto px-6 mb-32">
-        <div className="mb-12 border-b border-phthalo-deep pb-4">
+        <div className="mb-12 border-b border-white/10 pb-4">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
-            <SafeIcon name="Users" className="w-6 h-6 mr-4 text-phthalo-glow" />
+            <SafeIcon name="Users" className="w-6 h-6 mr-4 text-electric-yellow" />
             Personal Infrastructure
           </h3>
         </div>
@@ -100,13 +101,12 @@ const About = () => {
           className="grid md:grid-cols-2 gap-6"
         >
           <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-phthalo-glow to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <h4 className="text-white font-editorial text-xl font-bold mb-4">The Foundation</h4>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               Born in Victorville and raised in Hesperia, James grew up as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
-              His advocacy is born from a desire to ensure the American Dream remains accessible to the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
+              His advocacy is personal, born from a desire to keep the American Dream accessible for the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
             </p>
           </motion.div>
         </motion.div>
@@ -118,7 +118,7 @@ const About = () => {
           <div className="mb-12 border-b border-white/10 pb-4">
             <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
               <SafeIcon name="Compass" className="w-6 h-6 mr-4 text-purple-neon" />
-              The Vision
+              The Economic Vision
             </h3>
           </div>
 
@@ -131,8 +131,8 @@ const About = () => {
           >
             {visionData.map((item, index) => (
               <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative group">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-purple-neon/20 transition-colors duration-500">
-                  <SafeIcon name={item.icon} className="w-6 h-6 text-white group-hover:text-purple-neon transition-colors duration-500" />
+                <div className="w-12 h-12 bg-white/5 rounded-sm flex items-center justify-center mb-6 transition-colors duration-500">
+                  <SafeIcon name={item.icon} className="w-6 h-6 text-white transition-colors duration-500" />
                 </div>
                 <h4 className="text-white font-editorial text-xl font-bold mb-4">{item.title}</h4>
                 <p className="text-text-muted font-light text-sm leading-relaxed">{item.description}</p>

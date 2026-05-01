@@ -11,7 +11,7 @@ const Newsletter = () => {
 
     // Simulate API call
     setTimeout(() => {
-      toast.success("Transmission Received. Welcome to the Vanguard.", { theme: "dark" });
+      toast.success("Transmission Received. Welcome to the Newsletter.", { theme: "dark" });
       setEmail('');
       setIsSubmitting(false);
     }, 1000);
