@@ -73,15 +73,19 @@ const RantsArchive = () => {
 
         {/* Podcast Player Integration */}
         <div className="mb-16">
-          <iframe
-            src="https://play.pod.co/ellars-rants"
-            frameBorder="0"
-            width="100%"
-            height="200"
-            scrolling="no"
-            style={{ borderRadius: '8px' }}
-            title="Ellars Rants Player"
-          ></iframe>
+          <div className="podcastdotco-wrapper flex justify-center">
+            <iframe
+              data-target="rants"
+              src="https://play.pod.co/rants"
+              frameBorder="0"
+              width="100%"
+              scrolling="no"
+              style={{ overflow: 'hidden', maxWidth: '750px', height: '500px' }}
+              className="podcastdotco-player podcastdotco-player--podcast"
+              title="Ellars Rants Player"
+            >
+            </iframe>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
