@@ -33,11 +33,11 @@ const Newsletter = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="YOUR EMAIL ADDRESS" 
-            className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-gold-base transition-colors rounded-sm"
+            className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-yellow-electric transition-colors rounded-sm"
             required 
             disabled={isSubmitting}
           />
-          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-gold-bright transition-colors rounded-sm shadow-xl disabled:opacity-50">
+          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-yellow-electric transition-colors rounded-sm shadow-xl disabled:opacity-50">
             {isSubmitting ? 'ENCRYPTING...' : 'Join the Newsletter'}
           </button>
         </form>

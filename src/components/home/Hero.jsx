@@ -15,7 +15,7 @@ const Hero = () => {
         
         <div className="lg:col-span-7 order-2 lg:order-1">
           <div className="inline-flex items-center space-x-3 mb-8 border border-white/20 rounded-sm px-4 py-1.5 bg-white/5 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-phthalo-glow animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
             <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">UNITED STATES OF AMERICA</span>
           </div>
           
@@ -30,7 +30,7 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
-            <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-gradient-to-r hover:from-phthalo-glow hover:to-purple-neon hover:text-white hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
+            <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
               Listen to Rants
             </Link>
             <Link to="/platform" className="btn-gold flex items-center justify-center group">
@@ -51,8 +51,8 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
               </div>
             </div>
-            <div className="absolute -bottom-8 -left-8 glass-panel p-6 shadow-2xl border-l-2 border-phthalo-glow w-64 hidden md:block z-20">
-              <p className="font-editorial text-[10px] text-phthalo-glow uppercase tracking-widest font-bold mb-1">Mission</p>
+            <div className="absolute -bottom-8 -left-8 glass-panel p-6 shadow-2xl border-l-2 border-yellow-electric w-64 hidden md:block z-20">
+              <p className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-1">Mission</p>
               <p className="text-white font-medium text-sm leading-snug">Building Strong and Healthy Communities through Forward-Thinking Systems and Infrastructure.</p>
             </div>
           </div>
