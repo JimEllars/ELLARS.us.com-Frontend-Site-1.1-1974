@@ -49,7 +49,7 @@ const About = () => {
               "@type": "Person",
               "name": "James Ellars",
               "jobTitle": "Community Leader & Business Development Specialist",
-              "description": "Building Strong and Healthy Communities through Forward-Thinking Systems and Infrastructure.",
+              "description": "Born in Victorville and raised in Hesperia as the 4th of 6 children, James is building strong communities through People-First economics and infrastructure.",
               "birthPlace": "Victorville, CA",
               "url": "https://ellars.us.com",
               "sameAs": [
