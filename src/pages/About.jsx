@@ -113,7 +113,7 @@ const About = () => {
       </section>
 
       {/* The Vision */}
-      <section className="bg-pthalo-gradient py-24 mb-32 -mx-6 px-6 lg:-mx-24 lg:px-24">
+      <section className="bg-void py-24 mb-32 -mx-6 px-6 lg:-mx-24 lg:px-24">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 border-b border-white/10 pb-4">
             <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
@@ -131,10 +131,10 @@ const About = () => {
           >
             {visionData.map((item, index) => (
               <motion.div key={index} variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative group">
-                <div className="w-12 h-12 bg-white/5 rounded-sm flex items-center justify-center mb-6 transition-colors duration-500">
-                  <SafeIcon name={item.icon} className="w-6 h-6 text-white transition-colors duration-500" />
+                <div className="w-12 h-12 bg-white/5 rounded-sm flex items-center justify-center mb-6 transition-colors duration-500 group-hover:bg-yellow-electric/10">
+                  <SafeIcon name={item.icon} className="w-6 h-6 text-white transition-colors duration-500 group-hover:text-yellow-electric" />
                 </div>
-                <h4 className="text-white font-editorial text-xl font-bold mb-4">{item.title}</h4>
+                <h4 className="text-white font-editorial text-xl font-bold mb-4 group-hover:text-yellow-electric transition-colors">{item.title}</h4>
                 <p className="text-text-muted font-light text-sm leading-relaxed">{item.description}</p>
               </motion.div>
             ))}

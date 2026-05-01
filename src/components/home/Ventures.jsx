@@ -21,7 +21,7 @@ const Ventures = () => {
       title: "View Media",
       description: "Unfiltered video briefings on post-labor economics and institutional decay.",
       icon: "Video",
-      accent: "text-purple-neon"
+      accent: "text-yellow-electric"
     }
   ];
 
@@ -50,7 +50,7 @@ const Ventures = () => {
       >
         <div className="mb-16 text-center">
           <span className="font-editorial text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-4">Current Operations</span>
-          <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-gradient-gold">PROJECTS</span></h2>
+          <h2 className="font-editorial font-black text-4xl text-white">ACTIVE <span className="text-electric-gold">PROJECTS</span></h2>
         </div>
 
         <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-3 gap-8">

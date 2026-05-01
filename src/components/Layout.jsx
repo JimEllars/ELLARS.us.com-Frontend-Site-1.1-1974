@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
 
   return (
     <LoaderContext.Provider value={{ isLoading, setIsLoading }}>
-      <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">
+      <div className="relative min-h-screen flex flex-col text-text-main bg-void">
         <TopLoader />
         <Helmet>
           <title>James Ellars | Business Development & Community Leader</title>

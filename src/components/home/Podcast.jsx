@@ -9,8 +9,7 @@ const Podcast = () => {
   };
 
   return (
-    <section className="py-32 bg-[#080808] border-y border-white/5 relative z-10">
-      <div className="absolute right-0 top-0 w-1/2 h-full bg-phthalo-deep opacity-20 blur-[100px] pointer-events-none"></div>
+    <section className="py-32 bg-void border-y border-white/5 relative z-10">
       
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center relative z-10">
         <div className="order-2 lg:order-1 relative">
@@ -55,10 +54,10 @@ const Podcast = () => {
         </div>
 
         <div className="order-1 lg:order-2">
-          <span className="font-editorial text-[10px] text-phthalo-glow uppercase tracking-widest font-bold block mb-6">The Ellars Rants Show</span>
+          <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold block mb-6">The Ellars Rants Show</span>
           <h2 className="font-editorial font-black text-4xl md:text-6xl text-white mb-8 leading-tight">
             HIGH-RESOLUTION <br />
-            <span className="text-gradient-phthalo">DISCOURSE.</span>
+            <span className="text-electric-gold">DISCOURSE.</span>
           </h2>
           <p className="text-xl text-text-muted font-light leading-relaxed mb-10">
             Step inside the studio. Deep-dive conversations on macro-economics, local logistics, and the cultural shifts defining the next decade. Raw, uncut, and uncompromising.
