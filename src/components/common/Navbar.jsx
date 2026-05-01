@@ -28,7 +28,7 @@ const Navbar = () => {
             <Link 
               key={link.path}
               to={link.path} 
-              className={`transition-colors hover:text-white ${location.pathname === link.path ? 'text-white' : 'text-gray-400'}`}
+              className={`transition-colors hover:text-yellow-electric ${location.pathname === link.path ? 'text-white' : 'text-gray-400'}`}
             >
               {link.name}
             </Link>
@@ -53,7 +53,7 @@ const Navbar = () => {
               key={link.path}
               to={link.path} 
               onClick={() => setIsOpen(false)}
-              className="font-editorial font-bold text-xs uppercase tracking-widest text-white"
+              className="font-editorial font-bold text-xs uppercase tracking-widest text-white hover:text-yellow-electric transition-colors"
             >
               {link.name}
             </Link>
