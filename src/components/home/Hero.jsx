@@ -53,7 +53,7 @@ const Hero = () => {
             </div>
             <div className="absolute -bottom-8 -left-8 glass-panel p-6 shadow-2xl border-l-2 border-phthalo-glow w-64 hidden md:block z-20">
               <p className="font-editorial text-[10px] text-phthalo-glow uppercase tracking-widest font-bold mb-1">Mission</p>
-              <p className="text-white font-medium text-sm leading-snug">Building Strong and Healthy Communities through Forward-Thinking Systems and Infrastructure.</p>
+              <p className="text-white font-medium text-sm leading-snug">Building an economy measured by the prosperity of its people, through modern infrastructure and algorithmic economic equity.</p>
             </div>
           </div>
         </div>

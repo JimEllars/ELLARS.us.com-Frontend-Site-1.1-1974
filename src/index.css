@@ -35,6 +35,10 @@
     @apply bg-gradient-to-br from-[#4ade80] via-phthalo-glow to-phthalo-base bg-clip-text text-transparent;
   }
 
+  .bg-pthalo-gradient {
+    background: linear-gradient(to bottom, #050505, #001a13);
+  }
+
   .bg-grid {
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
