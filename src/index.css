@@ -62,7 +62,7 @@
   }
 
   .interactive-card {
-    @apply bg-surface border border-white/5 border-b-purple-neon/20 transition-all duration-500 relative overflow-hidden;
+    @apply bg-surface border border-white/5 border-b-[#a855f7]/20 transition-all duration-500 relative overflow-hidden;
   }
 
   .interactive-card::before {
@@ -90,7 +90,7 @@
 /* Scrollbar and Content Styling */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { @apply bg-void; }
-::-webkit-scrollbar-thumb { @apply bg-phthalo-glow rounded-sm; }
+::-webkit-scrollbar-thumb { @apply bg-[#008f7a] rounded-sm; }
 ::-webkit-scrollbar-thumb:hover { @apply bg-gold-base; }
 
 .article-content p { @apply mb-6; }
