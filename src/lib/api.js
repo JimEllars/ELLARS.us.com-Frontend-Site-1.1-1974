@@ -99,10 +99,10 @@ export async function getPostBySlug(slug) {
     if (!res.ok) throw new Error('WP API Offline');
 
     const data = await res.json();
-    return data[0] || FALLBACK_POSTS.find(p => p.slug === slug);
+    return data[0] || null; // Trigger fallback
   } catch (error) {
     console.warn("API Error, utilizing fallback protocol for post:", error.message);
-    return FALLBACK_POSTS.find(p => p.slug === slug);
+    throw error; // Let component handle fallback mode
   }
 }
 

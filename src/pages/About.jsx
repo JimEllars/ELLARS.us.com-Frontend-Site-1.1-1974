@@ -20,8 +20,8 @@ const About = () => {
   const visionData = [
     {
       title: "The American Tax Credit",
-      icon: "TrendingUp",
-      description: "A proactive vision for a $12,000 extra tax credit, paid monthly, providing algorithmic stability to families across the nation."
+      icon: "DollarSign",
+      description: "An extra $12,000 annual tax credit, paid monthly, providing algorithmic stability to families across the nation."
     },
     {
       title: "The Automation Dividend",
@@ -36,7 +36,7 @@ const About = () => {
   ];
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-void bg-grid">
+    <div className="pt-32 pb-20 min-h-screen bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>James Ellars | People-First Economic Vision</title>
@@ -49,7 +49,7 @@ const About = () => {
               "@type": "Person",
               "name": "James Ellars",
               "jobTitle": "Community Leader & Business Development Specialist",
-              "description": "Born in Victorville and raised in Hesperia as the 4th of 6 children, James is building strong communities through People-First economics and infrastructure. He advocates for algorithmic stability and economic equity.",
+              "description": "Born in Victorville and raised in Hesperia as the 4th of 6 children, James is building strong communities through People-First economics and infrastructure. He advocates for an extra $12,000 annual tax credit for algorithmic stability and economic equity.",
               "birthPlace": "Victorville, CA",
               "url": "https://ellars.us.com",
               "sameAs": [
@@ -103,17 +103,17 @@ const About = () => {
           <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
             <h4 className="text-white font-editorial text-xl font-bold mb-4">The Foundation</h4>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
-              Born in Victorville and raised in Hesperia, James grew up as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics.
+              Born in Victorville and raised in Hesperia as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
-              His advocacy is personal, born from a desire to keep the American Dream accessible for the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
+              His advocacy is personal, born from a desire to ensure the American Dream remains accessible to the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
             </p>
           </motion.div>
         </motion.div>
       </section>
 
       {/* The Vision */}
-      <section className="bg-void py-24 mb-32 -mx-6 px-6 lg:-mx-24 lg:px-24">
+      <section className="py-24 mb-32 -mx-6 px-6 lg:-mx-24 lg:px-24">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 border-b border-white/10 pb-4">
             <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
