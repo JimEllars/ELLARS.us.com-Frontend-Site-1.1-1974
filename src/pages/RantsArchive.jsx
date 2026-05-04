@@ -1,24 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
-import { getLatestPosts, stripHtml } from '@/lib/api';
 import { Helmet } from 'react-helmet-async';
 
 const RantsArchive = () => {
   const { setIsLoading } = useLoader();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('ALL');
+      const [activeFilter, setActiveFilter] = useState('ALL');
 
   useEffect(() => {
-    async function load() {
-      setIsLoading(true);
-      const data = await getLatestPosts(12);
-      setPosts(data);
-      setLoading(false);
-      setIsLoading(false);
-    }
-    load();
+    setIsLoading(false);
   }, [setIsLoading]);
 
   useEffect(() => {
@@ -35,9 +25,7 @@ const RantsArchive = () => {
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'DISPATCH'];
 
-  const filteredPosts = activeFilter === 'ALL'
-    ? posts
-    : posts.filter(post => post.acf?.category_label?.toUpperCase() === activeFilter);
+
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-grid">
@@ -88,53 +76,7 @@ const RantsArchive = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loading ? (
-             Array(6).fill(0).map((_, i) => (
-              <div key={i} className="interactive-card p-8 min-h-[350px] animate-pulse">
-                <div className="w-full h-48 bg-white/5 mb-6"></div>
-                <div className="w-3/4 h-6 bg-white/10 mb-4"></div>
-                <div className="w-full h-16 bg-white/5"></div>
-              </div>
-            ))
-          ) : (
-            filteredPosts.map((post, index) => (
-              <article key={post.id} className="interactive-card group flex flex-col h-full rounded-sm overflow-hidden bg-black/40 border border-white/10 transition-colors hover:border-yellow-electric/50">
-                <div className="aspect-video bg-black relative overflow-hidden border-b border-white/5">
-                   <img 
-                    src={post.featured_media_url || `https://images.unsplash.com/photo-${1559523161 + index}-0fc0d8b38a7a?auto=format&fit=crop&q=80&w=800`}
-                    alt={post.title.rendered} 
-                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 grayscale group-hover:grayscale-0"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-16 h-16 bg-yellow-electric rounded-full flex items-center justify-center">
-                      <SafeIcon name="Play" className="w-6 h-6 text-black ml-1" />
-                    </div>
-                  </div>
-                  <div className="absolute top-4 left-4 bg-black/80 backdrop-blur px-3 py-1 border border-white/10">
-                    <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">EP {post.acf?.episode_number || `04${5-index}`}</span>
-                  </div>
-                </div>
-                <div className="p-8 flex flex-col flex-grow">
-                  <h3 className="font-editorial font-bold text-xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-2">
-                    {stripHtml(post.title.rendered)}
-                  </h3>
-                  <p className="text-text-muted text-sm leading-relaxed line-clamp-3 mb-6">
-                    {stripHtml(post.excerpt.rendered)}
-                  </p>
-                  <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between text-gray-500">
-                    <div className="flex items-center space-x-2">
-                      <SafeIcon name="Clock" className="w-3 h-3 text-yellow-electric" />
-                      <span className="text-[10px] font-editorial font-bold uppercase tracking-widest">{post.acf?.read_time || '15 Min'}</span>
-                    </div>
-                    <SafeIcon name="ArrowRight" className="w-4 h-4 group-hover:text-yellow-electric transition-colors" />
-                  </div>
-                </div>
-              </article>
-            ))
-          )}
         </div>
-      </div>
     </div>
   );
 };
