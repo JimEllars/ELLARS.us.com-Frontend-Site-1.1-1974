@@ -41,7 +41,7 @@ const ArticleDetail = () => {
   }, [slug]);
 
   if (loading) return <div className="pt-40 text-center font-editorial text-gold-base animate-pulse">DECRYPTING TRANSMISSION...</div>;
-  if (fallbackMode) return <div className="pt-40 text-center font-editorial text-yellow-electric animate-pulse">[DISPATCH_BUFFER_ACTIVE]</div>;
+  if (fallbackMode) return <div className="pt-40 text-center font-editorial text-yellow-electric animate-pulse text-xl">[DISPATCH_BUFFER_ACTIVE]</div>;
   if (!post) return <div className="pt-40 text-center text-white">404: Article Not Found</div>;
 
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200';

@@ -31,7 +31,7 @@ const About = () => {
   ];
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-grid">
+    <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>James Ellars | People-First Economic Vision</title>
@@ -44,7 +44,7 @@ const About = () => {
               "@type": "Person",
               "name": "James Ellars",
               "jobTitle": "Community Leader & Business Development Specialist",
-              "description": "Born in Victorville and raised in Hesperia as the 4th of 6 children, James is building strong communities through People-First economics and infrastructure. He advocates for an extra $12,000 annual tax credit for algorithmic stability and economic equity.",
+              "description": "Born in Victorville and raised in Hesperia as the 4th of 6 children, James is a Business Development Specialist building strong communities through People-First economics and infrastructure. He advocates for Economic Equity and an extra $12,000 annual tax credit for algorithmic stability, funded by an Automation Dividend.",
               "birthPlace": "Victorville, CA",
               "url": "https://ellars.us.com",
               "sameAs": [
@@ -96,9 +96,9 @@ const About = () => {
           className="grid md:grid-cols-2 gap-6"
         >
           <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
-            <h4 className="text-white font-editorial text-xl font-bold mb-4">The Foundation</h4>
+            <h4 className="text-white font-editorial text-xl font-bold mb-4">ROOTED IN REALITY. DRIVEN BY SYSTEMS.</h4>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
-              Born in Victorville and raised in Hesperia as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics.
+              Born in Victorville and raised in Hesperia as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics. His advocacy was born from a singular drive: ensuring the American Dream remains an accessible reality for the working class, rather than an abstract concept.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
               His advocacy is personal, born from a desire to ensure the American Dream remains accessible to the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.

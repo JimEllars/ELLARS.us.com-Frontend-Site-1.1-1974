@@ -28,7 +28,7 @@ const RantsArchive = () => {
 
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-grid">
+    <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>Rants Archive | James Ellars</title>
