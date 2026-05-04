@@ -17,21 +17,16 @@ const About = () => {
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
 
-  const visionData = [
+    const visionData = [
     {
       title: "The American Tax Credit",
       icon: "DollarSign",
-      description: "An extra $12,000 annual tax credit, paid monthly, providing algorithmic stability to families across the nation."
+      description: "An extra $12,000 annual tax credit, paid monthly, providing predictability and dignity for families."
     },
     {
       title: "The Automation Dividend",
       icon: "Cpu",
-      description: "Closing loopholes and taxing entities that use public infrastructure to replace labor with automation, establishing a resilient financial floor."
-    },
-    {
-      title: "Decentralized Infrastructure",
-      icon: "Network",
-      description: "Building autonomous local networks that reduce dependence on fragile, centralized macro-systems."
+      description: "Closing loopholes and taxing entities that use public infrastructure and automation to replace labor."
     }
   ];
 
