@@ -9,20 +9,39 @@ const Articles = () => {
   const { setIsLoading } = useLoader();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fallbackMode, setFallbackMode] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     async function load() {
       setIsLoading(true);
-      const data = await getLatestPosts(12);
-      setPosts(data);
-      setLoading(false);
-      setIsLoading(false);
+      try {
+        const data = await getLatestPosts(12);
+        if (isMounted) {
+          if (!data || data.length === 0) {
+            setFallbackMode(true);
+          } else {
+            setPosts(data);
+          }
+          setLoading(false);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setFallbackMode(true);
+          setLoading(false);
+          setIsLoading(false);
+        }
+      }
     }
     load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-grid">
+    <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>Articles | James Ellars</title>
@@ -43,8 +62,13 @@ const Articles = () => {
           </p>
         </header>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loading ? (
+        {fallbackMode ? (
+          <div className="py-20 text-center font-editorial text-yellow-electric animate-pulse text-xl">
+            [DISPATCH_BUFFER_ACTIVE]
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
             Array(6).fill(0).map((_, i) => (
               <div key={i} className="interactive-card p-8 min-h-[400px] animate-pulse bg-yellow-electric/5 border border-yellow-electric/20">
                 <div className="aspect-video bg-yellow-electric/20 mb-6"></div>
@@ -54,8 +78,9 @@ const Articles = () => {
             ))
           ) : (
             posts.map(post => <ArticleCard key={post.id} post={post} />)
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
