@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
+import DOMPurify from 'dompurify';
 
 const ArticleDetail = () => {
   const { slug } = useParams();
@@ -46,6 +47,20 @@ const ArticleDetail = () => {
 
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200';
 
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": stripHtml(post.title.rendered),
+    "description": stripHtml(post.excerpt.rendered),
+    "author": {
+      "@type": "Person",
+      "name": "James Ellars",
+      "url": "https://axim.us.com"
+    },
+    "datePublished": post.date,
+    "image": imageUrl
+  };
+
   return (
     <div className="pt-24 min-h-screen">
       <Helmet>
@@ -55,6 +70,9 @@ const ArticleDetail = () => {
         <meta property="og:title" content={stripHtml(post.title.rendered)} />
         <meta property="og:description" content={stripHtml(post.excerpt.rendered)} />
         <meta property="og:image" content={imageUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(schemaData)}
+        </script>
       </Helmet>
       <div className="relative h-[60vh] overflow-hidden">
         <img 
@@ -84,7 +102,7 @@ const ArticleDetail = () => {
       <div className="max-w-4xl mx-auto px-6 py-20">
         <div 
           className="prose prose-invert prose-gold max-w-none text-text-muted text-lg leading-relaxed font-light article-content"
-          dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered) }}
         />
         
         <div className="mt-20 pt-10 border-t border-phthalo-deep flex justify-between items-center">
