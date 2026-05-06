@@ -51,7 +51,7 @@ const Platform = () => {
   };
 
   return (
-    <div className="pt-32 pb-20 min-h-screen blueprint-overlay">
+    <div className="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>The Platform | James Ellars</title>
@@ -72,14 +72,14 @@ const Platform = () => {
           {modules.map((m, idx) => (
             <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group">
               <div className="flex items-start justify-between mb-8">
-                <div className="w-16 h-16 bg-surface border border-phthalo-deep flex items-center justify-center rounded-sm">
+                <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
                 </div>
-                <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-phthalo-deep h-fit">{m.status}</span>
+                <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
               <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light">{m.description}</p>
-              <div className="mt-8 pt-6 border-t border-phthalo-deep flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-8 pt-6 border-t border-white/10 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
                 Access Documentation <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
               </div>
             </motion.div>

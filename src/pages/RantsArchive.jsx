@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet-async';
 
 const RantsArchive = () => {
   const { setIsLoading } = useLoader();
-      const [activeFilter, setActiveFilter] = useState('ALL');
+  const [activeFilter, setActiveFilter] = useState('ALL');
 
   useEffect(() => {
     setIsLoading(false);
@@ -24,8 +24,6 @@ const RantsArchive = () => {
   }, []);
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'DISPATCH'];
-
-
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-transparent">
@@ -60,23 +58,21 @@ const RantsArchive = () => {
         </header>
 
         {/* Podcast Player Integration */}
-        <div className="mb-16">
-          <div className="podcastdotco-wrapper flex justify-center">
-            <iframe
-              data-target="rants"
-              src="https://play.pod.co/rants"
-              frameBorder="0"
-              width="100%"
-              scrolling="no"
-              style={{ overflow: 'hidden', maxWidth: '750px', height: '500px' }}
-              className="podcastdotco-player podcastdotco-player--podcast"
-              title="Ellars Rants Player"
-            >
-            </iframe>
-          </div>
+        <div className="podcastdotco-wrapper mb-16">
+          <iframe
+            data-target="rants"
+            src="https://play.pod.co/rants"
+            frameBorder="0"
+            width="100%"
+            scrolling="no"
+            style={{ overflow: 'hidden', maxWidth: '750px', height: '500px' }}
+            className="podcastdotco-player podcastdotco-player--podcast mx-auto"
+            title="Ellars Rants Player"
+          >
+          </iframe>
         </div>
 
-        </div>
+      </div>
     </div>
   );
 };
