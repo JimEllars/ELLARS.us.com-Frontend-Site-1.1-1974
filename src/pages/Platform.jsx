@@ -6,18 +6,25 @@ import { Helmet } from 'react-helmet-async';
 const Platform = () => {
   const modules = [
     {
-      title: "THE CALIFORNIA FLOOR",
+      title: "PEOPLE-FIRST ECONOMICS",
+      icon: "Users",
+      status: "Core Protocol",
+      color: "text-yellow-electric",
+      description: "Measuring the economy by true human prosperity and community well-being, not just raw GDP output."
+    },
+    {
+      title: "THE AMERICAN TAX CREDIT",
       icon: "Database",
       status: "Priority Alpha",
       color: "text-yellow-electric",
-      description: "A modernized Negative Income Tax establishing an algorithmic baseline of stability for national infrastructure."
+      description: "A vision for an extra $12,000 annual credit, paid monthly, providing algorithmic stability for all citizens."
     },
     {
-      title: "END THE SIPHON ECONOMY",
-      icon: "Shield",
+      title: "THE AUTOMATION DIVIDEND",
+      icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "Structural reinvestment mandates for multinational extraction within regional geography."
+      description: "Funded by closing corporate loopholes and taxing entities that utilize public infrastructure to replace labor with automation."
     },
     {
       title: "CONSTITUTIONAL INTEGRITY",

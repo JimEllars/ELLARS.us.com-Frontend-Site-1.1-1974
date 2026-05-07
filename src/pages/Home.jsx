@@ -15,6 +15,22 @@ const Home = () => {
         <meta name="robots" content="index, follow" />
         <title>James Ellars | The Blueprint</title>
         <meta name="description" content="Enterprise-level influencer and thought-leader platform for James Ellars." />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "James Ellars",
+              "url": "https://ellars.us.com",
+              "knowsAbout": [
+                "Economic Equity",
+                "Automation Dividend",
+                "Business Development",
+                "Community Infrastructure"
+              ]
+            }
+          `}
+        </script>
       </Helmet>
       <Hero />
       <Ventures />
