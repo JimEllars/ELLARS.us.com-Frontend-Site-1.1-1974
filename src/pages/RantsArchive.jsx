@@ -108,7 +108,7 @@ const RantsArchive = () => {
             </div>
           ) : filteredPosts.length > 0 ? (
             filteredPosts.map((post) => (
-              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm">
+              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : 'Activity'} className="w-4 h-4" />
