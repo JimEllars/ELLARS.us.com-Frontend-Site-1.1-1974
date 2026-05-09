@@ -10,21 +10,21 @@ const Platform = () => {
       icon: "Users",
       status: "Core Protocol",
       color: "text-yellow-electric",
-      description: "Measuring economic health through human prosperity and localized wealth recirculation, rather than decoupled corporate profit margins."
+      description: "Measuring economic health through human prosperity and localized wealth recirculation, ensuring the American Dream remains an accessible reality for the working class."
     },
     {
       title: "THE AMERICAN TAX CREDIT",
       icon: "Database",
       status: "Priority Alpha",
       color: "text-yellow-electric",
-      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability families need to navigate the digital age."
+      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly ($1,000/mo), to provide the predictability and dignity families need to navigate the Fourth Industrial Revolution."
     },
     {
       title: "THE AUTOMATION DIVIDEND",
       icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "A funding mechanism that closes corporate loopholes and taxes entities utilizing public infrastructure and automation to replace human labor."
+      description: "A funding mechanism that closes corporate loopholes and taxes entities (e.g., Amazon, Walmart) that utilize public infrastructure and automation to replace human labor."
     },
     {
       title: "CONSTITUTIONAL INTEGRITY",
@@ -42,7 +42,7 @@ const Platform = () => {
     }
   ];
 
-  const containerVariant = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -52,7 +52,7 @@ const Platform = () => {
     }
   };
 
-  const itemVariant = {
+  const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };
@@ -108,9 +108,9 @@ const Platform = () => {
           </p>
         </div>
 
-        <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
+        <motion.div variants={containerVariants} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
+            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />

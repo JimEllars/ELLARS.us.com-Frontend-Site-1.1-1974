@@ -28,8 +28,7 @@ const Home = () => {
               "knowsAbout": [
                 "Economic Equity",
                 "Automation Dividend",
-                "Business Development",
-                "Community Infrastructure"
+                "Civic Infrastructure"
               ]
             }
           `}
