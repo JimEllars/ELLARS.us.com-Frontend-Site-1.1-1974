@@ -10,21 +10,21 @@ const Platform = () => {
       icon: "Users",
       status: "Core Protocol",
       color: "text-yellow-electric",
-      description: "Measuring the economy by true human prosperity and community well-being, not just raw GDP output."
+      description: "Measuring economic health through human prosperity and localized wealth recirculation, rather than decoupled corporate profit margins."
     },
     {
       title: "THE AMERICAN TAX CREDIT",
       icon: "Database",
       status: "Priority Alpha",
       color: "text-yellow-electric",
-      description: "A vision for an extra $12,000 annual credit, paid monthly, providing algorithmic stability for all citizens."
+      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability families need to navigate the digital age."
     },
     {
       title: "THE AUTOMATION DIVIDEND",
       icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "Funded by closing corporate loopholes and taxing entities that utilize public infrastructure to replace labor with automation."
+      description: "A funding mechanism that closes corporate loopholes and taxes entities utilizing public infrastructure to replace human labor."
     },
     {
       title: "CONSTITUTIONAL INTEGRITY",
@@ -63,6 +63,18 @@ const Platform = () => {
         <meta name="robots" content="index, follow" />
         <title>The Platform | James Ellars</title>
         <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
+        <script type="application/ld+json">
+          {`
+            {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "James Ellars",
+    "url": "https://axim.us.com",
+    "description": "Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity."
+}
+          `}
+        </script>
+
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
@@ -77,7 +89,7 @@ const Platform = () => {
 
         <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group">
+            <motion.div variants={itemVariant} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
