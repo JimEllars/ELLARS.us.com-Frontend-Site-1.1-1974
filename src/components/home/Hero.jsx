@@ -31,10 +31,10 @@ const Hero = () => {
           
           <div className="flex flex-col sm:flex-row gap-6">
             <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
-              Listen to Rants
+              ACCESS DISPATCHES
             </Link>
             <Link to="/platform" className="btn-gold flex items-center justify-center group">
-              Explore Platform <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              ACCESS PLATFORM <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -46,9 +46,9 @@ const Hero = () => {
                 <img 
                   src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp"
                   alt="James Ellars" 
-                  className="w-full h-full object-cover "
+                  className="w-full h-full object-cover"
                 />
-</div>
+              </div>
             </div>
             <div className="absolute -bottom-8 -left-8 glass-panel p-6 shadow-2xl border-l-2 border-yellow-electric w-64 hidden md:block z-20">
               <p className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-1">Mission</p>

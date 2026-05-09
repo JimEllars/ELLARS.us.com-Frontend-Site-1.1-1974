@@ -78,7 +78,7 @@ const ArticleDetail = () => {
         <img 
           src={imageUrl} 
           alt={post.title.rendered} 
-          className="w-full h-full object-cover grayscale opacity-40"
+          className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full p-10 md:p-20">
