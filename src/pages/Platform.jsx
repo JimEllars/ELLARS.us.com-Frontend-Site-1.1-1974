@@ -24,7 +24,7 @@ const Platform = () => {
       icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "A funding mechanism that closes corporate loopholes and taxes entities utilizing public infrastructure to replace human labor."
+      description: "A funding mechanism that closes corporate loopholes and taxes entities utilizing public infrastructure and automation to replace human labor."
     },
     {
       title: "CONSTITUTIONAL INTEGRITY",
@@ -62,6 +62,9 @@ const Platform = () => {
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>The Platform | James Ellars</title>
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="The Platform | James Ellars" />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
         <script type="application/ld+json">
           {`
@@ -74,7 +77,25 @@ const Platform = () => {
 }
           `}
         </script>
-
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": [{
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://axim.us.com"
+              },{
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Platform",
+                "item": "https://axim.us.com/platform"
+              }]
+            }
+          `}
+        </script>
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">

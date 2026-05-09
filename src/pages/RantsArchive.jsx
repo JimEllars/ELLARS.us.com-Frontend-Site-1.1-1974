@@ -59,6 +59,9 @@ const RantsArchive = () => {
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>Rants Archive | James Ellars</title>
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Rants Archive | James Ellars" />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="The official hub for the Ellars Rants show. High-resolution analysis on economics, technology, and the future of civic infrastructure." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
@@ -108,7 +111,7 @@ const RantsArchive = () => {
             </div>
           ) : filteredPosts.length > 0 ? (
             filteredPosts.map((post) => (
-              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
+              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-purple-neon/20 hover:border-yellow-electric transition-colors">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : 'Activity'} className="w-4 h-4" />
