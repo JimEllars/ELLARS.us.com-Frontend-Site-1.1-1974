@@ -9,7 +9,9 @@ const About = React.lazy(() => import('./pages/About'));
 const Articles = React.lazy(() => import('./pages/Articles'));
 const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
-const RantsArchive = React.lazy(() => import('./pages/RantsArchive'));
+const TransmissionHub = React.lazy(() => import('./pages/TransmissionHub'));
+const Armory = React.lazy(() => import('./pages/Armory'));
+const Ledger = React.lazy(() => import('./pages/Ledger'));
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -24,7 +26,9 @@ function App() {
           <Route path="/articles" element={<Articles />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/platform" element={<Platform />} />
-          <Route path="/rants" element={<RantsArchive />} />
+          <Route path="/transmission" element={<TransmissionHub />} />
+          <Route path="/armory" element={<Armory />} />
+          <Route path="/ledger" element={<Ledger />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
