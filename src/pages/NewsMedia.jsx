@@ -3,7 +3,8 @@ import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { getLatestPosts, stripHtml } from '@/lib/api';
+import { getLatestPosts, getInstagramFeed, stripHtml } from '@/lib/api';
+import DOMPurify from 'dompurify';
 import { motion } from 'framer-motion';
 
 const FrequencyVisualizer = ({ isPlaying }) => {
@@ -52,6 +53,8 @@ const NewsMedia = () => {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [socialPosts, setSocialPosts] = useState([]);
+  const [loadingSocial, setLoadingSocial] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -75,10 +78,26 @@ const NewsMedia = () => {
     }
     fetchPosts();
 
-    return () => { isMounted = false; };
+    let isSocialMounted = true;
+    async function fetchSocial() {
+      try {
+        const socialData = await getInstagramFeed();
+        if (isSocialMounted) {
+          setSocialPosts(socialData || []);
+          setLoadingSocial(false);
+        }
+      } catch (e) {
+        if (isSocialMounted) {
+          setLoadingSocial(false);
+        }
+      }
+    }
+    fetchSocial();
+
+    return () => { isMounted = false; isSocialMounted = false; };
   }, []);
 
-  const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES'];
+  const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
   const filteredPosts = posts.filter(post => {
     if (activeFilter === 'ALL') return true;
@@ -143,7 +162,36 @@ const NewsMedia = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loadingPosts ? (
+
+          {activeFilter === 'SOCIAL' ? (
+             loadingSocial ? (
+              <div className="col-span-full py-20 text-center text-yellow-electric font-mono text-sm tracking-widest">
+                [DISPATCH_BUFFER_ACTIVE]
+              </div>
+             ) : socialPosts.length > 0 ? (
+                socialPosts.map((post) => (
+                  <article key={post.id || post.permalink} className="interactive-card p-0 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors overflow-hidden bg-surface border border-white/10">
+                    <div className="w-full h-64 overflow-hidden relative">
+                       <img src={post.media_url || post.thumbnail_url} alt="Social Media Content" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                       <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md p-2 rounded-full border border-white/20">
+                          <SafeIcon name="Instagram" className="w-4 h-4 text-white" />
+                       </div>
+                    </div>
+                    <div className="p-6">
+                       <p className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.caption || '') }}></p>
+                       <a href={post.permalink} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500 hover:text-[#9400FF] transition-colors">
+                          View on Instagram <SafeIcon name="ArrowRight" className="w-4 h-4 ml-2" />
+                       </a>
+                    </div>
+                  </article>
+                ))
+             ) : (
+                <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
+                  No entries found for SOCIAL.
+                </div>
+             )
+          ) : loadingPosts ? (
+
             <div className="col-span-full py-20 text-center text-yellow-electric font-mono text-sm tracking-widest">
               [DISPATCH_BUFFER_ACTIVE]
             </div>
@@ -174,7 +222,8 @@ const NewsMedia = () => {
             <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
               No entries found for {activeFilter}.
             </div>
-          )}
+          )
+        }
         </div>
 
       </div>

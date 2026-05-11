@@ -119,3 +119,29 @@ export function formatDate(dateString) {
     year: 'numeric'
   });
 }
+export async function getInstagramFeed() {
+  try {
+    const url = 'https://wp.ellars.us.com/wp-json/spotlight/v1/posts';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error('Instagram Feed API Offline');
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.warn("Instagram API Error:", error.message);
+    return [];
+  }
+}
