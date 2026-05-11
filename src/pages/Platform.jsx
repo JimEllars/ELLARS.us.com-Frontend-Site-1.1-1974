@@ -4,7 +4,14 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
-  const modules = [
+    const modules = [
+    {
+      title: "THE AMERICAN TAX CREDIT",
+      icon: "Database",
+      status: "Priority Alpha",
+      color: "text-yellow-electric",
+      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability and predictability families need to navigate the digital age."
+    },
     {
       title: "PEOPLE-FIRST ECONOMICS",
       icon: "Users",
@@ -13,32 +20,11 @@ const Platform = () => {
       description: "Measuring economic health through human prosperity and localized wealth recirculation, ensuring the American Dream remains an accessible reality for the working class."
     },
     {
-      title: "THE AMERICAN TAX CREDIT",
-      icon: "Database",
-      status: "Priority Alpha",
-      color: "text-yellow-electric",
-      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly ($1,000/mo), to provide the predictability and dignity families need to navigate the Fourth Industrial Revolution."
-    },
-    {
       title: "THE AUTOMATION DIVIDEND",
       icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "A funding mechanism that closes corporate loopholes and taxes entities (e.g., Amazon, Walmart) that utilize public infrastructure and automation to replace human labor."
-    },
-    {
-      title: "CONSTITUTIONAL INTEGRITY",
-      icon: "Lock",
-      status: "Core Protocol",
-      color: "text-yellow-electric",
-      description: "Patching governance vulnerabilities through strict term limits and capital-policy decoupling."
-    },
-    {
-      title: "LOGISTICS INFRASTRUCTURE",
-      icon: "Map",
-      status: "Beta Phase",
-      color: "text-yellow-electric",
-      description: "Modernizing physical networks via decentralized energy grids and automated logistics hubs."
+      description: "A funding mechanism that closes corporate loopholes and taxes entities that utilize public infrastructure and automation to replace human labor."
     }
   ];
 

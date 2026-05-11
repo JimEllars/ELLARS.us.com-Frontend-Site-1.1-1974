@@ -18,16 +18,17 @@ const Home = () => {
         <meta property="og:title" content="James Ellars | The Blueprint" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="Enterprise-level influencer and thought-leader platform for James Ellars." />
-        <script type="application/ld+json">
+                <script type="application/ld+json">
           {`
             {
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "James Ellars",
-              "url": "https://ellars.us.com",
+              "url": "https://axim.us.com",
               "knowsAbout": [
                 "Economic Equity",
                 "Automation Dividend",
+                "Business Development Specialist",
                 "Civic Infrastructure"
               ]
             }

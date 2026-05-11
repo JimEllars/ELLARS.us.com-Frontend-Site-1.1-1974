@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 
 const RantsArchive = () => {
@@ -111,7 +112,8 @@ const RantsArchive = () => {
             </div>
           ) : filteredPosts.length > 0 ? (
             filteredPosts.map((post) => (
-              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-purple-neon/20 hover:border-yellow-electric transition-colors">
+              <Link to={`/articles/${post.slug}`} key={post.id} className="block h-full">
+              <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-purple-neon/20 hover:border-yellow-electric transition-colors">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : 'Activity'} className="w-4 h-4" />
@@ -129,6 +131,7 @@ const RantsArchive = () => {
                   <SafeIcon name="ArrowRight" className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
                 </div>
               </article>
+              </Link>
             ))
           ) : (
             <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
