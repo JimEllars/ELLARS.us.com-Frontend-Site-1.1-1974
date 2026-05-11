@@ -8,7 +8,7 @@ const ArticleCard = ({ post }) => {
 
   return (
     <article className="interactive-card group flex flex-col h-full rounded-sm overflow-hidden">
-      <Link to={`/intel/${post.slug}`} className="block relative aspect-video overflow-hidden border-b border-phthalo-deep">
+      <Link to={`/articles/${post.slug}`} className="block relative aspect-video overflow-hidden border-b border-phthalo-deep">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -45,7 +45,7 @@ const ArticleCard = ({ post }) => {
           <span className="text-[10px] font-editorial font-bold uppercase tracking-widest">
             {post.acf?.read_time || '8 Min Read'}
           </span>
-          <Link to={`/intel/${post.slug}`} className="text-white hover:text-yellow-electric transition-colors">
+          <Link to={`/articles/${post.slug}`} className="text-white hover:text-yellow-electric transition-colors">
             <SafeIcon name="ArrowRight" className="w-5 h-5" />
           </Link>
         </div>

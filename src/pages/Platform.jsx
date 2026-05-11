@@ -10,21 +10,30 @@ const Platform = () => {
       icon: "Database",
       status: "Priority Alpha",
       color: "text-yellow-electric",
-      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability and predictability families need to navigate the digital age."
+      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability and predictability families need to navigate the digital age.",
+      progress: 85,
+      sponsor: "Civic Infrastructure Guild",
+      revisions: 12
     },
     {
       title: "PEOPLE-FIRST ECONOMICS",
       icon: "Users",
       status: "Core Protocol",
       color: "text-yellow-electric",
-      description: "Measuring economic health through human prosperity and localized wealth recirculation, ensuring the American Dream remains an accessible reality for the working class."
+      description: "Measuring economic health through human prosperity and localized wealth recirculation, ensuring the American Dream remains an accessible reality for the working class.",
+      progress: 60,
+      sponsor: "Economic Equity Council",
+      revisions: 8
     },
     {
       title: "THE AUTOMATION DIVIDEND",
       icon: "Cpu",
       status: "Active Deployment",
       color: "text-yellow-electric",
-      description: "A funding mechanism that closes corporate loopholes and taxes entities that utilize public infrastructure and automation to replace human labor."
+      description: "A funding mechanism that closes corporate loopholes and taxes entities that utilize public infrastructure and automation to replace human labor.",
+      progress: 40,
+      sponsor: "Technological Advisory Board",
+      revisions: 24
     }
   ];
 
@@ -47,9 +56,9 @@ const Platform = () => {
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>The Platform | James Ellars</title>
+        <title>The Chartroom | James Ellars</title>
         <meta property="og:type" content="article" />
-        <meta property="og:title" content="The Platform | James Ellars" />
+        <meta property="og:title" content="The Chartroom | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
         <script type="application/ld+json">
@@ -87,7 +96,7 @@ const Platform = () => {
         <div className="text-center mb-20">
           <span className="font-editorial text-[10px] text-white uppercase tracking-widest font-bold block mb-4">Operational Directives</span>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-            THE <span className="text-electric-gold">PLATFORM.</span>
+            THE <span className="text-electric-gold">CHARTROOM.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl mx-auto text-lg font-light">
             A technical manual for the modernization of civic infrastructure.
@@ -96,18 +105,30 @@ const Platform = () => {
 
         <motion.div variants={containerVariants} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#a855f7]/20 hover:border-yellow-electric transition-colors">
+            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors bg-surface">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
-              <p className="text-text-muted leading-relaxed font-light">{m.description}</p>
-              <div className="mt-8 pt-6 border-t border-white/10 flex items-center text-[10px] font-editorial font-bold uppercase tracking-widest text-yellow-electric opacity-0 group-hover:opacity-100 transition-opacity">
-                Access Documentation <SafeIcon name="ArrowRight" className="ml-2 w-3 h-3" />
+              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-[#9400FF] transition-colors uppercase tracking-tight">{m.title}</h2>
+              <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
+
+              <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
+                 <div className="flex justify-between items-center text-xs font-mono text-gray-400">
+                    <span>Consensus Progress</span>
+                    <span className="text-[#4ade80]">{m.progress}%</span>
+                 </div>
+                 <div className="w-full bg-void h-2 rounded-sm overflow-hidden border border-white/5">
+                    <div className="h-full bg-[#4ade80] transition-all duration-1000" style={{ width: `${m.progress}%` }}></div>
+                 </div>
+                 <div className="flex justify-between text-[10px] font-mono text-gray-500 uppercase tracking-widest mt-4">
+                    <span>Sponsor: {m.sponsor}</span>
+                    <span>Revisions: {m.revisions}</span>
+                 </div>
               </div>
+
             </motion.div>
           ))}
         </motion.div>
