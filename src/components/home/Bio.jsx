@@ -22,7 +22,7 @@ const Bio = () => {
                   Specializing in logistics networks, renewable energy infrastructure, and SaaS integrations, James has built his reputation on identifying inefficiencies and designing solutions that drive immense value.
                 </p>
                 <p>
-                  Today, he is applying that rigorous, ROI-focused methodology to the greatest challenge of our time: civic infrastructure and economic sovereignty for the American working class.
+                  Today, he is applying that rigorous, results-focused mindset to the greatest challenge of our time: people-focused infrastructure and economic freedom for the American working class.
                 </p>
               </div>
               <div className="mt-12">

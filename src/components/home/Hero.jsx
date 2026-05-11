@@ -26,12 +26,12 @@ const Hero = () => {
           </h1>
           
           <p className="text-xl md:text-2xl font-light text-text-muted mb-12 max-w-2xl leading-relaxed">
-            Leading the modernization of American civic infrastructure through <span className="text-white font-medium">private-sector rigor</span> and algorithmic economic equity.
+            Leading American innovation through disruptive systems and algorithmic economic equity.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
-            <Link to="/rants" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
-              ACCESS DISPATCHES
+            <Link to="/news-media" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
+              ACCESS NEWS
             </Link>
             <Link to="/platform" className="btn-gold flex items-center justify-center group">
               ACCESS PLATFORM <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />

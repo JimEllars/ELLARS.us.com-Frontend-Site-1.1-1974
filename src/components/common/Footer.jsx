@@ -21,8 +21,8 @@ const Footer = () => {
             <a href="https://www.instagram.com/ellarsjames" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
               <SafeIcon name="Instagram" className="w-6 h-6" />
             </a>
-            <a href="https://www.tiktok.com/@ellars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
-              <SafeIcon name="Video" className="w-6 h-6" />
+            <a href="https://www.threads.net/@ellarsjames" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors">
+              <SafeIcon name="AtSign" className="w-6 h-6" />
             </a>
           </div>
         </div>
