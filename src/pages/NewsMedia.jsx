@@ -96,7 +96,7 @@ const NewsMedia = () => {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
-        <meta name="description" content="The Latest News, Updates and Media regarding the systems and strategies of James Ellars." />
+        <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
