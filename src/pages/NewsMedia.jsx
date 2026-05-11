@@ -47,7 +47,7 @@ const FrequencyVisualizer = ({ isPlaying }) => {
   return <canvas ref={canvasRef} width="200" height="60" className="w-full h-full opacity-50" />;
 };
 
-const TransmissionHub = () => {
+const NewsMedia = () => {
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);
@@ -78,33 +78,35 @@ const TransmissionHub = () => {
     return () => { isMounted = false; };
   }, []);
 
-  const filters = ['ALL', 'VIDEO', 'AUDIO', 'DISPATCH'];
+  const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES'];
 
   const filteredPosts = posts.filter(post => {
     if (activeFilter === 'ALL') return true;
-    const category = post.acf?.category_label?.toUpperCase() || '';
-    return category === activeFilter;
+    let category = post.acf?.category_label?.toUpperCase() || '';
+    if (category === 'DISPATCH' || category === 'BUSINESS BRIEFING') category = 'ARTICLES';
+    if (category === activeFilter) return true;
+    return false;
   });
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>Transmission Hub | James Ellars</title>
+        <title>News & Media Hub | James Ellars</title>
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Transmission Hub | James Ellars" />
+        <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
-        <meta name="description" content="Direct Transmissions from the Bridge. High-resolution analysis on economics, technology, and the future of civic infrastructure." />
+        <meta name="description" content="The Latest News, Updates and Media regarding the systems and strategies of James Ellars." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="max-w-2xl">
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold block mb-4">Synchronizing Fleet Intelligence</span>
             <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-              TRANSMISSION <span className="text-[#9400FF]">HUB.</span>
+              NEWS & MEDIA <span className="text-[#9400FF]">HUB.</span>
             </h1>
             <p className="text-text-muted mt-6 text-lg font-light leading-relaxed">
-              Direct Transmissions from the Bridge. High-resolution analysis on economics, technology, and the future of civic infrastructure.
+              The Latest News, Updates and Media regarding the systems and strategies of James Ellars.
             </p>
           </div>
           
@@ -152,7 +154,7 @@ const TransmissionHub = () => {
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : 'Activity'} className="w-4 h-4" />
-                    <span>{post.acf?.category_label || 'Fleet Signal'}</span>
+                    <span>{post.acf?.category_label || 'Article'}</span>
                   </div>
                   <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-[#9400FF] transition-colors line-clamp-3">
                     {stripHtml(post.title.rendered)}
@@ -180,4 +182,4 @@ const TransmissionHub = () => {
   );
 };
 
-export default TransmissionHub;
+export default NewsMedia;

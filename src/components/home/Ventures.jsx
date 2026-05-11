@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
+import { Link } from 'react-router-dom';
 
 const Ventures = () => {
   const ventures = [
@@ -9,19 +10,24 @@ const Ventures = () => {
       link: "https://axim.us.com",
       description: "Enterprise automation and civic infrastructure solutions.",
       icon: "Cpu",
-      accent: "text-yellow-electric"
+      accent: "text-yellow-electric",
+      external: true
     },
     {
       title: "ELLARS Rants",
+      link: "https://play.pod.co/rants",
       description: "Long-form audio discourse on the intersection of technology and human equity.",
       icon: "Mic",
-      accent: "text-yellow-electric"
+      accent: "text-yellow-electric",
+      external: true
     },
     {
-      title: "View Media",
+      title: "News & Media",
+      link: "/news-media",
       description: "Unfiltered video briefings on post-labor economics and institutional decay.",
       icon: "Video",
-      accent: "text-yellow-electric"
+      accent: "text-yellow-electric",
+      external: false
     }
   ];
 
@@ -70,14 +76,14 @@ const Ventures = () => {
 
             return (
               <motion.div variants={itemVariant} key={idx}>
-                {v.link ? (
+                {v.external ? (
                   <a href={v.link} target="_blank" rel="noopener noreferrer" className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface  block">
                     {CardContent}
                   </a>
                 ) : (
-                  <div className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface ">
+                  <Link to={v.link} className="interactive-card p-10 rounded-sm group flex flex-col h-full bg-surface  block">
                     {CardContent}
-                  </div>
+                  </Link>
                 )}
               </motion.div>
             );
