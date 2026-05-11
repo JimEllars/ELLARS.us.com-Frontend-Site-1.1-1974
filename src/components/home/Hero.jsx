@@ -46,7 +46,7 @@ const Hero = () => {
                 <img 
                   src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp"
                   alt="James Ellars" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-top object-contain"
                 />
               </div>
             </div>

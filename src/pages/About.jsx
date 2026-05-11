@@ -52,6 +52,7 @@ const About = () => {
                 "https://www.tiktok.com/@ellars",
                 "https://twitter.com/ellars"
               ],
+              "knowsAbout": ["Algorithmic Economic Equity", "Fourth Industrial Revolution Logistics", "Community-First Systems"],
               "family": "Raised as the 4th of 6 children."
             }
           `}

@@ -58,7 +58,7 @@ const Platform = () => {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "James Ellars",
-    "url": "https://axim.us.com",
+    "url": "https://ellars.us.com",
     "description": "Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity."
 }
           `}
@@ -72,12 +72,12 @@ const Platform = () => {
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Home",
-                "item": "https://axim.us.com"
+                "item": "https://ellars.us.com"
               },{
                 "@type": "ListItem",
                 "position": 2,
                 "name": "Platform",
-                "item": "https://axim.us.com/platform"
+                "item": "https://ellars.us.com/platform"
               }]
             }
           `}
@@ -111,6 +111,37 @@ const Platform = () => {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Implementation Roadmap */}
+        <div className="mt-32 pt-20 border-t border-white/10">
+          <div className="text-center mb-16">
+            <h2 className="font-editorial font-black text-3xl md:text-5xl text-white uppercase tracking-tight">IMPLEMENTATION ROADMAP</h2>
+          </div>
+
+          <div className="relative">
+            {/* Horizontal connecting line */}
+            <div className="absolute top-1/2 left-0 w-full h-px bg-white/10 -translate-y-1/2 hidden md:block"></div>
+
+            <div className="grid md:grid-cols-4 gap-8">
+              {[
+                { step: "01", title: "Policy Briefing", desc: "Initial stakeholder alignment and economic modeling." },
+                { step: "02", title: "Legislative Drafting", desc: "Translating models into actionable policy frameworks." },
+                { step: "03", title: "Pilot Programs", desc: "Localized testing of the American Tax Credit." },
+                { step: "04", title: "Civic Infrastructure Deployment", desc: "Full-scale rollout and continuous algorithmic monitoring." }
+              ].map((item, idx) => (
+                <div key={idx} className="relative bg-surface border border-white/10 p-6 rounded-sm z-10 md:mt-0 mt-8">
+                  <div className="absolute -top-4 md:-top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    <div className="w-3 h-3 rounded-full bg-phthalo-glow shadow-[0_0_10px_rgba(0,143,122,0.5)] mb-2"></div>
+                    <div className="h-4 w-px bg-white/20 hidden md:block"></div>
+                  </div>
+                  <span className="font-mono text-xs text-phthalo-glow block mb-2">{item.step}</span>
+                  <h3 className="font-editorial font-bold text-white uppercase text-sm mb-2">{item.title}</h3>
+                  <p className="text-text-muted text-xs leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ const ArticleDetail = () => {
     "author": {
       "@type": "Person",
       "name": "James Ellars",
-      "url": "https://axim.us.com"
+      "url": "https://ellars.us.com"
     },
     "datePublished": post.date,
     "image": imageUrl
