@@ -4,36 +4,66 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
-    const modules = [
+        const modules = [
     {
-      title: "THE AMERICAN TAX CREDIT",
-      icon: "Database",
-      status: "Priority Alpha",
+      title: "PROTECTED VITAL SYSTEMS",
+      icon: "ShieldCheck",
+      status: "Directive 01",
       color: "text-yellow-electric",
-      description: "A proactive vision for an extra $12,000 annual tax credit, paid monthly, providing the algorithmic stability and predictability families need to navigate the digital age.",
+      description: "Protecting essential systems—food, housing, education, and healthcare—from corporate profiteering to ensure the fundamental welfare of the American people.",
       progress: 85,
       sponsor: "Civic Infrastructure Guild",
       revisions: 12
     },
     {
-      title: "PEOPLE-FIRST ECONOMICS",
-      icon: "Users",
-      status: "Core Protocol",
+      title: "TAXATION PARITY",
+      icon: "Scale",
+      status: "Directive 02",
       color: "text-yellow-electric",
-      description: "Measuring economic health through human prosperity and localized wealth recirculation, ensuring the American Dream remains an accessible reality for the working class.",
+      description: "Returning wealthy and corporate taxation to 1950s levels to prevent resource hoarding and ensure the economy works for everyone, not just the ultra-rich.",
       progress: 60,
       sponsor: "Economic Equity Council",
       revisions: 8
     },
     {
-      title: "THE AUTOMATION DIVIDEND",
-      icon: "Cpu",
-      status: "Active Deployment",
+      title: "ELECTION SOVEREIGNTY",
+      icon: "Vote",
+      status: "Directive 03",
       color: "text-yellow-electric",
-      description: "A funding mechanism that closes corporate loopholes and taxes entities that utilize public infrastructure and automation to replace human labor.",
+      description: "Overturning Citizens United and removing dark money from politics to prevent corporate interests from diluting the power of the people.",
       progress: 40,
       sponsor: "Technological Advisory Board",
       revisions: 24
+    },
+    {
+      title: "HOUSING SOVEREIGNTY",
+      icon: "Home",
+      status: "Directive 04",
+      color: "text-yellow-electric",
+      description: "Prioritizing individual home ownership over corporate mass-rentals to strengthen the housing market and empower residents.",
+      progress: 55,
+      sponsor: "Civic Infrastructure Guild",
+      revisions: 10
+    },
+    {
+      title: "DIGITAL PRIVACY RIGHTS",
+      icon: "Fingerprint",
+      status: "Directive 05",
+      color: "text-yellow-electric",
+      description: "Establishing a right to data privacy where big tech must offer opt-in protocols and provide fair payment for the data they profit from.",
+      progress: 70,
+      sponsor: "Technological Advisory Board",
+      revisions: 15
+    },
+    {
+      title: "ENERGY INDEPENDENCE",
+      icon: "Zap",
+      status: "Directive 06",
+      color: "text-yellow-electric",
+      description: "Transitioning away from oil reliance toward clean transportation and robust public transit systems across America.",
+      progress: 45,
+      sponsor: "Economic Equity Council",
+      revisions: 9
     }
   ];
 
@@ -56,11 +86,11 @@ const Platform = () => {
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>The Chartroom | James Ellars</title>
+        <title>The Platform | James Ellars</title>
         <meta property="og:type" content="article" />
-        <meta property="og:title" content="The Chartroom | James Ellars" />
+        <meta property="og:title" content="The Platform | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
-        <meta name="description" content="A technical manual for the modernization of civic infrastructure." />
+        <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty." />
         <script type="application/ld+json">
           {`
             {
@@ -68,7 +98,8 @@ const Platform = () => {
     "@type": "Organization",
     "name": "James Ellars",
     "url": "https://ellars.us.com",
-    "description": "Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity."
+    "description": "Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity.",
+    "knowsAbout": ["Vital System Protection", "Taxation Parity", "Digital Data Rights", "Housing Sovereignty", "Green Transportation Systems"]
 }
           `}
         </script>
@@ -96,10 +127,10 @@ const Platform = () => {
         <div className="text-center mb-20">
           <span className="font-editorial text-[10px] text-white uppercase tracking-widest font-bold block mb-4">Operational Directives</span>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-            THE <span className="text-electric-gold">CHARTROOM.</span>
+            THE <span className="text-yellow-electric">PLATFORM.</span>
           </h1>
           <p className="text-text-muted mt-6 max-w-2xl mx-auto text-lg font-light">
-            A technical manual for the modernization of civic infrastructure.
+            A strategic blueprint for human-centric systems and economic sovereignty.
           </p>
         </div>
 

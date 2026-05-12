@@ -119,3 +119,68 @@ export function formatDate(dateString) {
     year: 'numeric'
   });
 }
+
+const SOCIAL_FALLBACK = [
+  {
+    id: 's1',
+    acf: { category_label: 'SOCIAL' },
+    title: { rendered: 'Spotlight Feed Unavailable' },
+    excerpt: { rendered: 'The social feed is currently offline.' },
+    slug: '#',
+    date: new Date().toISOString(),
+  }
+];
+
+export async function getSocialFeed(limit = 10) {
+  const cacheKey = `social-${limit}`;
+
+  if (!POSTS_CACHE[cacheKey]) {
+    POSTS_CACHE[cacheKey] = { data: null, timestamp: null };
+  }
+
+  const now = Date.now();
+  if (POSTS_CACHE[cacheKey].data && POSTS_CACHE[cacheKey].timestamp && (now - POSTS_CACHE[cacheKey].timestamp < POSTS_CACHE.CACHE_DURATION)) {
+    return POSTS_CACHE[cacheKey].data;
+  }
+
+  try {
+    const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?per_page=${limit}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error('Spotlight API Offline');
+
+    const data = await res.json();
+
+    // Map Spotlight format to match WordPress Posts format for generic rendering
+    const mappedData = (data.media || data).map((item, index) => ({
+        id: `social-${index}-${item.id || index}`,
+        slug: item.permalink || '#',
+        title: { rendered: "Social Update" },
+        excerpt: { rendered: item.caption || '' },
+        date: item.timestamp || new Date().toISOString(),
+        acf: { category_label: "SOCIAL", read_time: "1 Min" },
+        _embedded: {},
+        isExternal: true, // Marker for social links
+        externalUrl: item.permalink
+    }));
+
+    POSTS_CACHE[cacheKey].data = mappedData;
+    POSTS_CACHE[cacheKey].timestamp = now;
+    return mappedData;
+  } catch (error) {
+    console.warn("API Error, utilizing fallback protocol for social:", error.message);
+    return SOCIAL_FALLBACK;
+  }
+}
