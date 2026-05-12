@@ -3,7 +3,8 @@ import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { getLatestPosts, stripHtml } from '@/lib/api';
+import { getLatestPosts, getSocialFeed, stripHtml } from '@/lib/api';
+import DOMPurify from 'dompurify';
 import { motion } from 'framer-motion';
 
 const FrequencyVisualizer = ({ isPlaying }) => {
@@ -60,11 +61,15 @@ const NewsMedia = () => {
 
   useEffect(() => {
     let isMounted = true;
-    async function fetchPosts() {
+        async function fetchPosts() {
       try {
-        const data = await getLatestPosts(20);
+        const [articleData, socialData] = await Promise.all([
+          getLatestPosts(20),
+          getSocialFeed(20)
+        ]);
         if (isMounted) {
-          setPosts(data);
+          const allData = [...articleData, ...socialData].sort((a, b) => new Date(b.date) - new Date(a.date));
+          setPosts(allData);
           setLoadingPosts(false);
         }
       } catch (e) {
@@ -78,7 +83,7 @@ const NewsMedia = () => {
     return () => { isMounted = false; };
   }, []);
 
-  const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES'];
+  const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
   const filteredPosts = posts.filter(post => {
     if (activeFilter === 'ALL') return true;
@@ -149,23 +154,27 @@ const NewsMedia = () => {
             </div>
           ) : filteredPosts.length > 0 ? (
             filteredPosts.map((post) => (
-              <Link to={`/articles/${post.slug}`} key={post.id} className="block h-full">
+                            <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className="block h-full" target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
               <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
-                    <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : 'Activity'} className="w-4 h-4" />
+                    <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
                     <span>{post.acf?.category_label || 'Article'}</span>
                   </div>
                   <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-[#9400FF] transition-colors line-clamp-3">
                     {stripHtml(post.title.rendered)}
                   </h3>
-                  <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
-                    {stripHtml(post.excerpt.rendered)}
-                  </p>
+                  {post.isExternal ? (
+                     <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
+                  ) : (
+                     <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
+                       {stripHtml(post.excerpt.rendered)}
+                     </p>
+                  )}
                 </div>
                 <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
-                  <SafeIcon name="ArrowRight" className="w-5 h-5 group-hover:text-[#9400FF] transition-colors" />
+                  <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-[#9400FF] transition-colors" />
                 </div>
               </article>
               </Link>
