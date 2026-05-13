@@ -121,7 +121,7 @@ const Platform = () => {
         <meta property="og:title" content="The Platform | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
-        <meta property="og:description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
+        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
         <script type="application/ld+json">
           {`
             {
@@ -214,7 +214,7 @@ const Platform = () => {
               ].map((item, idx) => (
                 <div key={idx} className="relative bg-surface border border-white/10 p-6 rounded-sm z-10 md:mt-0 mt-8">
                   <div className="absolute -top-4 md:-top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <div className="w-3 h-3 rounded-full bg-phthalo-glow shadow-[0_0_10px_rgba(0,143,122,0.5)] mb-2"></div>
+                    <div className="w-3 h-3 rounded-full bg-phthalo-glow shadow-[0_0_15px_rgba(74,222,128,0.4)] mb-2"></div>
                     <div className="h-4 w-px bg-white/20 hidden md:block"></div>
                   </div>
                   <span className="font-mono text-xs text-phthalo-glow block mb-2">{item.step}</span>

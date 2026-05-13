@@ -18,7 +18,7 @@ const Home = () => {
         <meta property="og:title" content="James Ellars | The Blueprint" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
-        <meta property="og:description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
+        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
                 <script type="application/ld+json">
           {`
             {
