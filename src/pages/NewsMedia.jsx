@@ -48,6 +48,29 @@ const FrequencyVisualizer = ({ isPlaying }) => {
   return <canvas ref={canvasRef} width="200" height="60" className="w-full h-full opacity-50" />;
 };
 
+
+const SocialSkeleton = () => (
+  <>
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="interactive-card p-8 flex flex-col group h-[300px] rounded-sm border-b-[#9400FF]/20 bg-surface animate-pulse">
+        <div className="mb-auto">
+          <div className="h-4 w-24 bg-white/10 rounded mb-4"></div>
+          <div className="h-6 w-3/4 bg-white/10 rounded mb-4"></div>
+          <div className="space-y-2">
+            <div className="h-4 w-full bg-white/10 rounded"></div>
+            <div className="h-4 w-5/6 bg-white/10 rounded"></div>
+            <div className="h-4 w-4/6 bg-white/10 rounded"></div>
+          </div>
+        </div>
+        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+          <div className="h-4 w-16 bg-white/10 rounded"></div>
+          <div className="w-5 h-5 bg-white/10 rounded-full"></div>
+        </div>
+      </div>
+    ))}
+  </>
+);
+
 const NewsMedia = () => {
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
@@ -102,7 +125,7 @@ const NewsMedia = () => {
         <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
-        <meta property="og:description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
+        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
@@ -150,9 +173,7 @@ const NewsMedia = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loadingPosts ? (
-            <div className="col-span-full py-20 text-center text-yellow-electric font-mono text-sm tracking-widest">
-              [DISPATCH_BUFFER_ACTIVE]
-            </div>
+            <SocialSkeleton />
           ) : filteredPosts.length > 0 ? (
             filteredPosts.map((post) => {
               if (post.isSocialError) {

@@ -36,7 +36,7 @@ const About = () => {
         <meta name="robots" content="index, follow" />
         <title>James Ellars | People-First Economic Vision</title>
         <meta name="description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision. Sovereign Innovation." />
-        <meta property="og:description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision. Sovereign Innovation." />
+        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
 
         <script type="application/ld+json">
           {`
@@ -53,7 +53,7 @@ const About = () => {
                 "https://www.tiktok.com/@ellars",
                 "https://twitter.com/ellars"
               ],
-              "knowsAbout": ["Algorithmic Economic Equity", "Fourth Industrial Revolution Logistics", "Community-First Systems"],
+              "knowsAbout": ["Algorithmic Economic Equity", "Fourth Industrial Revolution Logistics", "Community-First Systems", "Systemic Age Caps"],
               "family": "Raised as the 4th of 6 children.",
               "alumniOf": [
                 {
