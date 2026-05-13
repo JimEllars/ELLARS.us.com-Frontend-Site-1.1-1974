@@ -123,6 +123,7 @@ export function formatDate(dateString) {
 const SOCIAL_FALLBACK = [
   {
     id: 's1',
+    isSocialError: true,
     acf: { category_label: 'SOCIAL' },
     title: { rendered: 'Spotlight Feed Unavailable' },
     excerpt: { rendered: 'The social feed is currently offline.' },

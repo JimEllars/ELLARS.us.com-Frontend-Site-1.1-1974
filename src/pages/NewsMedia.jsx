@@ -101,7 +101,8 @@ const NewsMedia = () => {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
-        <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity." />
+        <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
+        <meta property="og:description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
@@ -153,7 +154,16 @@ const NewsMedia = () => {
               [DISPATCH_BUFFER_ACTIVE]
             </div>
           ) : filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
+            filteredPosts.map((post) => {
+              if (post.isSocialError) {
+                return (
+                  <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 justify-center items-center">
+                     <span className="font-mono text-sm tracking-widest text-[#9400FF]">[SOCIAL_SIGNAL_INTERRUPTED]</span>
+                  </div>
+                );
+              }
+              return (
+
                             <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className="block h-full" target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
               <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors">
                 <div className="mb-auto">
@@ -178,7 +188,7 @@ const NewsMedia = () => {
                 </div>
               </article>
               </Link>
-            ))
+            )})
           ) : (
             <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
               No entries found for {activeFilter}.

@@ -35,7 +35,8 @@ const About = () => {
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>James Ellars | People-First Economic Vision</title>
-        <meta name="description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision." />
+        <meta name="description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision. Sovereign Innovation." />
+        <meta property="og:description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision. Sovereign Innovation." />
 
         <script type="application/ld+json">
           {`
@@ -53,7 +54,13 @@ const About = () => {
                 "https://twitter.com/ellars"
               ],
               "knowsAbout": ["Algorithmic Economic Equity", "Fourth Industrial Revolution Logistics", "Community-First Systems"],
-              "family": "Raised as the 4th of 6 children."
+              "family": "Raised as the 4th of 6 children.",
+              "alumniOf": [
+                {
+                  "@type": "Organization",
+                  "name": "Enterprise Innovation Guild"
+                }
+              ]
             }
           `}
         </script>
