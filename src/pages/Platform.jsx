@@ -64,6 +64,36 @@ const Platform = () => {
       progress: 45,
       sponsor: "Economic Equity Council",
       revisions: 9
+    },
+    {
+      title: "SYSTEMIC TERM LIMITS & AGE CAPS",
+      icon: "Clock",
+      status: "Directive 07",
+      color: "text-yellow-electric",
+      description: "Implementing mandatory term limits and age caps for all federal positions to prevent institutional squatting and ensure the government remains dynamic and uncorrupted.",
+      progress: 30,
+      sponsor: "Civic Infrastructure Guild",
+      revisions: 5
+    },
+    {
+      title: "SECULAR GOVERNANCE & FREEDOM",
+      icon: "Sun",
+      status: "Directive 08",
+      color: "text-yellow-electric",
+      description: "Upholding a strict separation of church and state to protect national health and ensure every citizen has the freedom to explore their own beliefs peacefully.",
+      progress: 25,
+      sponsor: "Technological Advisory Board",
+      revisions: 4
+    },
+    {
+      title: "DIRECT DEMOCRACY REFORM",
+      icon: "Cpu",
+      status: "Directive 09",
+      color: "text-yellow-electric",
+      description: "Eliminating the obsolete Electoral College in favor of the popular vote, utilizing modern technology to ensure every American's voice is heard equally.",
+      progress: 20,
+      sponsor: "Economic Equity Council",
+      revisions: 7
     }
   ];
 
@@ -99,7 +129,7 @@ const Platform = () => {
     "name": "James Ellars",
     "url": "https://ellars.us.com",
     "description": "Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity.",
-    "knowsAbout": ["Vital System Protection", "Taxation Parity", "Digital Data Rights", "Housing Sovereignty", "Green Transportation Systems"]
+    "knowsAbout": ["Economic Equity", "Automation Dividend", "Business Development Specialist", "Civic Infrastructure", "Vital System Protection", "Taxation Parity", "Digital Data Rights", "Housing Sovereignty", "Green Transportation Systems", "Systemic Term Limits", "Secular Governance", "Direct Democracy Reform", "Electoral College Obsolescence"]
 }
           `}
         </script>
