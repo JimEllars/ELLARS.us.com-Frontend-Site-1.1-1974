@@ -120,7 +120,8 @@ const Platform = () => {
         <meta property="og:type" content="article" />
         <meta property="og:title" content="The Platform | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
-        <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty." />
+        <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
+        <meta property="og:description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
         <script type="application/ld+json">
           {`
             {
@@ -182,7 +183,7 @@ const Platform = () => {
                     <span className="text-[#4ade80]">{m.progress}%</span>
                  </div>
                  <div className="w-full bg-void h-2 rounded-sm overflow-hidden border border-white/5">
-                    <div className="h-full bg-[#4ade80] transition-all duration-1000" style={{ width: `${m.progress}%` }}></div>
+                    <div className="h-full bg-[#4ade80] shadow-[0_0_10px_rgba(74,222,128,0.5)] transition-all duration-1000" style={{ width: `${m.progress}%` }}></div>
                  </div>
                  <div className="flex justify-between text-[10px] font-mono text-gray-500 uppercase tracking-widest mt-4">
                     <span>Sponsor: {m.sponsor}</span>
