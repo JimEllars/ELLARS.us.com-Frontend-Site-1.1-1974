@@ -75,7 +75,9 @@ const NewsMedia = () => {
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);
+  const [socialPosts, setSocialPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [loadingSocial, setLoadingSocial] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -84,31 +86,41 @@ const NewsMedia = () => {
 
   useEffect(() => {
     let isMounted = true;
-        async function fetchPosts() {
+
+    async function fetchArticles() {
       try {
-        const [articleData, socialData] = await Promise.all([
-          getLatestPosts(20),
-          getSocialFeed(20)
-        ]);
+        const articleData = await getLatestPosts(20);
         if (isMounted) {
-          const allData = [...articleData, ...socialData].sort((a, b) => new Date(b.date) - new Date(a.date));
-          setPosts(allData);
+          setPosts(articleData);
           setLoadingPosts(false);
         }
       } catch (e) {
-        if (isMounted) {
-          setLoadingPosts(false);
-        }
+        if (isMounted) setLoadingPosts(false);
       }
     }
-    fetchPosts();
+
+    async function fetchSocial() {
+      try {
+        const socialData = await getSocialFeed(20);
+        if (isMounted) {
+          setSocialPosts(socialData);
+          setLoadingSocial(false);
+        }
+      } catch (e) {
+        if (isMounted) setLoadingSocial(false);
+      }
+    }
+
+    fetchArticles();
+    fetchSocial();
 
     return () => { isMounted = false; };
   }, []);
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
-  const filteredPosts = posts.filter(post => {
+  const allCombinedPosts = [...posts, ...socialPosts].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const filteredPosts = allCombinedPosts.filter(post => {
     if (activeFilter === 'ALL') return true;
     let category = post.acf?.category_label?.toUpperCase() || '';
     if (category === 'DISPATCH' || category === 'BUSINESS BRIEFING') category = 'ARTICLES';
@@ -155,14 +167,14 @@ const NewsMedia = () => {
         {/* Custom Audio Player Integration */}
         <div className="interactive-card p-8 mb-16 border border-white/10 rounded-sm bg-surface flex flex-col md:flex-row items-center gap-8">
             <div className="w-full md:w-1/3 flex flex-col gap-4">
-               <h3 className="text-white font-editorial font-bold text-2xl uppercase">Latest Signal</h3>
-               <p className="text-text-muted text-sm leading-relaxed">Incoming Transmission: The Ethics of Algorithms</p>
+               <h3 className="text-white font-editorial font-bold text-2xl uppercase">Featured Media</h3>
+               <p className="text-text-muted text-sm leading-relaxed">Now Playing: The Ethics of Algorithms</p>
                <div className="flex items-center gap-4">
                     <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
                         <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
                     </button>
                     <div className="text-[#4ade80] font-mono text-sm uppercase tracking-widest">
-                        {isPlaying ? 'Receiving...' : 'Standby'}
+                        {isPlaying ? 'Playing...' : 'Paused'}
                     </div>
                </div>
             </div>
@@ -172,14 +184,15 @@ const NewsMedia = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loadingPosts ? (
+          {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
             <SocialSkeleton />
-          ) : filteredPosts.length > 0 ? (
+          )}
+          {filteredPosts.length > 0 ? (
             filteredPosts.map((post) => {
               if (post.isSocialError) {
                 return (
                   <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 justify-center items-center">
-                     <span className="font-mono text-sm tracking-widest text-yellow-electric">[SIGNAL_INTERRUPTED] - Connection Offline</span>
+                     <span className="font-mono text-sm tracking-widest text-yellow-electric">[FEED_UNAVAILABLE] - Content Currently Offline</span>
                   </div>
                 );
               }
@@ -210,11 +223,11 @@ const NewsMedia = () => {
               </article>
               </Link>
             )})
-          ) : (
+          ) : (!loadingPosts && !loadingSocial) ? (
             <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
               No entries found for {activeFilter}.
             </div>
-          )}
+          ) : null}
         </div>
 
       </div>

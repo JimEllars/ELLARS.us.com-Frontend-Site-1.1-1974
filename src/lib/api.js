@@ -145,7 +145,7 @@ export async function getSocialFeed(limit = 10) {
   }
 
   try {
-    const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?per_page=${limit}`;
+    const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?feed=390&per_page=${limit}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
