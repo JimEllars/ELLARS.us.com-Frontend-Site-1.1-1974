@@ -199,12 +199,24 @@ const NewsMedia = () => {
               return (
 
                             <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className="block h-full" target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
-              <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors">
-                <div className="mb-auto">
-                  <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
-                    <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
-                    <span>{post.acf?.category_label || 'Article'}</span>
+              <article className={`interactive-card flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
+                {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
+                  <div className="relative w-full aspect-square md:aspect-video mb-6">
+                    <img src={post.imageUrl} alt="Social Post" className="w-full h-full object-cover rounded-t-sm" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
+                      <SafeIcon name="Globe" className="w-4 h-4" />
+                      <span>{post.acf?.category_label || 'SOCIAL'}</span>
+                    </div>
                   </div>
+                ) : null}
+                <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'px-8 pb-8' : ''}`}>
+                  {(!post.imageUrl || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
+                    <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
+                      <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
+                      <span>{post.acf?.category_label || 'Article'}</span>
+                    </div>
+                  )}
                   <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
                     {stripHtml(post.title.rendered)}
                   </h3>
@@ -216,7 +228,7 @@ const NewsMedia = () => {
                      </p>
                   )}
                 </div>
-                <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
+                <div className={`mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'mx-8 mb-8' : ''}`}>
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
                   <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
                 </div>
