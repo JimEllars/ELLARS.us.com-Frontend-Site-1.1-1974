@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 
 const About = () => {
@@ -37,6 +38,7 @@ const About = () => {
         <title>James Ellars | People-First Economic Vision</title>
         <meta name="description" content="James Ellars - Rooted in reality. Driven by systems. Personal infrastructure and vision. Sovereign Innovation." />
         <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
 
         <script type="application/ld+json">
           {`
@@ -108,8 +110,11 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               Born in Victorville and raised in Hesperia as the 4th of 6 children. Experiencing the practical realities of a large family in the High Desert shaped an uncompromising work ethic and a deep understanding of community dynamics. His advocacy was born from a singular drive: ensuring the American Dream remains an accessible reality for the working class, rather than an abstract concept.
             </p>
-            <p className="text-text-muted font-light text-sm leading-relaxed">
+            <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               His advocacy is personal, born from a desire to ensure the American Dream remains accessible to the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
+            </p>
+            <p className="text-text-muted font-light text-sm leading-relaxed">
+              This High Desert upbringing fundamentally informed his stance on Protected Vital Systems and Housing Sovereignty, recognizing early on that without grounded, resilient community infrastructure, algorithmic economic stability cannot exist.
             </p>
           </motion.div>
         </motion.div>
@@ -142,6 +147,9 @@ const About = () => {
               </motion.div>
             ))}
           </motion.div>
+          <div className="mt-16 text-center">
+            <Link to="/platform" className="btn-gold">View Platform</Link>
+          </div>
         </div>
       </section>
     </div>

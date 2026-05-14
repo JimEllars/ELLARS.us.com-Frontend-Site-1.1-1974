@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SafeIcon from '@/common/SafeIcon';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
-          const modules = [
+  const [showAll, setShowAll] = useState(false);
+  const modules = [
     {
       title: "THE AMERICAN TAX CREDIT",
       icon: "DollarSign",
@@ -187,7 +188,12 @@ const Platform = () => {
 
         <motion.div variants={containerVariants} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-yellow-electric/20 hover:border-yellow-electric transition-colors bg-surface">
+            <motion.div
+              variants={itemVariants}
+              key={idx}
+              whileTap={{ scale: 0.98 }}
+              className={`interactive-card p-10 rounded-sm group border-b-yellow-electric/20 hover:border-yellow-electric transition-colors bg-surface ${!showAll && idx >= 6 ? 'hidden md:block' : ''}`}
+            >
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
@@ -214,6 +220,16 @@ const Platform = () => {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Mobile Show More Toggle */}
+        <div className="mt-12 text-center md:hidden">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="btn-gold"
+          >
+            {showAll ? 'Show Less' : 'View All Directives'}
+          </button>
+        </div>
 
         {/* Implementation Roadmap */}
         <div className="mt-32 pt-20 border-t border-white/10">

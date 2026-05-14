@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Newsletter = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,6 +16,8 @@ const Newsletter = () => {
       toast.success("Transmission Received. Welcome to the Newsletter.", { theme: "dark" });
       setEmail('');
       setIsSubmitting(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     }, 1000);
   };
 
@@ -37,10 +41,22 @@ const Newsletter = () => {
             required 
             disabled={isSubmitting}
           />
-          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-yellow-electric transition-colors rounded-sm shadow-xl disabled:opacity-50">
+          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.4)] disabled:opacity-50">
             {isSubmitting ? 'ENCRYPTING...' : 'Join the Newsletter'}
           </button>
         </form>
+        <AnimatePresence>
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mt-6 font-mono text-sm tracking-widest text-yellow-electric uppercase"
+            >
+              [SIGNAL_RECEIVED]
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );

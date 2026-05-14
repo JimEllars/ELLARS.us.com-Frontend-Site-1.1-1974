@@ -174,7 +174,8 @@ export async function getSocialFeed(limit = 10) {
         acf: { category_label: "SOCIAL", read_time: "1 Min" },
         _embedded: {},
         isExternal: true, // Marker for social links
-        externalUrl: item.permalink
+        externalUrl: item.permalink,
+        imageUrl: item.media_url || item.thumbnail_url || null
     }));
 
     POSTS_CACHE[cacheKey].data = mappedData;
