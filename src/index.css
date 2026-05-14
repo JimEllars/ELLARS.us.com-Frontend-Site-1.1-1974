@@ -41,8 +41,8 @@
 
   .bg-grid {
     background-image: 
-        linear-gradient(rgba(148, 0, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 0, 255, 0.05) 1px, transparent 1px);
+        linear-gradient(rgba(253, 224, 71, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(253, 224, 71, 0.05) 1px, transparent 1px);
     background-size: 50px 50px;
     background-attachment: fixed;
   }
@@ -76,7 +76,7 @@
   }
 
   .interactive-card {
-    @apply bg-surface border border-white/5 border-b-[#a855f7]/20 transition-all duration-500 relative overflow-hidden;
+    @apply bg-surface border border-white/5 border-b-yellow-electric/20 transition-all duration-500 relative overflow-hidden;
   }
 
   .interactive-card::before {

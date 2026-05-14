@@ -41,12 +41,12 @@ const Hero = () => {
         
         <div className="lg:col-span-5 order-1 lg:order-2">
           <div className="relative">
-            <div className="h-auto overflow-hidden rounded-sm glass-panel p-2 relative group shadow-2xl">
-              <div className="w-full h-full relative overflow-hidden bg-black rounded-sm">
+            <div className="h-fit overflow-hidden rounded-sm glass-panel p-2 relative group shadow-2xl">
+              <div className="w-full h-fit relative overflow-hidden bg-black rounded-sm">
                 <img 
                   src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp"
                   alt="James Ellars" 
-                  className="w-full h-auto object-top object-cover"
+                  className="w-full h-auto object-contain"
                 />
               </div>
             </div>

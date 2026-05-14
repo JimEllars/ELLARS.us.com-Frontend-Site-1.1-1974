@@ -9,7 +9,7 @@ export default {
       colors: {
         void: '#0A0A0A',
         purple: { neon: '#a855f7', deep: '#4c1d95' },
-        yellow: { electric: '#fbbf24' },
+        yellow: { electric: '#fde047' },
         panel: '#0a0a0a',
         surface: '#121212',
         phthalo: {

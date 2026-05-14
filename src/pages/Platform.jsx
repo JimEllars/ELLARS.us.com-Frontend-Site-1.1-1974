@@ -4,11 +4,31 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
-        const modules = [
+          const modules = [
+    {
+      title: "THE AMERICAN TAX CREDIT",
+      icon: "DollarSign",
+      status: "Directive 01",
+      color: "text-yellow-electric",
+      description: "A foundational economic floor providing a $12,000 annual tax credit, paid monthly ($1,000/mo) directly to citizens, ensuring stability and predictability for every American family.",
+      progress: 95,
+      sponsor: "Economic Equity Council",
+      revisions: 14
+    },
+    {
+      title: "THE AUTOMATION DIVIDEND",
+      icon: "Cpu",
+      status: "Directive 02",
+      color: "text-yellow-electric",
+      description: "Securing the future of human labor by taxing advanced AI and automation systems, returning the generated wealth back to the public as a technological dividend.",
+      progress: 88,
+      sponsor: "Technological Advisory Board",
+      revisions: 9
+    },
     {
       title: "PROTECTED VITAL SYSTEMS",
       icon: "ShieldCheck",
-      status: "Directive 01",
+      status: "Directive 03",
       color: "text-yellow-electric",
       description: "Protecting essential systems—food, housing, education, and healthcare—from corporate profiteering to ensure the fundamental welfare of the American people.",
       progress: 85,
@@ -18,7 +38,7 @@ const Platform = () => {
     {
       title: "TAXATION PARITY",
       icon: "Scale",
-      status: "Directive 02",
+      status: "Directive 04",
       color: "text-yellow-electric",
       description: "Returning wealthy and corporate taxation to 1950s levels to prevent resource hoarding and ensure the economy works for everyone, not just the ultra-rich.",
       progress: 60,
@@ -28,7 +48,7 @@ const Platform = () => {
     {
       title: "ELECTION SOVEREIGNTY",
       icon: "Vote",
-      status: "Directive 03",
+      status: "Directive 05",
       color: "text-yellow-electric",
       description: "Overturning Citizens United and removing dark money from politics to prevent corporate interests from diluting the power of the people.",
       progress: 40,
@@ -38,7 +58,7 @@ const Platform = () => {
     {
       title: "HOUSING SOVEREIGNTY",
       icon: "Home",
-      status: "Directive 04",
+      status: "Directive 06",
       color: "text-yellow-electric",
       description: "Prioritizing individual home ownership over corporate mass-rentals to strengthen the housing market and empower residents.",
       progress: 55,
@@ -48,7 +68,7 @@ const Platform = () => {
     {
       title: "DIGITAL PRIVACY RIGHTS",
       icon: "Fingerprint",
-      status: "Directive 05",
+      status: "Directive 07",
       color: "text-yellow-electric",
       description: "Establishing a right to data privacy where big tech must offer opt-in protocols and provide fair payment for the data they profit from.",
       progress: 70,
@@ -58,7 +78,7 @@ const Platform = () => {
     {
       title: "ENERGY INDEPENDENCE",
       icon: "Zap",
-      status: "Directive 06",
+      status: "Directive 08",
       color: "text-yellow-electric",
       description: "Transitioning away from oil reliance toward clean transportation and robust public transit systems across America.",
       progress: 45,
@@ -68,7 +88,7 @@ const Platform = () => {
     {
       title: "SYSTEMIC TERM LIMITS & AGE CAPS",
       icon: "Clock",
-      status: "Directive 07",
+      status: "Directive 09",
       color: "text-yellow-electric",
       description: "Implementing mandatory term limits and age caps for all federal positions to prevent institutional squatting and ensure the government remains dynamic and uncorrupted.",
       progress: 30,
@@ -78,7 +98,7 @@ const Platform = () => {
     {
       title: "SECULAR GOVERNANCE & FREEDOM",
       icon: "Sun",
-      status: "Directive 08",
+      status: "Directive 10",
       color: "text-yellow-electric",
       description: "Upholding a strict separation of church and state to protect national health and ensure every citizen has the freedom to explore their own beliefs peacefully.",
       progress: 25,
@@ -87,8 +107,8 @@ const Platform = () => {
     },
     {
       title: "DIRECT DEMOCRACY REFORM",
-      icon: "Cpu",
-      status: "Directive 09",
+      icon: "Activity",
+      status: "Directive 11",
       color: "text-yellow-electric",
       description: "Eliminating the obsolete Electoral College in favor of the popular vote, utilizing modern technology to ensure every American's voice is heard equally.",
       progress: 20,
@@ -179,7 +199,7 @@ const Platform = () => {
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
                  <div className="flex justify-between items-center text-xs font-mono text-gray-400">
-                    <span>Consensus Progress</span>
+                    <span>Public Consensus</span>
                     <span className="text-[#4ade80]">{m.progress}%</span>
                  </div>
                  <div className="w-full bg-void h-2 rounded-sm overflow-hidden border border-white/5">
