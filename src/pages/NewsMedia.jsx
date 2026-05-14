@@ -52,8 +52,9 @@ const FrequencyVisualizer = ({ isPlaying }) => {
 const SocialSkeleton = () => (
   <>
     {[1, 2, 3].map((i) => (
-      <div key={i} className="interactive-card p-8 flex flex-col group h-[300px] rounded-sm border-b-yellow-electric/20 bg-surface animate-pulse">
-        <div className="mb-auto">
+      <div key={i} className="interactive-card flex flex-col group h-full rounded-sm border-b-yellow-electric/20 bg-surface animate-pulse">
+        <div className="w-full aspect-square md:aspect-video mb-6 bg-white/10 rounded-t-sm"></div>
+        <div className="mb-auto px-8">
           <div className="h-4 w-24 bg-white/10 rounded mb-4"></div>
           <div className="h-6 w-3/4 bg-white/10 rounded mb-4"></div>
           <div className="space-y-2">
@@ -62,7 +63,7 @@ const SocialSkeleton = () => (
             <div className="h-4 w-4/6 bg-white/10 rounded"></div>
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between mx-8 mb-8">
           <div className="h-4 w-16 bg-white/10 rounded"></div>
           <div className="w-5 h-5 bg-white/10 rounded-full"></div>
         </div>

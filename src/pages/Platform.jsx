@@ -227,7 +227,7 @@ const Platform = () => {
             onClick={() => setShowAll(!showAll)}
             className="btn-gold"
           >
-            {showAll ? 'Show Less' : 'View All Directives'}
+            {showAll ? 'Show Less' : 'View More Directives'}
           </button>
         </div>
 

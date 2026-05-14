@@ -31,29 +31,38 @@ const Newsletter = () => {
         <p className="text-xl text-text-muted font-light mb-12 max-w-2xl mx-auto">
           Gain exclusive access to technical dispatches and strategic insight before public release.
         </p>
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto">
-          <input 
-            type="email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="YOUR EMAIL ADDRESS" 
-            className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-yellow-electric transition-colors rounded-sm"
-            required 
-            disabled={isSubmitting}
-          />
-          <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.4)] disabled:opacity-50">
-            {isSubmitting ? 'ENCRYPTING...' : 'Join the Newsletter'}
-          </button>
-        </form>
-        <AnimatePresence>
-          {success && (
+        <AnimatePresence mode="wait">
+          {!success ? (
+            <motion.form
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto"
+            >
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="YOUR EMAIL ADDRESS"
+                className="flex-grow bg-white/5 border border-white/10 text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-yellow-electric transition-colors rounded-sm"
+                required
+                disabled={isSubmitting}
+              />
+              <button disabled={isSubmitting} type="submit" className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-10 py-5 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(250,204,21,0.4)] disabled:opacity-50">
+                {isSubmitting ? 'ENCRYPTING...' : 'Join the Newsletter'}
+              </button>
+            </motion.form>
+          ) : (
             <motion.div
+              key="success"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mt-6 font-mono text-sm tracking-widest text-yellow-electric uppercase"
+              className="mt-6 font-mono text-lg tracking-widest text-[#4ade80] uppercase animate-pulse"
             >
-              [SIGNAL_RECEIVED]
+              [SIGNAL_RECEIVED_THANK_YOU]
             </motion.div>
           )}
         </AnimatePresence>

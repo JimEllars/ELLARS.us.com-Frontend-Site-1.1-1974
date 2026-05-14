@@ -114,7 +114,7 @@ const About = () => {
               His advocacy is personal, born from a desire to ensure the American Dream remains accessible to the working class. It is not just about policy; it's about building the personal and societal infrastructure that allows every individual the opportunity to thrive.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
-              This High Desert upbringing fundamentally informed his stance on Protected Vital Systems and Housing Sovereignty, recognizing early on that without grounded, resilient community infrastructure, algorithmic economic stability cannot exist.
+              This lived experience informs his proactive stance on Protected Vital Systems and Housing Sovereignty—ensuring these systems serve people, not corporate interests.
             </p>
           </motion.div>
         </motion.div>
@@ -148,7 +148,7 @@ const About = () => {
             ))}
           </motion.div>
           <div className="mt-16 text-center">
-            <Link to="/platform" className="btn-gold">View Platform</Link>
+            <Link to="/platform" className="btn-gold">VIEW FULL PLATFORM</Link>
           </div>
         </div>
       </section>
