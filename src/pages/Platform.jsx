@@ -156,7 +156,7 @@ const Platform = () => {
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
-          <span className="font-editorial text-[10px] text-white uppercase tracking-widest font-bold block mb-4">Operational Directives</span>
+          <span className="font-editorial text-[10px] text-white uppercase tracking-widest font-bold block mb-4">Our Strategic Vision</span>
           <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
             THE <span className="text-yellow-electric">PLATFORM.</span>
           </h1>
@@ -167,14 +167,14 @@ const Platform = () => {
 
         <motion.div variants={containerVariants} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
           {modules.map((m, idx) => (
-            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors bg-surface">
+            <motion.div variants={itemVariants} key={idx} className="interactive-card p-10 rounded-sm group border-b-yellow-electric/20 hover:border-yellow-electric transition-colors bg-surface">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                   <SafeIcon name={m.icon} className={`w-6 h-6 ${m.color}`} />
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-[#9400FF] transition-colors uppercase tracking-tight">{m.title}</h2>
+              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
