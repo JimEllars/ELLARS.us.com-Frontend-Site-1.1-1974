@@ -26,7 +26,7 @@ const FrequencyVisualizer = ({ isPlaying }) => {
         const x = i * (barWidth + 2);
         const y = canvas.height - barHeight;
 
-        ctx.fillStyle = isPlaying ? '#9400FF' : '#4ade80';
+        ctx.fillStyle = isPlaying ? '#4ade80' : '#4ade80';
         ctx.fillRect(x, y, barWidth, barHeight);
       }
 
@@ -52,7 +52,7 @@ const FrequencyVisualizer = ({ isPlaying }) => {
 const SocialSkeleton = () => (
   <>
     {[1, 2, 3].map((i) => (
-      <div key={i} className="interactive-card p-8 flex flex-col group h-[300px] rounded-sm border-b-[#9400FF]/20 bg-surface animate-pulse">
+      <div key={i} className="interactive-card p-8 flex flex-col group h-[300px] rounded-sm border-b-yellow-electric/20 bg-surface animate-pulse">
         <div className="mb-auto">
           <div className="h-4 w-24 bg-white/10 rounded mb-4"></div>
           <div className="h-6 w-3/4 bg-white/10 rounded mb-4"></div>
@@ -125,14 +125,14 @@ const NewsMedia = () => {
         <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
         <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
-        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
+        <meta property="og:description" content="James Ellars' updates on American innovation and economic freedom" />
       </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="max-w-2xl">
-            <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold block mb-4">Synchronizing Fleet Intelligence</span>
+            <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold block mb-4">Stay Informed</span>
             <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">
-              NEWS & MEDIA <span className="text-[#9400FF]">HUB.</span>
+              NEWS & MEDIA <span className="text-yellow-electric">HUB.</span>
             </h1>
             <p className="text-text-muted mt-6 text-lg font-light leading-relaxed">
               The Latest News, Updates and Media regarding the systems and strategies of James Ellars.
@@ -144,7 +144,7 @@ const NewsMedia = () => {
               <button 
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-6 py-2 font-editorial text-[10px] uppercase tracking-widest font-bold rounded-sm transition-all ${activeFilter === f ? 'bg-[#9400FF] text-white border-transparent shadow-[0_0_15px_rgba(148,0,255,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                className={`px-6 py-2 font-editorial text-[10px] uppercase tracking-widest font-bold rounded-sm transition-all ${activeFilter === f ? 'bg-yellow-electric text-black border-transparent shadow-[0_0_15px_rgba(250,204,21,0.4)]' : 'text-gray-400 hover:text-white'}`}
               >
                 {f}
               </button>
@@ -158,7 +158,7 @@ const NewsMedia = () => {
                <h3 className="text-white font-editorial font-bold text-2xl uppercase">Latest Signal</h3>
                <p className="text-text-muted text-sm leading-relaxed">Incoming Transmission: The Ethics of Algorithms</p>
                <div className="flex items-center gap-4">
-                    <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-[#9400FF] flex items-center justify-center text-white hover:bg-[#a855f7] transition-colors shadow-[0_0_15px_rgba(148,0,255,0.5)]">
+                    <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
                         <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
                     </button>
                     <div className="text-[#4ade80] font-mono text-sm uppercase tracking-widest">
@@ -178,21 +178,21 @@ const NewsMedia = () => {
             filteredPosts.map((post) => {
               if (post.isSocialError) {
                 return (
-                  <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 justify-center items-center">
-                     <span className="font-mono text-sm tracking-widest text-[#9400FF]">[SOCIAL_SIGNAL_INTERRUPTED]</span>
+                  <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 justify-center items-center">
+                     <span className="font-mono text-sm tracking-widest text-yellow-electric">[SIGNAL_INTERRUPTED] - Connection Offline</span>
                   </div>
                 );
               }
               return (
 
                             <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className="block h-full" target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
-              <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-[#9400FF]/20 hover:border-[#9400FF] transition-colors">
+              <article className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
                     <span>{post.acf?.category_label || 'Article'}</span>
                   </div>
-                  <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-[#9400FF] transition-colors line-clamp-3">
+                  <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
                     {stripHtml(post.title.rendered)}
                   </h3>
                   {post.isExternal ? (
@@ -205,7 +205,7 @@ const NewsMedia = () => {
                 </div>
                 <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
-                  <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-[#9400FF] transition-colors" />
+                  <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
                 </div>
               </article>
               </Link>
