@@ -223,12 +223,12 @@ const Platform = () => {
 
         {/* Mobile Show More Toggle */}
         <div className="mt-12 text-center md:hidden">
-          <button
+          <motion.button whileTap={{ scale: 0.98 }}
             onClick={() => setShowAll(!showAll)}
             className="btn-gold"
           >
             {showAll ? 'Show Less' : 'View More Directives'}
-          </button>
+          </motion.button>
         </div>
 
         {/* Implementation Roadmap */}

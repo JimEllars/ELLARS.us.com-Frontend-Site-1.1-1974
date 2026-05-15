@@ -204,7 +204,7 @@ const NewsMedia = () => {
                 {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
                   <div className="relative w-full aspect-square md:aspect-video mb-6">
                     <img src={post.imageUrl} alt="Social Post" className="w-full h-full object-cover rounded-t-sm" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
                       <SafeIcon name="Globe" className="w-4 h-4" />
                       <span>{post.acf?.category_label || 'SOCIAL'}</span>
