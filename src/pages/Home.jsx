@@ -25,7 +25,7 @@ const Home = () => {
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "James Ellars",
-              "url": "https://axim.us.com",
+              "url": "https://ellars.us.com",
               "knowsAbout": [
                 "Economic Equity",
                 "Automation Dividend",

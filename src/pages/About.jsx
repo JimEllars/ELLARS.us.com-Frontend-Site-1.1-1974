@@ -148,7 +148,7 @@ const About = () => {
             ))}
           </motion.div>
           <div className="mt-16 text-center">
-            <Link to="/platform" className="btn-gold">VIEW FULL PLATFORM</Link>
+            <Link to="/platform" className="btn-gold">VIEW FULL STRATEGIC PLATFORM</Link>
           </div>
         </div>
       </section>
