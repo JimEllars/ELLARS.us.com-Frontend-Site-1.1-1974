@@ -16,7 +16,7 @@ const Bio = () => {
               </h2>
               <div className="space-y-6 text-text-muted text-lg font-light leading-relaxed">
                 <p>
-                  James Ellars is a business development specialist and systems strategist with over 15 years of experience executing high-stakes transitions in the private sector.
+                  James Ellars is a business development specialist and systems strategist with an 18-Year Career in Business Development and Marketing, executing high-stakes transitions in the private sector.
                 </p>
                 <p>
                   Specializing in logistics networks, renewable energy infrastructure, and SaaS integrations, James has built his reputation on identifying inefficiencies and designing solutions that drive immense value.
@@ -35,18 +35,18 @@ const Bio = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-black/50 border border-white/5 p-8 rounded-sm">
                 <SafeIcon name="Briefcase" className="w-8 h-8 text-gold-base mb-6" />
-                <div className="font-editorial font-black text-4xl text-white mb-2">15+</div>
-                <div className="text-[10px] uppercase tracking-widest text-gray-500 font-editorial font-bold">Years in Enterprise Growth</div>
+                <div className="font-editorial font-black text-4xl text-white mb-2">18</div>
+                <div className="text-[10px] uppercase tracking-widest text-gray-500 font-editorial font-bold">Year Career in Business Development and Marketing</div>
               </div>
               <div className="bg-black/50 border border-white/5 p-8 rounded-sm">
                 <SafeIcon name="Share2" className="w-8 h-8 text-phthalo-glow mb-6" />
                 <div className="font-editorial font-black text-4xl text-white mb-2">03</div>
                 <div className="text-[10px] uppercase tracking-widest text-gray-500 font-editorial font-bold">Core Industries Optimized</div>
               </div>
-              <div className="bg-black/50 border border-white/5 p-8 rounded-sm sm:col-span-2">
-                <SafeIcon name="Target" className="w-8 h-8 text-white mb-6" />
-                <div className="font-editorial font-black text-2xl text-white mb-2">The Mission</div>
-                <div className="text-sm text-text-muted">Applying private-sector rigor to modernize the foundation of the American working class.</div>
+                            <div className="bg-black/50 border border-white/5 p-8 rounded-sm sm:col-span-2">
+                <SafeIcon name="Building2" className="w-8 h-8 text-phthalo-glow mb-6" />
+                <div className="font-editorial font-black text-2xl text-white mb-2">Chamber Board Tenure</div>
+                <div className="text-sm text-text-muted">Served on the Board of Directors for the Adelanto Chamber of Commerce (2014–2016), highlighting his deep, ground-level exposure to regional macroeconomic shifts.</div>
               </div>
             </div>
           </div>
