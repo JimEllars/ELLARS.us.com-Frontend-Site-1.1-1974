@@ -26,22 +26,21 @@ const FrequencyVisualizer = ({ isPlaying }) => {
         const x = i * (barWidth + 2);
         const y = canvas.height - barHeight;
 
-        ctx.fillStyle = isPlaying ? '#4ade80' : '#4ade80';
+        ctx.fillStyle = isPlaying ? '#fde047' : '#4ade80';
         ctx.fillRect(x, y, barWidth, barHeight);
       }
 
       if (isPlaying) {
         animationFrameId = requestAnimationFrame(render);
-      } else {
-        animationFrameId = setTimeout(() => requestAnimationFrame(render), 500);
       }
     };
 
     render();
 
     return () => {
-      if (isPlaying) cancelAnimationFrame(animationFrameId);
-      else clearTimeout(animationFrameId);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [isPlaying]);
 
@@ -169,7 +168,7 @@ const NewsMedia = () => {
         <div className="interactive-card p-8 mb-16 border border-white/10 rounded-sm bg-surface flex flex-col md:flex-row items-center gap-8">
             <div className="w-full md:w-1/3 flex flex-col gap-4">
                <h3 className="text-white font-editorial font-bold text-2xl uppercase">Featured Media</h3>
-               <p className="text-text-muted text-sm leading-relaxed">Now Playing: The Ethics of Algorithms</p>
+               <p className="text-text-muted text-sm leading-relaxed">Now Playing: The All-American Tax Credit vs. Reactive Welfare Structures</p>
                <div className="flex items-center gap-4">
                     <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
                         <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
@@ -203,7 +202,7 @@ const NewsMedia = () => {
               <article className={`interactive-card flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
                 {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
                   <div className="relative w-full aspect-square md:aspect-video mb-6">
-                    <img src={post.imageUrl} alt="Social Post" className="w-full h-full object-cover rounded-t-sm" />
+                    <img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover rounded-t-sm" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
                       <SafeIcon name="Globe" className="w-4 h-4" />
@@ -219,13 +218,13 @@ const NewsMedia = () => {
                     </div>
                   )}
                   <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
-                    {stripHtml(post.title.rendered)}
+                    <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
                   </h3>
                   {post.isExternal ? (
                      <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
                   ) : (
                      <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
-                       {stripHtml(post.excerpt.rendered)}
+                       <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
                      </p>
                   )}
                 </div>
