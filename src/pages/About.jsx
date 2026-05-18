@@ -23,8 +23,9 @@ const About = () => {
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>James Ellars | The Political Vision & Comprehensive Profile</title>
-        <meta name="description" content="The political vision of James Ellars. A comprehensive profile of a new kind of working-class advocate." />
-        <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
+        <meta name="description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
+        <meta property="og:description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
+        <meta name="twitter:description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
 
         <script type="application/ld+json">
@@ -89,7 +90,7 @@ const About = () => {
             THE POLITICAL VISION OF JAMES ELLARS:<br className="hidden md:block"/> A COMPREHENSIVE PROFILE
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">A New Kind of Working-Class Advocate</h2>
-          <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed">
+          <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-editorial first-letter:font-black first-letter:text-yellow-electric first-letter:mr-3 first-letter:float-left">
             Representing a massive structural shift away from rigid traditional party lines toward human capital and the proactive "People-First Economy."
           </p>
         </motion.div>
@@ -115,7 +116,7 @@ const About = () => {
               Born in February 1989 in Victorville, California, and growing up in Hesperia as the fourth of six children to John and Kandie Ellars, James's foundation was built on physical resilience and community.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
-              His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in logistics. This localized family operation navigating the physical resilience required during deregulation stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks that currently define the supply chain, driving his focus on automated logistics.
+              His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in logistics. This localized family operation navigating the physical resilience required during deregulation stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks that currently define the supply chain. This transition from manual transport to automated sorting directly informs the architecture of <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 02: The Automation Dividend</Link>.
             </p>
           </motion.div>
         </motion.div>
@@ -136,11 +137,14 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
         >
           <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
+            <p className="text-text-muted font-light text-sm leading-relaxed mb-4 italic text-white/70">
+              Transitioning from this grounded background into the corporate sector shaped his unique perspective on regional economies.
+            </p>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               With an 18-year career in Business Development and Marketing, James has effectively bridged the gap between local enterprise and broad corporate strategies. His tenure on the Board of Directors for the Adelanto Chamber of Commerce (2014–2016) provided critical insights into civic infrastructure and small business advocacy.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
-              Extensive nationwide travel monitoring the regional impacts of globalization further broadened his perspective, allowing him to analyze firsthand the profound impacts of automation on regional economic hubs. He holds a firm stance of demanding corporate accountability without relying on hollow anti-corporate buzzwords.
+              Extensive nationwide travel monitoring the regional impacts of globalization further broadened his perspective, allowing him to analyze firsthand the profound impacts of automation on regional economic hubs. He holds a firm stance of demanding corporate accountability without relying on hollow anti-corporate buzzwords. Observing the displacement of families across working-class regions solidified his commitment to <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 06: Housing Sovereignty</Link>.
             </p>
           </motion.div>
         </motion.div>
@@ -159,15 +163,15 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="space-y-8"
+          className="grid md:grid-cols-12 gap-12 items-start"
         >
-          <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
             <p className="text-text-muted font-light text-sm leading-relaxed">
               In 2020, James launched a frugal "tester campaign" for the U.S. House of Representatives in California's 8th Congressional District. The campaign proved that widespread community engagement doesn't require exorbitant corporate funding. He achieved maximum name recognition with minimal spending through a strategy of "minimum money raised and minimum events."
             </p>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 grid grid-cols-2 md:grid-cols-1 gap-4">
             <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
               <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">Campaign Raised</div>
               <div className="font-editorial text-3xl font-black text-white">$2,056.20</div>
@@ -231,15 +235,16 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed mb-6">
               Connecting his corporate background with the framework of a "People-First Economy", James argues that progress must be measured by human prosperity rather than decoupled stock market metrics or GDP. The cornerstone of his platform is the structural implementation mechanics of the All-American Tax Credit. This flagship proposal establishes a $12,000 annual tax credit delivered in predictable $1,000 monthly installments designed to avoid the welfare trap.
             </p>
+            <blockquote className="border-l-2 border-yellow-electric pl-6 my-12 font-editorial text-xl italic text-white/90 max-w-3xl">
+              "We can no longer measure our country's success solely by the stock market or GDP. If corporate profits are hitting record highs but everyday families can't afford housing, the system is broken."
+            </blockquote>
             <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-[#4ade80]/20 mb-6 transition-all duration-500 hover:-translate-y-1 hover:border-[#4ade80] group">
               <h4 className="text-white font-editorial text-xl font-bold mb-2 group-hover:text-[#4ade80] transition-colors">The Automation Dividend</h4>
               <p className="text-text-muted font-light text-sm leading-relaxed">
                 This massive social contract is not funded by taxing the working class, but directly through the Automation Dividend—taxing tech monopolies like Amazon and Walmart that exploit public infrastructure to eliminate human labor.
               </p>
             </div>
-            <div className="mt-8 text-center md:text-left">
-              <Link to="/platform" className="btn-gold">VIEW FULL STRATEGIC PLATFORM</Link>
-            </div>
+
           </motion.div>
         </motion.div>
       </section>
@@ -257,7 +262,7 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid md:grid-cols-12 gap-8"
+          className="grid md:grid-cols-12 gap-12 items-start"
         >
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
             <p className="text-text-muted font-light text-sm leading-relaxed">
@@ -292,6 +297,9 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed">
               In conclusion, James Ellars's political brand combines authentic High Desert roots with a sophisticated grasp of advanced tax policy, AI logistics, and global economics to prepare working-class families for the future. He stands as a vanguard for economic equity, ready to navigate the complex intersection of main street reality and systemic reform.
             </p>
+            <div className="mt-8 pt-8 border-t border-white/10 text-center md:text-left">
+              <Link to="/platform" className="btn-gold inline-block">VIEW FULL STRATEGIC PLATFORM</Link>
+            </div>
           </motion.div>
         </motion.div>
       </section>
