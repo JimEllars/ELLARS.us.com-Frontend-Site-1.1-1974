@@ -19,7 +19,7 @@ const Hero = () => {
             <span className="font-editorial text-[10px] font-bold uppercase tracking-widest text-gray-300">UNITED STATES OF AMERICA</span>
           </div>
           
-          <h1 className="font-deco font-normal text-5xl md:text-7xl lg:text-[85px] leading-[0.95] text-white mb-8">
+          <h1 className="font-deco font-normal text-5xl md:text-7xl lg:text-[85px] leading-[0.95] text-white mb-8 tracking-wide uppercase">
             COMMUNITY. <br />
             POLITICS. <br />
             <span className="text-electric-gold">CONSCIOUS IDEAS.</span>

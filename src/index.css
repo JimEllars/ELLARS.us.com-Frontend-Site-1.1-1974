@@ -27,11 +27,11 @@
   }
 
   .deco-divider {
-    @apply h-[2px] w-full bg-gradient-to-r from-transparent via-yellow-electric/40 to-transparent my-8;
+    @apply h-[2px] w-full bg-gradient-to-r from-transparent via-yellow-electric/30 to-transparent my-12;
   }
 
   .deco-tracking {
-    @apply uppercase tracking-[0.25em] font-deco;
+    @apply uppercase tracking-[0.22em] font-deco;
   }
 
   .text-gradient-gold {
