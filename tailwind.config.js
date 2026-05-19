@@ -28,6 +28,7 @@ export default {
         }
       },
       fontFamily: {
+        deco: ['Marcellus', 'serif'],
         inter: ['Inter', 'sans-serif'],
         editorial: ['Cinzel', 'serif'],
         mono: ['VT323', 'monospace'],

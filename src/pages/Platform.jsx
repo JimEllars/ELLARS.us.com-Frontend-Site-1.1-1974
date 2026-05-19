@@ -200,7 +200,7 @@ const Platform = () => {
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-editorial font-black text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-tight">{m.title}</h2>
+              <h2 className="font-deco text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-[0.15em]">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
@@ -232,7 +232,8 @@ const Platform = () => {
         </div>
 
         {/* Implementation Roadmap */}
-        <div className="mt-32 pt-20 border-t border-white/10">
+        <div className="deco-divider"></div>
+        <div className="mt-32 pt-20">
           <div className="text-center mb-16">
             <h2 className="font-editorial font-black text-3xl md:text-5xl text-white uppercase tracking-tight">IMPLEMENTATION ROADMAP</h2>
           </div>

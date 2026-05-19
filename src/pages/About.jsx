@@ -235,7 +235,7 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed mb-6">
               Connecting his corporate background with the framework of a "People-First Economy", James argues that progress must be measured by human prosperity rather than decoupled stock market metrics or GDP. The cornerstone of his platform is the structural implementation mechanics of the All-American Tax Credit. This flagship proposal establishes a $12,000 annual tax credit delivered in predictable $1,000 monthly installments designed to avoid the welfare trap.
             </p>
-            <blockquote className="border-l-2 border-yellow-electric pl-6 my-12 font-editorial text-xl italic text-white/90 max-w-3xl">
+            <blockquote className="deco-frame my-12 font-editorial text-xl italic text-white/90 max-w-3xl">
               "We can no longer measure our country's success solely by the stock market or GDP. If corporate profits are hitting record highs but everyday families can't afford housing, the system is broken."
             </blockquote>
             <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-[#4ade80]/20 mb-6 transition-all duration-500 hover:-translate-y-1 hover:border-[#4ade80] group">

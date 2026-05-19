@@ -11,8 +11,8 @@ const Bio = () => {
           
           <div className="grid lg:grid-cols-2 gap-16 items-center relative z-10">
             <div>
-              <h2 className="font-editorial font-black text-4xl md:text-5xl text-white mb-8 leading-tight">
-                A CAREER BUILT ON <span className="text-gradient-gold">SCALE AND EXECUTION.</span>
+              <h2 className="font-deco font-normal tracking-wide text-white uppercase text-4xl md:text-5xl mb-8 leading-tight">
+                A CAREER BUILT ON <span className="text-yellow-electric">SCALE AND EXECUTION.</span>
               </h2>
               <div className="space-y-6 text-text-muted text-lg font-light leading-relaxed">
                 <p>
@@ -33,17 +33,17 @@ const Bio = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="bg-black/50 border border-white/5 p-8 rounded-sm">
+              <div className="border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric p-8 rounded-sm transition-colors">
                 <SafeIcon name="Briefcase" className="w-8 h-8 text-gold-base mb-6" />
                 <div className="font-editorial font-black text-4xl text-white mb-2">18</div>
                 <div className="text-[10px] uppercase tracking-widest text-gray-500 font-editorial font-bold">Year Career in Business Development and Marketing</div>
               </div>
-              <div className="bg-black/50 border border-white/5 p-8 rounded-sm">
+              <div className="border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric p-8 rounded-sm transition-colors">
                 <SafeIcon name="Share2" className="w-8 h-8 text-phthalo-glow mb-6" />
                 <div className="font-editorial font-black text-4xl text-white mb-2">03</div>
                 <div className="text-[10px] uppercase tracking-widest text-gray-500 font-editorial font-bold">Core Industries Optimized</div>
               </div>
-                            <div className="bg-black/50 border border-white/5 p-8 rounded-sm sm:col-span-2">
+                            <div className="border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric p-8 rounded-sm transition-colors sm:col-span-2">
                 <SafeIcon name="Building2" className="w-8 h-8 text-phthalo-glow mb-6" />
                 <div className="font-editorial font-black text-2xl text-white mb-2">Chamber Board Tenure</div>
                 <div className="text-sm text-text-muted">Served on the Board of Directors for the Adelanto Chamber of Commerce (2014–2016), highlighting his deep, ground-level exposure to regional macroeconomic shifts.</div>
