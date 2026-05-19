@@ -1,5 +1,5 @@
 @import 'react-toastify/dist/ReactToastify.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Cinzel:wght@400;500;700;800;900&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Cinzel:wght@400;700;900&family=Marcellus&family=VT323&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -20,6 +20,20 @@
 }
 
 @layer utilities {
+  .deco-frame {
+    @apply border border-white/10 p-2 relative;
+    outline: 1px solid rgba(253, 224, 71, 0.2);
+    outline-offset: -4px;
+  }
+
+  .deco-divider {
+    @apply h-[2px] w-full bg-gradient-to-r from-transparent via-yellow-electric/40 to-transparent my-8;
+  }
+
+  .deco-tracking {
+    @apply uppercase tracking-[0.25em] font-deco;
+  }
+
   .text-gradient-gold {
     @apply bg-gradient-to-br from-gold-bright via-gold-base to-gold-dim bg-clip-text text-transparent;
   }
