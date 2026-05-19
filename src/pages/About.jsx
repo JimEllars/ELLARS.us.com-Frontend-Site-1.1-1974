@@ -98,7 +98,7 @@ const About = () => {
 
       {/* Section 01: High Desert Roots and a Blue-Collar Legacy */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="MapPin" className="w-6 h-6 mr-4 text-yellow-electric" />
             01. High Desert Roots and a Blue-Collar Legacy
@@ -122,9 +122,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 02: Bridging Main Street and the Corporate World */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="Briefcase" className="w-6 h-6 mr-4 text-yellow-electric" />
             02. Bridging Main Street and the Corporate World
@@ -150,9 +151,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 03: Taking on the Establishment — The 2020 Campaign */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="TrendingUp" className="w-6 h-6 mr-4 text-yellow-electric" />
             03. Taking on the Establishment — The 2020 Campaign
@@ -192,9 +194,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 04: Activism in an Age of Crisis */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="AlertCircle" className="w-6 h-6 mr-4 text-yellow-electric" />
             04. Activism in an Age of Crisis
@@ -217,9 +220,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 05: A Blueprint for the Future: The People-First Economy */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="FileText" className="w-6 h-6 mr-4 text-yellow-electric" />
             05. A Blueprint for the Future: The People-First Economy
@@ -249,9 +253,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 06 [SECOND TO LAST]: Lessons from the Gridiron */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="Shield" className="w-6 h-6 mr-4 text-yellow-electric" />
             06. Lessons from the Gridiron
@@ -279,9 +284,10 @@ const About = () => {
         </motion.div>
       </section>
 
+      <div className="deco-divider"></div>
       {/* Section 07 [CONCLUSION]: The Road Ahead */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="mb-12 border-b border-white/10 pb-4">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
           <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
             <SafeIcon name="Activity" className="w-6 h-6 mr-4 text-yellow-electric" />
             07. The Road Ahead

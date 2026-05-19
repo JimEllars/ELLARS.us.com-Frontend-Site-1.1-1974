@@ -192,7 +192,7 @@ const Platform = () => {
               variants={itemVariants}
               key={idx}
               whileTap={{ scale: 0.98 }}
-              className={`interactive-card p-10 rounded-sm group border-b-yellow-electric/20 hover:border-yellow-electric transition-colors bg-surface ${!showAll && idx >= 6 ? 'hidden md:block' : ''}`}
+              className={`interactive-card p-10 rounded-sm group border border-white/5 border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-500 bg-surface ${!showAll && idx >= 6 ? 'hidden md:block' : ''}`}
             >
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
@@ -200,7 +200,7 @@ const Platform = () => {
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-deco text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors uppercase tracking-[0.15em]">{m.title}</h2>
+              <h2 className="font-deco uppercase tracking-wider text-white text-2xl mb-4 group-hover:text-yellow-electric transition-colors">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">

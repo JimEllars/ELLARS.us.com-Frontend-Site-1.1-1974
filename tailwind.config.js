@@ -28,9 +28,9 @@ export default {
         }
       },
       fontFamily: {
-        deco: ['Marcellus', 'serif'],
         inter: ['Inter', 'sans-serif'],
         editorial: ['Cinzel', 'serif'],
+        deco: ['Marcellus', 'serif'], // Primary Art Deco Token
         mono: ['VT323', 'monospace'],
       }
     },
