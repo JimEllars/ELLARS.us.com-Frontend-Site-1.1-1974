@@ -86,12 +86,12 @@ const About = () => {
             <SafeIcon name="Target" className="w-3 h-3 text-yellow-electric" />
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">The Blueprint of Advocacy</span>
           </div>
-          <h1 className="font-deco font-black text-5xl md:text-7xl text-white leading-tight uppercase mb-4">
-            THE POLITICAL VISION OF JAMES ELLARS:<br className="hidden md:block"/> A COMPREHENSIVE PROFILE
+          <h1 className="font-deco font-normal tracking-wider uppercase text-white text-5xl md:text-7xl leading-tight mb-4">
+            THE PROFILE OF JAMES ELLARS
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">A New Kind of Working-Class Advocate</h2>
           <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-deco first-letter:text-yellow-electric first-letter:float-left first-letter:mr-3">
-            Representing a massive structural shift away from rigid traditional party lines toward human capital and the proactive "People-First Economy."
+            Analyzing the modern shift away from rigid party lines toward a human-centric economy, this profile outlines the foundational roots and forward-thinking directives of a new kind of working-class advocate.
           </p>
         </motion.div>
       </section>
@@ -109,15 +109,25 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid md:grid-cols-2 gap-8"
+          className="grid md:grid-cols-12 gap-12 items-center"
         >
-          <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               Born in February 1989 in Victorville, California, and growing up in Hesperia as the fourth of six children to John and Kandie Ellars, James's foundation was built on physical resilience and community.
             </p>
-            <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
-              His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in logistics. This localized family operation navigating the physical resilience required during deregulation stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks that currently define the supply chain. This transition from manual transport to automated sorting directly informs the architecture of <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 02: The Automation Dividend</Link>.
+            <p className="text-text-muted font-light text-sm leading-relaxed">
+              His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in logistics. This localized family operation navigating the physical resilience required during deregulation stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks that currently define the supply chain. This transition from manual transport to automated sorting directly informs his stance on <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 02: The Automation Dividend</Link>.
             </p>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5">
+            <div className="deco-frame overflow-hidden bg-void/50">
+              <img
+                src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
+                alt="Ellars Inc Legacy"
+                className="w-full h-auto object-contain"
+              />
+            </div>
           </motion.div>
         </motion.div>
       </section>
@@ -138,6 +148,7 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
         >
           <motion.div variants={itemVariants} className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group">
+            <h4 className="font-deco uppercase tracking-wide text-yellow-electric text-xl mb-4">A Unique Perspective on Regional Economies</h4>
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4 italic text-white/70">
               Transitioning from this grounded background into the corporate sector shaped his unique perspective on regional economies.
             </p>
@@ -145,7 +156,7 @@ const About = () => {
               With an 18-year career in Business Development and Marketing, James has effectively bridged the gap between local enterprise and broad corporate strategies. His tenure on the Board of Directors for the Adelanto Chamber of Commerce (2014–2016) provided critical insights into civic infrastructure and small business advocacy.
             </p>
             <p className="text-text-muted font-light text-sm leading-relaxed">
-              Extensive nationwide travel monitoring the regional impacts of globalization further broadened his perspective, allowing him to analyze firsthand the profound impacts of automation on regional economic hubs. He holds a firm stance of demanding corporate accountability without relying on hollow anti-corporate buzzwords. Observing the displacement of families across working-class regions solidified his commitment to <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 06: Housing Sovereignty</Link>.
+              Extensive nationwide travel monitoring the regional impacts of globalization further broadened his perspective, allowing him to analyze firsthand the profound impacts of automation on regional economic hubs. He holds a firm stance of demanding corporate accountability without relying on hollow anti-corporate buzzwords. Observing the displacement of families across working-class regions solidified his focus on <Link to="/platform" className="underline hover:text-yellow-electric transition-colors">Directive 06: Housing Sovereignty</Link>.
             </p>
           </motion.div>
         </motion.div>
