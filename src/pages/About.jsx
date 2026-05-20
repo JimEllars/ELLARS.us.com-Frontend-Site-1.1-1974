@@ -22,7 +22,7 @@ const About = () => {
     <div className="pt-32 pb-20 min-h-screen bg-transparent space-y-32 py-24 bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>James Ellars | The Political Vision & Comprehensive Profile</title>
+        <title>The Profile | James Ellars | Official</title>
         <meta name="description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
         <meta property="og:description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
         <meta name="twitter:description" content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation." />
@@ -87,7 +87,7 @@ const About = () => {
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">The Blueprint of Advocacy</span>
           </div>
           <h1 className="font-deco font-normal tracking-wider uppercase text-white text-5xl md:text-7xl leading-tight mb-4">
-            THE PROFILE OF JAMES ELLARS
+            THE PROFILE
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">A New Kind of Working-Class Advocate</h2>
           <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-deco first-letter:text-yellow-electric first-letter:float-left first-letter:mr-3">
@@ -121,11 +121,11 @@ const About = () => {
           </motion.div>
 
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5">
-            <div className="deco-frame overflow-hidden bg-void/50">
+            <div className="deco-frame overflow-hidden bg-void/50 border border-white/5 shadow-2xl">
               <img
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
                 alt="Ellars Inc Legacy"
-                className="w-full h-auto object-contain"
+                className="w-full h-auto object-contain transition-transform duration-500 hover:scale-102"
               />
             </div>
           </motion.div>

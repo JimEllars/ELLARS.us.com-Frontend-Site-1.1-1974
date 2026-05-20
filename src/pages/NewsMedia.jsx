@@ -132,7 +132,7 @@ const NewsMedia = () => {
     <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>News & Media Hub | James Ellars</title>
+        <title>News & Media Hub | James Ellars | Official</title>
         <meta property="og:type" content="website" />
         <meta property="og:title" content="News & Media Hub | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />

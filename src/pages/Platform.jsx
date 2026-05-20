@@ -137,7 +137,7 @@ const Platform = () => {
     <div className="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>The Platform | James Ellars</title>
+        <title>The Platform | James Ellars | Official</title>
         <meta property="og:type" content="article" />
         <meta property="og:title" content="The Platform | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />

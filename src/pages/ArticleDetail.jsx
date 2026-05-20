@@ -65,7 +65,7 @@ const ArticleDetail = () => {
     <div className="pt-24 min-h-screen">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>{stripHtml(post.title.rendered)} | James Ellars</title>
+        <title>{stripHtml(post.title.rendered)} | James Ellars | Official</title>
         <meta name="description" content={stripHtml(post.excerpt.rendered)} />
         <meta property="og:title" content={stripHtml(post.title.rendered)} />
         <meta property="og:description" content={stripHtml(post.excerpt.rendered)} />
