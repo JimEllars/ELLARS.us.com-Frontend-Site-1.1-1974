@@ -22,16 +22,16 @@
 @layer utilities {
   .deco-frame {
     @apply border border-white/10 p-2 relative;
-    outline: 1px solid rgba(253, 224, 71, 0.2);
+    outline: 1px solid rgba(253, 224, 71, 0.15);
     outline-offset: -4px;
   }
 
   .deco-divider {
-    @apply h-[2px] w-full bg-gradient-to-r from-transparent via-yellow-electric/30 to-transparent my-12;
+    @apply h-[2px] w-full bg-gradient-to-r from-transparent via-yellow-electric/30 to-transparent my-16;
   }
 
-  .deco-tracking {
-    @apply uppercase tracking-[0.22em] font-deco;
+  .deco-text {
+    @apply uppercase tracking-[0.24em] font-deco;
   }
 
   .text-gradient-gold {
