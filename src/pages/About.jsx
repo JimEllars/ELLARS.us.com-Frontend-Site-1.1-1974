@@ -86,11 +86,11 @@ const About = () => {
             <SafeIcon name="Target" className="w-3 h-3 text-yellow-electric" />
             <span className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold">The Blueprint of Advocacy</span>
           </div>
-          <h1 className="font-editorial font-black text-5xl md:text-7xl text-white leading-tight uppercase mb-4">
+          <h1 className="font-deco font-black text-5xl md:text-7xl text-white leading-tight uppercase mb-4">
             THE POLITICAL VISION OF JAMES ELLARS:<br className="hidden md:block"/> A COMPREHENSIVE PROFILE
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">A New Kind of Working-Class Advocate</h2>
-          <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-editorial first-letter:font-black first-letter:text-yellow-electric first-letter:mr-3 first-letter:float-left">
+          <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-deco first-letter:text-yellow-electric first-letter:float-left first-letter:mr-3">
             Representing a massive structural shift away from rigid traditional party lines toward human capital and the proactive "People-First Economy."
           </p>
         </motion.div>
@@ -239,7 +239,7 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed mb-6">
               Connecting his corporate background with the framework of a "People-First Economy", James argues that progress must be measured by human prosperity rather than decoupled stock market metrics or GDP. The cornerstone of his platform is the structural implementation mechanics of the All-American Tax Credit. This flagship proposal establishes a $12,000 annual tax credit delivered in predictable $1,000 monthly installments designed to avoid the welfare trap.
             </p>
-            <blockquote className="deco-frame my-12 font-editorial text-xl italic text-white/90 max-w-3xl">
+            <blockquote className="deco-frame my-12 font-deco text-xl italic text-white/90 max-w-3xl">
               "We can no longer measure our country's success solely by the stock market or GDP. If corporate profits are hitting record highs but everyday families can't afford housing, the system is broken."
             </blockquote>
             <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-[#4ade80]/20 mb-6 transition-all duration-500 hover:-translate-y-1 hover:border-[#4ade80] group">
