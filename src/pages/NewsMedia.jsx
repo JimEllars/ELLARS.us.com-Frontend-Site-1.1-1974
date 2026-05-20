@@ -72,6 +72,13 @@ const SocialSkeleton = () => (
 );
 
 const NewsMedia = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);

@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import SafeIcon from '../common/SafeIcon';
 
 const About = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -121,10 +125,10 @@ const About = () => {
           </motion.div>
 
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5">
-            <div className="deco-frame overflow-hidden bg-void/50 border border-white/5 shadow-2xl">
+            <div className="deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
               <img
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
-                alt="Ellars Inc Legacy"
+                alt="Ellars Inc Legacy Fleet"
                 className="w-full h-auto object-contain transition-transform duration-500 hover:scale-102"
               />
             </div>

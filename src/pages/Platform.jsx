@@ -1,9 +1,14 @@
+import { useEffect } from 'react';
 import React, { useState } from 'react';
 import SafeIcon from '@/common/SafeIcon';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 const Platform = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [showAll, setShowAll] = useState(false);
   const modules = [
     {
