@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import React from 'react';
+import React, { useEffect } from 'react';
 import Hero from '@/components/home/Hero';
 import Ventures from '@/components/home/Ventures';
 import Expertise from '@/components/home/Expertise';
@@ -9,6 +9,10 @@ import Bio from '@/components/home/Bio';
 import Newsletter from '@/components/home/Newsletter';
 
 const Home = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="w-full">
       <Helmet>
