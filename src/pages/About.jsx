@@ -104,7 +104,7 @@ const About = () => {
               The Blueprint of Advocacy
             </span>
           </div>
-          <h1 className="font-deco font-normal tracking-wider uppercase text-white text-5xl md:text-7xl leading-tight mb-4">
+          <h1 className="font-deco font-normal text-white uppercase tracking-wider text-5xl md:text-7xl leading-tight mb-4">
             THE PROFILE
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">
@@ -169,18 +169,13 @@ const About = () => {
             </p>
           </motion.div>
 
-          <motion.div
-            variants={itemVariants}
-            className="col-span-12 md:col-span-5"
-          >
-            <div className="deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
               <img
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
                 alt="Ellars Inc Legacy Fleet"
                 className="w-full h-auto object-contain transition-transform duration-500 hover:scale-102"
               />
-            </div>
-          </motion.div>
+            </motion.div>
         </motion.div>
       </section>
 
