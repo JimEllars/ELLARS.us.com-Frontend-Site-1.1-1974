@@ -209,7 +209,7 @@ const NewsMedia = () => {
               <article className={`interactive-card flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
                 {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
                   <div className="relative w-full aspect-square md:aspect-video mb-6">
-                    <img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover rounded-t-sm" />
+                    <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
                       <SafeIcon name="Globe" className="w-4 h-4" />
