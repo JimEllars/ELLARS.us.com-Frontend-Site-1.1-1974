@@ -40,6 +40,37 @@ const POSTS_CACHE = {
   CACHE_DURATION: 1000 * 60 * 5 // 5 minutes
 };
 
+async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = new Error(`HTTP Error: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`Retrying fetch to ${url} (${retries} retries left) after ${backoff}ms...`);
+      await new Promise(resolve => setTimeout(resolve, backoff));
+      return fetchWithRetry(url, options, retries - 1, backoff * 2);
+    } else {
+      if (error.name === 'AbortError') {
+        throw new Error('API request timed out');
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('Network offline');
+      }
+      throw error;
+    }
+  }
+}
+
 export async function getLatestPosts(limit = 10, categoryId = null) {
   const cacheKey = `${limit}-${categoryId}`;
 
@@ -56,20 +87,12 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
     if (categoryId) url += `&categories=${categoryId}`;
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
-
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
-      },
-      signal: controller.signal
+      }
     });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) throw new Error('WP API Offline');
 
     const data = await res.json();
     POSTS_CACHE[cacheKey].data = data;
@@ -83,20 +106,12 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 
 export async function getPostBySlug(slug) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
+    const res = await fetchWithRetry(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
-      },
-      signal: controller.signal
+      }
     });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) throw new Error('WP API Offline');
 
     const data = await res.json();
     return data[0] || null; // Trigger fallback
@@ -147,20 +162,12 @@ export async function getSocialFeed(limit = 10) {
   try {
     const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?feed=390&per_page=${limit}`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
-
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
-      },
-      signal: controller.signal
+      }
     });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) throw new Error('Spotlight API Offline');
 
     const data = await res.json();
 
