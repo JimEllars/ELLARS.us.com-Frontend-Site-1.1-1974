@@ -29,15 +29,15 @@ const About = () => {
         <title>The Profile | James Ellars | Official</title>
         <meta
           name="description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation."
+          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
         />
         <meta
           property="og:description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation."
+          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
         />
         <meta
           name="twitter:description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and disruptive American innovation."
+          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
         />
         <meta
           property="og:image"
@@ -113,8 +113,8 @@ const About = () => {
           <p className="text-text-muted max-w-3xl text-lg md:text-xl font-light leading-relaxed first-letter:text-5xl first-letter:font-deco first-letter:text-yellow-electric first-letter:float-left first-letter:mr-3">
             Analyzing the modern shift away from rigid party lines toward a
             human-centric economy, this profile outlines the foundational roots
-            and forward-thinking directives of a new kind of working-class
-            advocate.
+            and forward-thinking directives of a blue-collar advocate focused on
+            sustainable systems and forward-thinking ideas.
           </p>
         </motion.div>
       </section>
