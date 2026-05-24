@@ -26,7 +26,7 @@ const Hero = () => {
           </h1>
           
           <p className="text-xl md:text-2xl font-light text-text-muted mb-12 max-w-2xl leading-relaxed">
-            Leading American innovation through disruptive systems and algorithmic economic equity.
+            Leading American Innovation through Sustainable Systems , Forward-Thinking Ideas and a Blue-Collar Work Ethic.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
