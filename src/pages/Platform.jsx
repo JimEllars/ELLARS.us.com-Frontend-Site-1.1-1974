@@ -66,7 +66,7 @@ const Platform = () => {
       icon: "Home",
       status: "Directive 06",
       color: "text-yellow-electric",
-      description: "Concrete programs for American tradespeople to construct high-quality, long-lasting municipal and residential projects, revitalizing our foundation with blue-collar precision.",
+      description: "Rebuilding domestic manufacturing, localized physical supply chains, and commissioning union-backed industrial construction frameworks to revitalize our foundation with blue-collar precision.",
       progress: 65,
       sponsor: "Civic Infrastructure Guild",
       revisions: 12
@@ -86,17 +86,17 @@ const Platform = () => {
       icon: "Zap",
       status: "Directive 08",
       color: "text-yellow-electric",
-      description: "The development of futuristic high-speed train networks to re-link regional coastal zones and mid-continent manufacturing corridors, restoring American logistical supremacy.",
+      description: "Modernizing American transportation by building out continuous high-speed transit networks connecting historic manufacturing towns with coastal trade hubs.",
       progress: 45,
       sponsor: "Economic Equity Council",
       revisions: 9
     },
         {
-      title: "POLITICAL ACCOUNTABILITY METRIC",
+      title: "POLITICAL ACCOUNTABILITY FRAMEWORK",
       icon: "Clock",
       status: "Directive 09",
       color: "text-yellow-electric",
-      description: "Establishing the structural necessity of office age caps, concrete term limits, and the complete reversal of corrupt corporate political spending influence.",
+      description: "Implementing state and federal age caps, strict legislative term limits, and an absolute legislative path to overturn Citizens United to eradicate dark money from public governance.",
       progress: 30,
       sponsor: "Civic Infrastructure Guild",
       revisions: 5
@@ -197,7 +197,7 @@ const Platform = () => {
               variants={itemVariants}
               key={idx}
               whileTap={{ scale: 0.98 }}
-              className={`interactive-card p-10 rounded-sm group border border-white/5 border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-500 bg-surface ${!showAll && idx >= 6 ? 'hidden md:block' : ''}`}
+              className={`interactive-card p-10 rounded-sm group border border-white/5 border-b-2 border-r-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-500 bg-surface will-change-transform ${!showAll && idx >= 6 ? 'hidden md:block' : ''}`}
             >
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
@@ -205,7 +205,7 @@ const Platform = () => {
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="font-deco uppercase tracking-wider text-white text-2xl mb-4 group-hover:text-yellow-electric transition-colors">{m.title}</h2>
+              <h2 className="tracking-[0.2em] uppercase font-deco font-normal text-xs text-yellow-electric mb-4 group-hover:text-white transition-colors">{m.title}</h2>
               <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">

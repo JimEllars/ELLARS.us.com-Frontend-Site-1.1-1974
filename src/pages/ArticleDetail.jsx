@@ -14,7 +14,7 @@ const ArticleDetail = () => {
   useEffect(() => {
     let isMounted = true;
 
-    if (!slug || typeof slug !== 'string' || slug.trim() === '') {
+    if (typeof slug === 'undefined' || !slug || typeof slug !== 'string' || slug.trim() === '') {
       setFallbackMode(true);
       setLoading(false);
       return;
@@ -59,7 +59,7 @@ const ArticleDetail = () => {
           <p className="text-text-muted font-light mb-8 text-sm leading-relaxed">
             The requested technical dispatch or strategic insight could not be located in the current database index. The record may have been archived or explicitly redacted.
           </p>
-          <Link to="/news-media" className="inline-block bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-8 py-4 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
+          <Link to="/news-media" className="inline-block border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-editorial font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
             Return to Hub
           </Link>
         </div>
