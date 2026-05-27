@@ -1,4 +1,14 @@
-import React, { useState } from 'react';
+with open('src/components/home/Newsletter.jsx', 'r') as f:
+    content = f.read()
+
+# We need to implement localized visual state boundaries for error handling (isSubmitting, isSuccess, hasError)
+# using crisp, non-shifting motion feedback.
+# Ensure that success actions render inside a custom `.deco-frame` utilizing an active subtle pulse variant.
+# We also need to refactor primary input wrappers to handle native, clean HTML5 submission fields prepared for headless lead routing networks.
+# We will use name attributes, maybe an action prop? The prompt says "native, clean HTML5 submission fields prepared for headless lead routing networks."
+# We should add `name="email"`, `id="email"`, `autoComplete="email"`, etc.
+
+new_component = """import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -100,3 +110,7 @@ const Newsletter = () => {
 };
 
 export default Newsletter;
+"""
+
+with open('src/components/home/Newsletter.jsx', 'w') as f:
+    f.write(new_component)
