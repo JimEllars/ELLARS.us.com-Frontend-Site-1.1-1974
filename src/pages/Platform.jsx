@@ -61,15 +61,15 @@ const Platform = () => {
       sponsor: "Technological Advisory Board",
       revisions: 24
     },
-    {
-      title: "HOUSING SOVEREIGNTY",
+        {
+      title: "THE WORKERS' INFRASTRUCTURE SHELL",
       icon: "Home",
       status: "Directive 06",
       color: "text-yellow-electric",
-      description: "Prioritizing individual home ownership over corporate mass-rentals to strengthen the housing market and empower residents.",
-      progress: 55,
+      description: "Concrete programs for American tradespeople to construct high-quality, long-lasting municipal and residential projects, revitalizing our foundation with blue-collar precision.",
+      progress: 65,
       sponsor: "Civic Infrastructure Guild",
-      revisions: 10
+      revisions: 12
     },
     {
       title: "DIGITAL PRIVACY RIGHTS",
@@ -81,22 +81,22 @@ const Platform = () => {
       sponsor: "Technological Advisory Board",
       revisions: 15
     },
-    {
-      title: "ENERGY INDEPENDENCE",
+        {
+      title: "THE NEXT-GEN TRANSIT MANDATE",
       icon: "Zap",
       status: "Directive 08",
       color: "text-yellow-electric",
-      description: "Transitioning away from oil reliance toward clean transportation and robust public transit systems across America.",
+      description: "The development of futuristic high-speed train networks to re-link regional coastal zones and mid-continent manufacturing corridors, restoring American logistical supremacy.",
       progress: 45,
       sponsor: "Economic Equity Council",
       revisions: 9
     },
-    {
-      title: "SYSTEMIC TERM LIMITS & AGE CAPS",
+        {
+      title: "POLITICAL ACCOUNTABILITY METRIC",
       icon: "Clock",
       status: "Directive 09",
       color: "text-yellow-electric",
-      description: "Implementing mandatory term limits and age caps for all federal positions to prevent institutional squatting and ensure the government remains dynamic and uncorrupted.",
+      description: "Establishing the structural necessity of office age caps, concrete term limits, and the complete reversal of corrupt corporate political spending influence.",
       progress: 30,
       sponsor: "Civic Infrastructure Guild",
       revisions: 5
