@@ -14,7 +14,7 @@ const Newsletter = () => {
     e.preventDefault();
 
     // Clean strings and check email pattern
-    const sanitizedEmail = DOMPurify.sanitize(email).trim();
+    const sanitizedEmail = DOMPurify.sanitize(email).trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
@@ -24,6 +24,13 @@ const Newsletter = () => {
 
     setIsSubmitting(true);
     setHasError(false);
+
+
+    const payload = {
+      email: sanitizedEmail,
+      lead_origin: "frontend_brand_hub_v5.10"
+    };
+    console.log("Telemetry Payload:", payload);
 
     // Simulate API call with potential error simulation or just success
     setTimeout(() => {

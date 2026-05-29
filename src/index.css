@@ -110,6 +110,37 @@
     @apply bg-transparent text-yellow-electric border border-yellow-electric px-8 py-3 font-editorial font-bold uppercase tracking-widest text-xs transition-all duration-300 inline-flex items-center justify-center rounded-none;
   }
 
+
+  .deco-brackets::before,
+  .deco-brackets::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 2px solid #fde047;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .deco-brackets::before {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+    transform: translate(-5px, -5px);
+  }
+  .deco-brackets::after {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+    transform: translate(5px, 5px);
+  }
+  .deco-brackets:hover::before,
+  .deco-brackets:hover::after {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+
   .btn-gold:hover {
     @apply bg-yellow-electric text-void;
   }
