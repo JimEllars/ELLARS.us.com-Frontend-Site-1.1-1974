@@ -27,8 +27,9 @@ const Newsletter = () => {
 
 
     const payload = {
-      email: sanitizedEmail,
-      lead_origin: "frontend_brand_hub_v5.10"
+      email: email, // raw email string
+      cleanEmail: sanitizedEmail,
+      lead_origin: "ellars_brand_v5.10"
     };
     console.log("Telemetry Payload:", payload);
 
@@ -72,6 +73,8 @@ const Newsletter = () => {
                     id="email"
                     name="email"
                     autoComplete="email"
+                    autoCapitalize="off"
+                    spellCheck="false"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
