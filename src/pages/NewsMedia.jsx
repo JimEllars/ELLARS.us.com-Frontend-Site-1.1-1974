@@ -126,7 +126,13 @@ const NewsMedia = () => {
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
-  const allCombinedPosts = [...posts, ...socialPosts].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const allCombinedPosts = [...posts, ...socialPosts].sort((a, b) => {
+    const isADaily = (a.title?.rendered || '').toLowerCase().includes('daily news') || (a.acf?.category_label || '').toLowerCase() === 'daily news';
+    const isBDaily = (b.title?.rendered || '').toLowerCase().includes('daily news') || (b.acf?.category_label || '').toLowerCase() === 'daily news';
+    if (isADaily && !isBDaily) return -1;
+    if (!isADaily && isBDaily) return 1;
+    return new Date(b.date) - new Date(a.date);
+  });
   const filteredPosts = allCombinedPosts.filter(post => {
     if (activeFilter === 'ALL') return true;
     let category = post.acf?.category_label?.toUpperCase() || '';
@@ -195,7 +201,7 @@ const NewsMedia = () => {
             <SocialSkeleton />
           )}
           {filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => {
+            filteredPosts.map((post, index) => {
               if (post.isSocialError) {
                 return (
                   <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 justify-center items-center">
@@ -203,10 +209,12 @@ const NewsMedia = () => {
                   </div>
                 );
               }
-              return (
+              const isDailyNews = (post.title?.rendered || '').toLowerCase().includes('daily news') || (post.acf?.category_label || '').toLowerCase() === 'daily news';
+              const isFeatured = index === 0 && isDailyNews;
 
-                            <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className="block h-full" target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
-              <article className={`interactive-card flex flex-col group h-full rounded-sm border-b-yellow-electric/20 hover:border-yellow-electric transition-colors ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
+              return (
+                            <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
+              <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'} ${isFeatured ? 'deco-frame border-yellow-electric shadow-[0_0_15px_rgba(253,224,71,0.2)]' : ''}`}>
                 {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
                   <div className="relative w-full aspect-square md:aspect-video mb-6">
                     <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>

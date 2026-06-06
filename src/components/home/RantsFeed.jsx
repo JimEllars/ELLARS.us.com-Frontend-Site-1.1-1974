@@ -8,9 +8,19 @@ const RantsFeed = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchPosts() {
-      const data = await getLatestPosts(3);
-      setPosts(data);
+        async function fetchPosts() {
+      const data = await getLatestPosts(5); // Fetch a bit more to ensure we find a Daily News if it exists
+
+      // Sort to prioritize Daily News
+      const sortedData = [...data].sort((a, b) => {
+        const isADaily = (a.title.rendered || '').toLowerCase().includes('daily news') || (a.acf?.category_label || '').toLowerCase() === 'daily news';
+        const isBDaily = (b.title.rendered || '').toLowerCase().includes('daily news') || (b.acf?.category_label || '').toLowerCase() === 'daily news';
+        if (isADaily && !isBDaily) return -1;
+        if (!isADaily && isBDaily) return 1;
+        return new Date(b.date) - new Date(a.date);
+      }).slice(0, 3); // Keep only top 3
+
+      setPosts(sortedData);
       setLoading(false);
     }
     fetchPosts();
@@ -41,9 +51,17 @@ const RantsFeed = () => {
               </div>
             ))
           ) : (
-            posts.map((post) => (
-              <Link to={`/news-media/${post.slug}`} key={post.id} className="block group">
-                <article className="interactive-card p-8 flex flex-col h-full rounded-sm hover:-translate-y-1 hover:bg-yellow-electric/5 transition-all duration-300">
+            posts.map((post, index) => {
+              const isDailyNews = (post.title.rendered || '').toLowerCase().includes('daily news') || (post.acf?.category_label || '').toLowerCase() === 'daily news';
+              const isFeatured = index === 0 && isDailyNews;
+
+              return (
+              <Link
+                to={`/articles/${post.slug}`}
+                key={post.id}
+                className={`block group ${isFeatured ? 'md:col-span-2' : ''}`}
+              >
+                <article className={`interactive-card p-8 flex flex-col h-full rounded-sm hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric hover:bg-yellow-electric/5 transition-all duration-300 ${isFeatured ? 'deco-frame border-yellow-electric shadow-[0_0_15px_rgba(253,224,71,0.2)]' : ''}`}>
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-gold-base uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name="Activity" className="w-4 h-4" />
@@ -62,7 +80,7 @@ const RantsFeed = () => {
                 </div>
               </article>
               </Link>
-            ))
+            )})
           )}
         </div>
       </div>
