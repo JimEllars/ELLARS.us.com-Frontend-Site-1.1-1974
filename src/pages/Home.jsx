@@ -43,8 +43,8 @@ const Home = () => {
       </Helmet>
       <Hero />
       <Ventures />
-      <Expertise />
       <RantsFeed />
+      <Expertise />
       <Podcast />
       <Bio />
       <Newsletter />
