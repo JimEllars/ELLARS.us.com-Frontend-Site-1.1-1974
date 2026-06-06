@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
@@ -34,6 +34,7 @@ const ArticleDetail = () => {
           setLoading(false);
         }
       } catch (error) {
+        console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
         if (isMounted) {
           setFallbackMode(true);
           setLoading(false);
@@ -168,7 +169,7 @@ const ArticleDetail = () => {
 
         {/* Right Column (Sidebar) */}
         <div className="lg:w-1/3">
-          <div className="sticky top-32">
+          <div className="static lg:sticky top-32">
             <div className="bg-gradient-to-br from-[#050505] to-zinc-900 border border-yellow-electric/30 rounded-sm p-8 shadow-2xl">
               <h3 className="font-deco text-2xl text-yellow-electric mb-4">The American Tax Credit</h3>
               <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
