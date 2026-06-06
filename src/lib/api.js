@@ -45,11 +45,26 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
 
-    const response = await fetch(url, { ...options, signal: controller.signal });
+    const defaultHeaders = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+
+    const fetchOptions = {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...(options.headers || {})
+      },
+      signal: controller.signal
+    };
+
+    const response = await fetch(url, fetchOptions);
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const error = new Error(`HTTP Error: ${response.status}`);
+      console.error(`[API Error] HTTP ${response.status} from ${url}`);
+      const error = new Error("Our systems are currently experiencing high traffic. We are utilizing fallback protocols to serve you.");
       error.status = response.status;
       throw error;
     }

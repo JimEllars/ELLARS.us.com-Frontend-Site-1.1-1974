@@ -113,6 +113,7 @@
 
   .deco-brackets::before,
   .deco-brackets::after {
+    pointer-events: none;
     content: '';
     position: absolute;
     width: 8px;
