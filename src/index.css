@@ -155,3 +155,15 @@
 
 .article-content p { @apply mb-6; }
 .article-content h2 { @apply text-2xl font-editorial font-bold text-white mt-12 mb-6 uppercase tracking-wider; }
+
+.article-content a {
+  @apply text-yellow-electric transition-colors underline decoration-yellow-electric/30;
+}
+
+.article-content a:hover {
+  @apply text-white;
+}
+
+.article-content blockquote {
+  @apply border-l-4 border-yellow-electric text-text-muted italic pl-4;
+}
