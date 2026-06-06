@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 
 const ArticleDetail = () => {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,9 +61,10 @@ const ArticleDetail = () => {
           <p className="text-text-muted font-light mb-8 text-sm leading-relaxed">
             The requested technical dispatch or strategic insight could not be located in the current database index. The record may have been archived or explicitly redacted.
           </p>
-          <Link to="/news-media" className="inline-block border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-editorial font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
-            Back to News
-          </Link>
+          <button onClick={() => window.history.length > 2 ? navigate(-1) : navigate('/news-media')} className="inline-flex items-center space-x-2 border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-editorial font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
+            <SafeIcon name="ArrowLeft" className="w-4 h-4" />
+            <span>Back</span>
+          </button>
         </div>
       </div>
     );
@@ -105,26 +108,33 @@ const ArticleDetail = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full p-10 md:p-20">
-          <div className="max-w-4xl mx-auto">
-            <Link to="/articles" className="inline-flex items-center space-x-2 text-gold-base mb-8 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto border-b border-white/10 pb-8"
+          >
+            <button onClick={() => window.history.length > 2 ? navigate(-1) : navigate('/news-media')} className="inline-flex items-center space-x-2 text-yellow-electric mb-8 hover:bg-yellow-electric/10 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold px-3 py-2 border border-transparent rounded-sm">
               <SafeIcon name="ArrowLeft" className="w-4 h-4" />
-              <span>Back to Articles</span>
-            </Link>
-            <h1 className="font-editorial font-black text-4xl md:text-6xl text-white mb-6 leading-tight">
+              <span>Back</span>
+            </button>
+            <h1 className="text-5xl md:text-7xl font-deco text-yellow-electric leading-tight mb-6">
               {post.title.rendered}
             </h1>
             <div className="flex items-center space-x-6 text-gray-400 text-xs uppercase tracking-[0.2em] font-bold">
               <span>{formatDate(post.date)}</span>
-              <span className="w-1 h-1 bg-gold-base rounded-full"></span>
+              <span className="w-1 h-1 bg-yellow-electric rounded-full"></span>
               <span>{post.acf?.read_time || '10 Min Read'}</span>
+              <span className="w-1 h-1 bg-yellow-electric rounded-full"></span>
+              <span>{post._embedded?.author?.[0]?.name || 'James Ellars'}</span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-20">
+      <div className="max-w-3xl mx-auto px-6 py-20">
         <div 
-          className="prose prose-invert prose-gold max-w-none text-text-muted text-lg leading-relaxed font-light article-content"
+          className="prose prose-invert prose-yellow overflow-hidden break-words text-text-muted text-lg leading-relaxed font-light article-content"
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered) }}
         />
         
