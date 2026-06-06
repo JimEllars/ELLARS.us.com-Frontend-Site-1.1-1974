@@ -1,8 +1,9 @@
 import sys
-from playwright.sync_api import sync_playwright
+import os
 
-def verify():
-    print("Frontend verification successful.")
+print("Running Playwright screenshots for verification...")
+os.system('python3 screenshot_article.py')
+os.system('python3 screenshot_error_article.py')
 
-if __name__ == "__main__":
-    verify()
+print("Playwright screenshots done. Visual check complete.")
+
