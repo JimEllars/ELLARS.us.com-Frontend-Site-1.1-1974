@@ -205,8 +205,8 @@ const Platform = () => {
                 </div>
                 <span className="text-[10px] text-white font-mono uppercase tracking-[0.2em] font-bold bg-white/5 px-2 py-1 border border-white/10 h-fit">{m.status}</span>
               </div>
-              <h2 className="tracking-[0.2em] uppercase font-deco font-normal text-xs text-yellow-electric mb-4 group-hover:text-white transition-colors">{m.title}</h2>
-              <p className="text-text-muted leading-relaxed font-light mb-6">{m.description}</p>
+              <h2 className="tracking-[0.2em] uppercase font-deco font-normal text-xs text-yellow-electric mb-4">{m.title}</h2>
+              <p className="text-text-muted font-light leading-relaxed mb-6">{m.description}</p>
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
                  <div className="flex justify-between items-center text-xs font-mono text-gray-400">

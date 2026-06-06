@@ -95,7 +95,7 @@ const Ventures = () => {
           <h2 className="font-editorial font-black text-4xl text-white">STRATEGIC <span className="text-electric-gold">ASSETS</span></h2>
         </div>
 
-        <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid lg:grid-cols-2 gap-8">
+        <motion.div variants={containerVariant} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             {
               title: "The Blue-Collar Automation Dividend Manual",
@@ -114,7 +114,7 @@ const Ventures = () => {
                 <h3 className="font-editorial font-black text-2xl text-white mb-4 uppercase tracking-tight">{asset.title}</h3>
                 <p className="text-text-muted leading-relaxed font-light flex-grow mb-8">{asset.description}</p>
                 <div className="mt-auto">
-                  <button className="border border-yellow-electric/30 text-yellow-electric font-bold text-xs tracking-[0.2em] uppercase hover:bg-yellow-electric/10 transition-colors px-6 py-3 w-full sm:w-auto">
+                  <button className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-6 py-3 w-full sm:w-auto">
                     Acquire Asset
                   </button>
                 </div>

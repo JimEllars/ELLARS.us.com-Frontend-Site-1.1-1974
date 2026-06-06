@@ -60,7 +60,7 @@ const ArticleDetail = () => {
             The requested technical dispatch or strategic insight could not be located in the current database index. The record may have been archived or explicitly redacted.
           </p>
           <Link to="/news-media" className="inline-block border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-editorial font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
-            Return to Hub
+            Back to News
           </Link>
         </div>
       </div>
