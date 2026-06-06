@@ -21,8 +21,8 @@ const RantsFeed = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
-            <h2 className="font-editorial font-black text-4xl md:text-6xl text-white mb-6 leading-tight">
-              ELLARS <span className="text-electric-gold">RANTS.</span>
+            <h2 className="tracking-[0.2em] uppercase font-deco text-yellow-electric mb-6 leading-tight text-4xl md:text-6xl">
+              ARTICLES
             </h2>
             <p className="text-lg text-text-muted font-light leading-relaxed">
               Unfiltered analysis on the shifting tides of economics and community leadership.
@@ -42,7 +42,8 @@ const RantsFeed = () => {
             ))
           ) : (
             posts.map((post) => (
-              <article key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm">
+              <Link to={`/news-media/${post.slug}`} key={post.id} className="block group">
+                <article className="interactive-card p-8 flex flex-col h-full rounded-sm hover:-translate-y-1 hover:bg-yellow-electric/5 transition-all duration-300">
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-gold-base uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name="Activity" className="w-4 h-4" />
@@ -60,6 +61,7 @@ const RantsFeed = () => {
                   <SafeIcon name="ArrowRight" className="w-5 h-5 group-hover:text-white transition-colors" />
                 </div>
               </article>
+              </Link>
             ))
           )}
         </div>
