@@ -199,6 +199,29 @@ const NewsMedia = () => {
                   return (
                     <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
                       <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 p-8 ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
+                                                <div className="block relative w-full h-48 md:h-64 overflow-hidden border-b border-phthalo-deep bg-zinc-900 rounded-t-sm mb-4">
+                          {post.imageUrl ? (
+                            <img
+                              src={post.imageUrl}
+                              alt={post.title.rendered}
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-80 group-hover:opacity-100"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-[#050505] to-zinc-900 group-hover:scale-105 transition-transform duration-700 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(253,224,71,0.1)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                              <svg className="absolute inset-0 w-full h-full opacity-20 text-yellow-electric mix-blend-overlay group-hover:opacity-40 transition-opacity duration-700" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                  <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                                  </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#gridPattern)" />
+                              </svg>
+                              <div className="absolute inset-0 border-[0.5px] border-yellow-electric/10 m-4 group-hover:border-yellow-electric/30 transition-colors duration-700"></div>
+                              <div className="absolute inset-0 border-[0.5px] border-yellow-electric/5 m-8 group-hover:border-yellow-electric/20 transition-colors duration-700 delay-100"></div>
+                            </div>
+                          )}
+                        </div>
                         <div className="mb-auto">
                           <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                             <SafeIcon name="Activity" className="w-4 h-4" />

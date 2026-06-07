@@ -189,6 +189,7 @@ const ArticleDetail = () => {
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered) }}
               />
 
+
               <div className="mt-16 pt-8 border-t border-white/10 flex justify-between items-center">
                 <div className="flex space-x-4">
                   <button className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric transition-colors rounded-sm text-yellow-electric">
@@ -199,6 +200,21 @@ const ArticleDetail = () => {
                   </button>
                 </div>
               </div>
+
+              <div className="mt-8 pt-8 border-t border-white/5">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="w-16 h-16 rounded-sm overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
+                    <img src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" alt="James Ellars" className="w-full h-full object-cover grayscale" />
+                  </div>
+                  <div>
+                    <h4 className="font-editorial text-lg text-white font-bold uppercase tracking-widest mb-2">James Ellars</h4>
+                    <p className="text-text-muted text-sm leading-relaxed">
+                      James Ellars is a multifaceted professional, business development specialist, and civic advocate. A former Congressional candidate for California's 8th District, he leads initiatives focused on economic equity, the Automation Dividend, and sovereign civic infrastructure.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
