@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
+import { subscribeToNewsletter } from '@/lib/email';
 
 const Newsletter = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,8 @@ const Newsletter = () => {
   const [hasError, setHasError] = useState(false);
 
 
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Clean strings and check email pattern
@@ -25,23 +27,18 @@ const Newsletter = () => {
     setIsSubmitting(true);
     setHasError(false);
 
-
-    const payload = {
-      email: email, // raw email string
-      cleanEmail: sanitizedEmail,
-      lead_origin: "ellars_brand_v5.10"
-    };
-    console.log("Telemetry Payload:", payload);
-
-    // Simulate API call with potential error simulation or just success
-    setTimeout(() => {
+    try {
+      await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
       setIsSubmitting(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    }, 1500);
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      setIsSubmitting(false);
+      setHasError(true);
+    }
   };
-
   return (
     <section className="py-32 border-t border-white/5 relative z-10">
       <div className="max-w-4xl mx-auto px-6 text-center">

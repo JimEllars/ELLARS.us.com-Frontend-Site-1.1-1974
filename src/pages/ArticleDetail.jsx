@@ -5,13 +5,21 @@ import { motion } from 'framer-motion';
 import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
+import { subscribeToNewsletter } from '@/lib/email';
+import { AnimatePresence } from 'framer-motion';
 
 const ArticleDetail = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
+
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fallbackMode, setFallbackMode] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -79,7 +87,35 @@ const ArticleDetail = () => {
     );
   }
 
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    const sanitizedEmail = DOMPurify.sanitize(email).trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
+        setHasError(true);
+        return;
+    }
+
+    setIsSubmitting(true);
+    setHasError(false);
+
+    try {
+      await subscribeToNewsletter(sanitizedEmail);
+      setEmail('');
+      setIsSubmitting(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      setIsSubmitting(false);
+      setHasError(true);
+    }
+  };
+
   // Safe Execution variables
+
   const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200';
   const cleanExcerpt = stripHtml(post.excerpt.rendered);
   const title = stripHtml(post.title.rendered);
@@ -175,22 +211,84 @@ const ArticleDetail = () => {
               <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
                 It's time to build systems that support working Americans. Join the fight to secure the Automation Dividend, overturn Citizens United, and permanently remove corrupt money from politics. Secure your stake in the People-First Economy today.
               </p>
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                <div>
-                  <input
-                    type="email"
-                    placeholder="ENTER SECURE EMAIL"
-                    required
-                    className="w-full bg-[#050505] border border-white/10 p-3 text-white text-sm focus:outline-none focus:border-yellow-electric/50 placeholder-zinc-600 rounded-sm"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-yellow-electric text-black font-bold uppercase tracking-widest text-xs py-4 hover:bg-white hover:text-black transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.2)]"
-                >
-                  Join the Movement
-                </button>
-              </form>
+
+              <AnimatePresence mode="wait">
+                {!success ? (
+                  <motion.form
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4"
+                    onSubmit={handleSubscribe}
+                  >
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (hasError) setHasError(false);
+                        }}
+                        placeholder="ENTER SECURE EMAIL"
+                        required
+                        disabled={isSubmitting}
+                        className={`w-full bg-[#050505] border p-3 text-white text-sm focus:outline-none focus:border-yellow-electric/50 placeholder-zinc-600 rounded-sm transition-colors ${hasError ? 'border-red-500' : 'border-white/10'}`}
+                      />
+                      {hasError && (
+                        <span className="absolute left-0 -bottom-5 text-red-500 text-[10px] font-mono tracking-widest uppercase">
+                          [INVALID_TRANSMISSION]
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-yellow-electric text-black font-bold uppercase tracking-widest text-xs py-4 hover:bg-white hover:text-black transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.2)] disabled:opacity-50 relative overflow-hidden"
+                    >
+                      <AnimatePresence mode="wait">
+                        {isSubmitting ? (
+                          <motion.span
+                            key="submitting"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex items-center justify-center space-x-2"
+                          >
+                            <span className="w-2 h-2 bg-black rounded-full animate-pulse"></span>
+                            <span>ENCRYPTING...</span>
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            key="idle"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          >
+                            Join the Movement
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </button>
+                  </motion.form>
+                ) : (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="deco-frame border border-yellow-electric/30 bg-[#050505] px-6 py-6 rounded-sm animate-pulse shadow-[0_0_15px_rgba(253,224,71,0.4)] text-center"
+                  >
+                    <div className="font-mono text-sm tracking-widest text-[#4ade80] uppercase mb-2">
+                      [SIGNAL_RECEIVED]
+                    </div>
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                      SECURE TRANSMISSION CONFIRMED
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
           </div>
         </div>
