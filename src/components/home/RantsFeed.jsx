@@ -38,7 +38,7 @@ const RantsFeed = () => {
               Unfiltered analysis on the shifting tides of economics and community leadership.
             </p>
           </div>
-          <Link to="/rants" className="btn-gold hidden md:inline-flex">View Entire Archive</Link>
+          <Link to="/news-media" className="btn-gold hidden md:inline-flex">View Entire Archive</Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
