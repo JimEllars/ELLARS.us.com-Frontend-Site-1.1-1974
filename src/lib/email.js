@@ -15,25 +15,26 @@ export const sendEmail = async (payload) => {
 export const subscribeToNewsletter = async (cleanEmail) => {
   console.log(`[EmailIt] Routing subscription to Cloudflare backend for:`, cleanEmail);
 
-  const payload = {
-    email: cleanEmail,
-    lead_origin: "ellars_brand_v5.17"
-  };
+  const url = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/subscribe` : '/api/v1/subscribe';
 
   try {
-    const response = await fetch('/api/v1/subscribe', {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ email: cleanEmail, source: "Ellars_Web_App" })
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("[EmailIt] Backend returned error status:", response.status, errorData);
-      throw new Error(`Subscription failed with status: ${response.status}`);
+      if (response.status === 400) {
+        throw new Error("Transmission rejected: Invalid format");
+      } else if (response.status === 500) {
+        throw new Error("Core server offline");
+      } else {
+        throw new Error(`Subscription failed with status: ${response.status}`);
+      }
     }
 
     return await response.json();

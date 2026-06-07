@@ -50,6 +50,10 @@ const RantsFeed = () => {
                 <div className="w-full h-24 bg-white/5"></div>
               </div>
             ))
+          ) : posts.length === 0 ? (
+            <div className="col-span-full min-h-[200px] border border-white/10 bg-bg-void flex items-center justify-center font-mono text-zinc-500 uppercase tracking-widest">
+              No recent transmissions available.
+            </div>
           ) : (
             posts.map((post, index) => {
               const isDailyNews = (post.title.rendered || '').toLowerCase().includes('daily news') || (post.acf?.category_label || '').toLowerCase() === 'daily news';
