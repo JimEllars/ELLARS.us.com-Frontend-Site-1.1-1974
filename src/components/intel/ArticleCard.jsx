@@ -7,7 +7,7 @@ const ArticleCard = ({ post }) => {
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
   return (
-    <Link to={`/articles/${post.slug}`} className="block h-full group">
+    <Link to={post.slug ? `/articles/${post.slug}` : "#"} className="block h-full group" onClick={(e) => { if (!post.slug) e.preventDefault(); }}>
       <article className="interactive-card flex flex-col h-full rounded-sm overflow-hidden hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300">
         <div className="block relative aspect-video overflow-hidden border-b border-phthalo-deep min-h-[250px] bg-void">
           {imageUrl ? (

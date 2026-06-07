@@ -114,6 +114,7 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     POSTS_CACHE[cacheKey].timestamp = now;
     return data;
   } catch (error) {
+    console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol:", error.message);
     return FALLBACK_POSTS.slice(0, limit);
   }
@@ -131,6 +132,7 @@ export async function getPostBySlug(slug) {
     const data = await res.json();
     return data[0] || null; // Trigger fallback
   } catch (error) {
+    console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol for post:", error.message);
     throw error; // Let component handle fallback mode
   }
@@ -204,6 +206,7 @@ export async function getSocialFeed(limit = 10) {
     POSTS_CACHE[cacheKey].timestamp = now;
     return mappedData;
   } catch (error) {
+    console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol for social:", error.message);
     return SOCIAL_FALLBACK;
   }
