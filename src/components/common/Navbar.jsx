@@ -1,10 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      if (typeof window !== 'undefined') {
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          setShowNavbar(false);
+          setIsOpen(false); // Close mobile menu on scroll down
+        } else {
+          setShowNavbar(true);
+        }
+
+        setIsScrolled(currentScrollY > 20);
+        setLastScrollY(currentScrollY);
+      }
+    };
+
+    window.addEventListener('scroll', controlNavbar);
+    return () => window.removeEventListener('scroll', controlNavbar);
+  }, [lastScrollY]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const navLinks = [
     { name: 'About', path: '/about' },
@@ -13,11 +49,18 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full z-50 glass-nav">
-      <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+    <motion.nav
+      initial={{ y: 0 }}
+      animate={{ y: showNavbar ? 0 : "-100%" }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className={`fixed w-full z-[100] will-change-transform transition-colors duration-300 ${
+        isScrolled || isOpen ? 'bg-void/80 backdrop-blur-md border-b border-white/10' : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center relative z-10">
         <div className="flex flex-col">
           <Link to="/" className="font-editorial font-black text-2xl tracking-tighter text-white leading-none">
-            JAMES <span className="text-gradient-gold">ELLARS</span>
+            JAMES <span className="text-yellow-electric">ELLARS</span>
           </Link>
           <span className="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Business Development • Community Leader</span>
         </div>
@@ -37,30 +80,52 @@ const Navbar = () => {
         <div className="flex items-center space-x-4">
           <button className="btn-gold hidden sm:flex">Join the Newsletter</button>
           <button 
-            className="lg:hidden text-white hover:text-gold-base transition-colors"
+            className="lg:hidden text-white hover:text-yellow-electric transition-colors"
             onClick={() => setIsOpen(!isOpen)}
+            aria-expanded={isOpen}
+            aria-label="Toggle navigation menu"
           >
             <SafeIcon name={isOpen ? "X" : "Menu"} className="w-6 h-6" />
           </button>
         </div>
       </div>
 
-      {isOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-void border-b border-white/10 p-6 flex flex-col space-y-6">
-          {navLinks.map(link => (
-            <Link 
-              key={link.path}
-              to={link.path} 
-              onClick={() => setIsOpen(false)}
-              className="font-editorial font-bold text-xs uppercase tracking-widest text-white hover:text-yellow-electric transition-colors"
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ y: "-10%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "-10%", opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="lg:hidden absolute top-full left-0 w-full bg-void/95 backdrop-blur-md border-b border-white/10 p-6 flex flex-col space-y-6"
+          >
+            {navLinks.map((link, index) => (
+              <motion.div
+                key={link.path}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 + 0.1 }}
+              >
+                <Link
+                  to={link.path}
+                  onClick={() => setIsOpen(false)}
+                  className="font-editorial font-bold text-xs uppercase tracking-widest text-white hover:text-yellow-electric transition-colors block"
+                >
+                  {link.name}
+                </Link>
+              </motion.div>
+            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: navLinks.length * 0.1 + 0.1 }}
             >
-              {link.name}
-            </Link>
-          ))}
-          <button className="btn-gold w-full">Join the Newsletter</button>
-        </div>
-      )}
-    </nav>
+              <button className="btn-gold w-full">Join the Newsletter</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
   );
 };
 
