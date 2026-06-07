@@ -17,8 +17,18 @@ const ArticleCard = ({ post }) => {
               className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-80 group-hover:opacity-100"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-zinc-900 group-hover:scale-105 transition-transform duration-700 h-full w-full">
-              <SafeIcon name="Terminal" className="w-12 h-12 text-yellow-electric opacity-80 group-hover:opacity-100 transition-opacity" />
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-[#050505] to-zinc-900 group-hover:scale-105 transition-transform duration-700 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(253,224,71,0.1)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <svg className="absolute inset-0 w-full h-full opacity-20 text-yellow-electric mix-blend-overlay group-hover:opacity-40 transition-opacity duration-700" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#gridPattern)" />
+              </svg>
+              <div className="absolute inset-0 border-[0.5px] border-yellow-electric/10 m-4 group-hover:border-yellow-electric/30 transition-colors duration-700"></div>
+              <div className="absolute inset-0 border-[0.5px] border-yellow-electric/5 m-8 group-hover:border-yellow-electric/20 transition-colors duration-700 delay-100"></div>
             </div>
           )}
           <div className="absolute top-4 left-4 glass-panel px-3 py-1 bg-black/50 backdrop-blur-sm border border-white/10 rounded-sm">

@@ -41,114 +41,44 @@ const Platform = () => {
 
   const modules = [
     {
-      title: "THE AMERICAN TAX CREDIT",
-      icon: "DollarSign",
+      title: "WORKING CLASS FOUNDATION",
+      icon: "Home",
       status: "Directive 01",
       color: "text-yellow-electric",
-      description: "A foundational economic floor providing a $12,000 annual tax credit, paid monthly ($1,000/mo) directly to citizens, ensuring stability and predictability for every American family.",
+      description: "Rebuilding the American working class as the core foundation of the country, shifting power away from the ultra-wealthy and empowering the backbone of our nation.",
       progress: 95,
       sponsor: "Economic Equity Council",
       revisions: 14
     },
     {
-      title: "THE AUTOMATION DIVIDEND",
-      icon: "Cpu",
+      title: "POLITICAL REFORM",
+      icon: "Vote",
       status: "Directive 02",
       color: "text-yellow-electric",
-      description: "Securing the future of human labor by taxing advanced AI and automation systems, returning the generated wealth back to the public as a technological dividend.",
+      description: "Detailing the immediate need to overturn Citizens United, eliminate corrupt money from politics, and establish strict age caps and term limits for elected officials.",
       progress: 88,
-      sponsor: "Technological Advisory Board",
+      sponsor: "Civic Infrastructure Guild",
       revisions: 9
     },
     {
-      title: "PROTECTED VITAL SYSTEMS",
-      icon: "ShieldCheck",
+      title: "THE AUTOMATION DIVIDEND & TAXATION",
+      icon: "Cpu",
       status: "Directive 03",
       color: "text-yellow-electric",
-      description: "Protecting essential systems—food, housing, education, and healthcare—from corporate profiteering to ensure the fundamental welfare of the American people.",
+      description: "Implementing a Negative Income Tax system funded by returning taxes on the ultra-rich and corporations to 1950s levels, closing avoidance loopholes, and returning generated wealth as a technological dividend.",
       progress: 85,
-      sponsor: "Civic Infrastructure Guild",
+      sponsor: "Technological Advisory Board",
       revisions: 12
     },
     {
-      title: "TAXATION PARITY",
-      icon: "Scale",
+      title: "FUTURE INFRASTRUCTURE",
+      icon: "Zap",
       status: "Directive 04",
       color: "text-yellow-electric",
-      description: "Returning wealthy and corporate taxation to 1950s levels to prevent resource hoarding and ensure the economy works for everyone, not just the ultra-rich.",
+      description: "Forward-thinking investments in renewable energy systems, futuristic high-speed train networks, and American-built, long-lasting housing programs for a modernized foundation.",
       progress: 60,
       sponsor: "Economic Equity Council",
       revisions: 8
-    },
-    {
-      title: "ELECTION SOVEREIGNTY",
-      icon: "Vote",
-      status: "Directive 05",
-      color: "text-yellow-electric",
-      description: "Overturning Citizens United and removing dark money from politics to prevent corporate interests from diluting the power of the people.",
-      progress: 40,
-      sponsor: "Technological Advisory Board",
-      revisions: 24
-    },
-        {
-      title: "THE WORKERS' INFRASTRUCTURE SHELL",
-      icon: "Home",
-      status: "Directive 06",
-      color: "text-yellow-electric",
-      description: "Rebuilding domestic manufacturing, localized physical supply chains, and commissioning union-backed industrial construction frameworks to revitalize our foundation with blue-collar precision.",
-      progress: 65,
-      sponsor: "Civic Infrastructure Guild",
-      revisions: 12
-    },
-    {
-      title: "DIGITAL PRIVACY RIGHTS",
-      icon: "Fingerprint",
-      status: "Directive 07",
-      color: "text-yellow-electric",
-      description: "Establishing a right to data privacy where big tech must offer opt-in protocols and provide fair payment for the data they profit from.",
-      progress: 70,
-      sponsor: "Technological Advisory Board",
-      revisions: 15
-    },
-        {
-      title: "THE NEXT-GEN TRANSIT MANDATE",
-      icon: "Zap",
-      status: "Directive 08",
-      color: "text-yellow-electric",
-      description: "Modernizing American transportation by building out continuous high-speed transit networks connecting historic manufacturing towns with coastal trade hubs.",
-      progress: 45,
-      sponsor: "Economic Equity Council",
-      revisions: 9
-    },
-        {
-      title: "POLITICAL ACCOUNTABILITY FRAMEWORK",
-      icon: "Clock",
-      status: "Directive 09",
-      color: "text-yellow-electric",
-      description: "Implementing state and federal age caps, strict legislative term limits, and an absolute legislative path to overturn Citizens United to eradicate dark money from public governance.",
-      progress: 30,
-      sponsor: "Civic Infrastructure Guild",
-      revisions: 5
-    },
-    {
-      title: "SECULAR GOVERNANCE & FREEDOM",
-      icon: "Sun",
-      status: "Directive 10",
-      color: "text-yellow-electric",
-      description: "Upholding a strict separation of church and state to protect national health and ensure every citizen has the freedom to explore their own beliefs peacefully.",
-      progress: 25,
-      sponsor: "Technological Advisory Board",
-      revisions: 4
-    },
-    {
-      title: "DIRECT DEMOCRACY REFORM",
-      icon: "Activity",
-      status: "Directive 11",
-      color: "text-yellow-electric",
-      description: "Eliminating the obsolete Electoral College in favor of the popular vote, utilizing modern technology to ensure every American's voice is heard equally.",
-      progress: 20,
-      sponsor: "Economic Equity Council",
-      revisions: 7
     }
   ];
 
