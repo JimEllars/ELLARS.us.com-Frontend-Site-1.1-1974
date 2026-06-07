@@ -11,6 +11,7 @@ const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
 import NotFound from './pages/NotFound';
+const Ecosystem = React.lazy(() => import('./pages/Ecosystem'));
 
 
 function ScrollToTop() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/platform" element={<Platform />} />
+          <Route path="/ecosystem" element={<Ecosystem />} />
           <Route path="/news-media" element={<NewsMedia />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

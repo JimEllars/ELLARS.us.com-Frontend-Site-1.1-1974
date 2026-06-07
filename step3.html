@@ -1,0 +1,824 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-family=%22serif%22 font-size=%2290%22 fill=%22%23fde047%22 font-weight=%22bold%22&gt;E&lt;/text&gt;&lt;/svg&gt;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Vite + React application optimized for SEO with proper meta tags and titles.">
+    <meta name="keywords" content="React, Vite, SEO, Web Development, JavaScript">
+    <meta name="author" content="Your Name">
+    <meta property="og:title" content="Vite + React SEO-Friendly App">
+    <meta property="og:description" content="A Vite + React application optimized for SEO.">
+    <meta property="og:type" content="website">
+    <title>The Ecosystem | Decentralized Architecture | James Ellars</title>
+    <script type="module" crossorigin="" src="/assets/index-CVe_N27L.js"></script>
+    <link rel="stylesheet" crossorigin="" href="/assets/index-DGoi8HTD.css">
+  <style>:root {
+  --toastify-color-light: #fff;
+  --toastify-color-dark: #121212;
+  --toastify-color-info: #3498db;
+  --toastify-color-success: #07bc0c;
+  --toastify-color-warning: #f1c40f;
+  --toastify-color-error: hsl(6, 78%, 57%);
+  --toastify-color-transparent: rgba(255, 255, 255, 0.7);
+
+  --toastify-icon-color-info: var(--toastify-color-info);
+  --toastify-icon-color-success: var(--toastify-color-success);
+  --toastify-icon-color-warning: var(--toastify-color-warning);
+  --toastify-icon-color-error: var(--toastify-color-error);
+
+  --toastify-container-width: fit-content;
+  --toastify-toast-width: 320px;
+  --toastify-toast-offset: 16px;
+  --toastify-toast-top: max(var(--toastify-toast-offset), env(safe-area-inset-top));
+  --toastify-toast-right: max(var(--toastify-toast-offset), env(safe-area-inset-right));
+  --toastify-toast-left: max(var(--toastify-toast-offset), env(safe-area-inset-left));
+  --toastify-toast-bottom: max(var(--toastify-toast-offset), env(safe-area-inset-bottom));
+  --toastify-toast-background: #fff;
+  --toastify-toast-padding: 14px;
+  --toastify-toast-min-height: 64px;
+  --toastify-toast-max-height: 800px;
+  --toastify-toast-bd-radius: 6px;
+  --toastify-toast-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  --toastify-font-family: sans-serif;
+  --toastify-z-index: 9999;
+  --toastify-text-color-light: #757575;
+  --toastify-text-color-dark: #fff;
+
+  /* Used only for colored theme */
+  --toastify-text-color-info: #fff;
+  --toastify-text-color-success: #fff;
+  --toastify-text-color-warning: #fff;
+  --toastify-text-color-error: #fff;
+
+  --toastify-spinner-color: #616161;
+  --toastify-spinner-color-empty-area: #e0e0e0;
+  --toastify-color-progress-light: linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55);
+  --toastify-color-progress-dark: #bb86fc;
+  --toastify-color-progress-info: var(--toastify-color-info);
+  --toastify-color-progress-success: var(--toastify-color-success);
+  --toastify-color-progress-warning: var(--toastify-color-warning);
+  --toastify-color-progress-error: var(--toastify-color-error);
+  /* used to control the opacity of the progress trail */
+  --toastify-color-progress-bgo: 0.2;
+}
+
+.Toastify__toast-container {
+  z-index: var(--toastify-z-index);
+  -webkit-transform: translate3d(0, 0, var(--toastify-z-index));
+  position: fixed;
+  width: var(--toastify-container-width);
+  box-sizing: border-box;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.Toastify__toast-container--top-left {
+  top: var(--toastify-toast-top);
+  left: var(--toastify-toast-left);
+}
+.Toastify__toast-container--top-center {
+  top: var(--toastify-toast-top);
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+.Toastify__toast-container--top-right {
+  top: var(--toastify-toast-top);
+  right: var(--toastify-toast-right);
+  align-items: end;
+}
+.Toastify__toast-container--bottom-left {
+  bottom: var(--toastify-toast-bottom);
+  left: var(--toastify-toast-left);
+}
+.Toastify__toast-container--bottom-center {
+  bottom: var(--toastify-toast-bottom);
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+.Toastify__toast-container--bottom-right {
+  bottom: var(--toastify-toast-bottom);
+  right: var(--toastify-toast-right);
+  align-items: end;
+}
+
+.Toastify__toast {
+  --y: 0px;
+  position: relative;
+  touch-action: none;
+  width: var(--toastify-toast-width);
+  min-height: var(--toastify-toast-min-height);
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  padding: var(--toastify-toast-padding);
+  border-radius: var(--toastify-toast-bd-radius);
+  box-shadow: var(--toastify-toast-shadow);
+  max-height: var(--toastify-toast-max-height);
+  font-family: var(--toastify-font-family);
+  /* webkit only issue #791 */
+  z-index: 0;
+  /* inner swag */
+  display: flex;
+  flex: 1 auto;
+  align-items: center;
+  word-break: break-word;
+}
+
+@media only screen and (max-width: 480px) {
+  .Toastify__toast-container {
+    width: 100vw;
+    left: env(safe-area-inset-left);
+    margin: 0;
+  }
+  .Toastify__toast-container--top-left,
+  .Toastify__toast-container--top-center,
+  .Toastify__toast-container--top-right {
+    top: env(safe-area-inset-top);
+    transform: translateX(0);
+  }
+  .Toastify__toast-container--bottom-left,
+  .Toastify__toast-container--bottom-center,
+  .Toastify__toast-container--bottom-right {
+    bottom: env(safe-area-inset-bottom);
+    transform: translateX(0);
+  }
+  .Toastify__toast-container--rtl {
+    right: env(safe-area-inset-right);
+    left: initial;
+  }
+  .Toastify__toast {
+    --toastify-toast-width: 100%;
+    margin-bottom: 0;
+    border-radius: 0;
+  }
+}
+
+.Toastify__toast-container[data-stacked='true'] {
+  width: var(--toastify-toast-width);
+}
+
+@media only screen and (max-width: 480px) {
+  .Toastify__toast-container[data-stacked='true'] {
+    width: 100vw;
+  }
+}
+
+.Toastify__toast--stacked {
+  position: absolute;
+  width: 100%;
+  transform: translate3d(0, var(--y), 0) scale(var(--s));
+  transition: transform 0.3s;
+}
+
+.Toastify__toast--stacked[data-collapsed] .Toastify__toast-body,
+.Toastify__toast--stacked[data-collapsed] .Toastify__close-button {
+  transition: opacity 0.1s;
+}
+
+.Toastify__toast--stacked[data-collapsed='false'] {
+  overflow: visible;
+}
+
+.Toastify__toast--stacked[data-collapsed='true']:not(:last-child) > * {
+  opacity: 0;
+}
+
+.Toastify__toast--stacked:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(var(--g) * 1px);
+  bottom: 100%;
+}
+
+.Toastify__toast--stacked[data-pos='top'] {
+  top: 0;
+}
+
+.Toastify__toast--stacked[data-pos='bot'] {
+  bottom: 0;
+}
+
+.Toastify__toast--stacked[data-pos='bot'].Toastify__toast--stacked:before {
+  transform-origin: top;
+}
+
+.Toastify__toast--stacked[data-pos='top'].Toastify__toast--stacked:before {
+  transform-origin: bottom;
+}
+
+.Toastify__toast--stacked:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  transform: scaleY(3);
+  z-index: -1;
+}
+
+.Toastify__toast--rtl {
+  direction: rtl;
+}
+
+.Toastify__toast--close-on-click {
+  cursor: pointer;
+}
+
+.Toastify__toast-icon {
+  margin-inline-end: 10px;
+  width: 22px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.Toastify--animate {
+  animation-fill-mode: both;
+  animation-duration: 0.5s;
+}
+
+.Toastify--animate-icon {
+  animation-fill-mode: both;
+  animation-duration: 0.3s;
+}
+
+.Toastify__toast-theme--dark {
+  background: var(--toastify-color-dark);
+  color: var(--toastify-text-color-dark);
+}
+
+.Toastify__toast-theme--light {
+  background: var(--toastify-color-light);
+  color: var(--toastify-text-color-light);
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--default {
+  background: var(--toastify-color-light);
+  color: var(--toastify-text-color-light);
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--info {
+  color: var(--toastify-text-color-info);
+  background: var(--toastify-color-info);
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--success {
+  color: var(--toastify-text-color-success);
+  background: var(--toastify-color-success);
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--warning {
+  color: var(--toastify-text-color-warning);
+  background: var(--toastify-color-warning);
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--error {
+  color: var(--toastify-text-color-error);
+  background: var(--toastify-color-error);
+}
+
+.Toastify__progress-bar-theme--light {
+  background: var(--toastify-color-progress-light);
+}
+
+.Toastify__progress-bar-theme--dark {
+  background: var(--toastify-color-progress-dark);
+}
+
+.Toastify__progress-bar--info {
+  background: var(--toastify-color-progress-info);
+}
+
+.Toastify__progress-bar--success {
+  background: var(--toastify-color-progress-success);
+}
+
+.Toastify__progress-bar--warning {
+  background: var(--toastify-color-progress-warning);
+}
+
+.Toastify__progress-bar--error {
+  background: var(--toastify-color-progress-error);
+}
+
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
+  background: var(--toastify-color-transparent);
+}
+
+.Toastify__close-button {
+  color: #fff;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  outline: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.3s ease;
+  z-index: 1;
+}
+
+.Toastify__toast--rtl .Toastify__close-button {
+  left: 6px;
+  right: unset;
+}
+
+.Toastify__close-button--light {
+  color: #000;
+  opacity: 0.3;
+}
+
+.Toastify__close-button > svg {
+  fill: currentColor;
+  height: 16px;
+  width: 14px;
+}
+
+.Toastify__close-button:hover,
+.Toastify__close-button:focus {
+  opacity: 1;
+}
+
+@keyframes Toastify__trackProgress {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+.Toastify__progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.7;
+  transform-origin: left;
+}
+
+.Toastify__progress-bar--animated {
+  animation: Toastify__trackProgress linear 1 forwards;
+}
+
+.Toastify__progress-bar--controlled {
+  transition: transform 0.2s;
+}
+
+.Toastify__progress-bar--rtl {
+  right: 0;
+  left: initial;
+  transform-origin: right;
+  border-bottom-left-radius: initial;
+}
+
+.Toastify__progress-bar--wrp {
+  position: absolute;
+  overflow: hidden;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  border-bottom-left-radius: var(--toastify-toast-bd-radius);
+  border-bottom-right-radius: var(--toastify-toast-bd-radius);
+}
+
+.Toastify__progress-bar--wrp[data-hidden='true'] {
+  opacity: 0;
+}
+
+.Toastify__progress-bar--bg {
+  opacity: var(--toastify-color-progress-bgo);
+  width: 100%;
+  height: 100%;
+}
+
+.Toastify__spinner {
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-radius: 100%;
+  border-color: var(--toastify-spinner-color-empty-area);
+  border-right-color: var(--toastify-spinner-color);
+  animation: Toastify__spin 0.65s linear infinite;
+}
+
+@keyframes Toastify__bounceInRight {
+  from,
+  60%,
+  75%,
+  90%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  from {
+    opacity: 0;
+    transform: translate3d(3000px, 0, 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(-25px, 0, 0);
+  }
+  75% {
+    transform: translate3d(10px, 0, 0);
+  }
+  90% {
+    transform: translate3d(-5px, 0, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes Toastify__bounceOutRight {
+  20% {
+    opacity: 1;
+    transform: translate3d(-20px, var(--y), 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(2000px, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__bounceInLeft {
+  from,
+  60%,
+  75%,
+  90%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  0% {
+    opacity: 0;
+    transform: translate3d(-3000px, 0, 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(25px, 0, 0);
+  }
+  75% {
+    transform: translate3d(-10px, 0, 0);
+  }
+  90% {
+    transform: translate3d(5px, 0, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes Toastify__bounceOutLeft {
+  20% {
+    opacity: 1;
+    transform: translate3d(20px, var(--y), 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-2000px, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__bounceInUp {
+  from,
+  60%,
+  75%,
+  90%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  from {
+    opacity: 0;
+    transform: translate3d(0, 3000px, 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -20px, 0);
+  }
+  75% {
+    transform: translate3d(0, 10px, 0);
+  }
+  90% {
+    transform: translate3d(0, -5px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes Toastify__bounceOutUp {
+  20% {
+    transform: translate3d(0, calc(var(--y) - 10px), 0);
+  }
+  40%,
+  45% {
+    opacity: 1;
+    transform: translate3d(0, calc(var(--y) + 20px), 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -2000px, 0);
+  }
+}
+
+@keyframes Toastify__bounceInDown {
+  from,
+  60%,
+  75%,
+  90%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -3000px, 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, 25px, 0);
+  }
+  75% {
+    transform: translate3d(0, -10px, 0);
+  }
+  90% {
+    transform: translate3d(0, 5px, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes Toastify__bounceOutDown {
+  20% {
+    transform: translate3d(0, calc(var(--y) - 10px), 0);
+  }
+  40%,
+  45% {
+    opacity: 1;
+    transform: translate3d(0, calc(var(--y) + 20px), 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 2000px, 0);
+  }
+}
+
+.Toastify__bounce-enter--top-left,
+.Toastify__bounce-enter--bottom-left {
+  animation-name: Toastify__bounceInLeft;
+}
+
+.Toastify__bounce-enter--top-right,
+.Toastify__bounce-enter--bottom-right {
+  animation-name: Toastify__bounceInRight;
+}
+
+.Toastify__bounce-enter--top-center {
+  animation-name: Toastify__bounceInDown;
+}
+
+.Toastify__bounce-enter--bottom-center {
+  animation-name: Toastify__bounceInUp;
+}
+
+.Toastify__bounce-exit--top-left,
+.Toastify__bounce-exit--bottom-left {
+  animation-name: Toastify__bounceOutLeft;
+}
+
+.Toastify__bounce-exit--top-right,
+.Toastify__bounce-exit--bottom-right {
+  animation-name: Toastify__bounceOutRight;
+}
+
+.Toastify__bounce-exit--top-center {
+  animation-name: Toastify__bounceOutUp;
+}
+
+.Toastify__bounce-exit--bottom-center {
+  animation-name: Toastify__bounceOutDown;
+}
+
+@keyframes Toastify__zoomIn {
+  from {
+    opacity: 0;
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes Toastify__zoomOut {
+  from {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+    transform: translate3d(0, var(--y), 0) scale3d(0.3, 0.3, 0.3);
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.Toastify__zoom-enter {
+  animation-name: Toastify__zoomIn;
+}
+
+.Toastify__zoom-exit {
+  animation-name: Toastify__zoomOut;
+}
+
+@keyframes Toastify__flipIn {
+  from {
+    transform: perspective(400px) rotate3d(1, 0, 0, 90deg);
+    animation-timing-function: ease-in;
+    opacity: 0;
+  }
+  40% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -20deg);
+    animation-timing-function: ease-in;
+  }
+  60% {
+    transform: perspective(400px) rotate3d(1, 0, 0, 10deg);
+    opacity: 1;
+  }
+  80% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -5deg);
+  }
+  to {
+    transform: perspective(400px);
+  }
+}
+
+@keyframes Toastify__flipOut {
+  from {
+    transform: translate3d(0, var(--y), 0) perspective(400px);
+  }
+  30% {
+    transform: translate3d(0, var(--y), 0) perspective(400px) rotate3d(1, 0, 0, -20deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, var(--y), 0) perspective(400px) rotate3d(1, 0, 0, 90deg);
+    opacity: 0;
+  }
+}
+
+.Toastify__flip-enter {
+  animation-name: Toastify__flipIn;
+}
+
+.Toastify__flip-exit {
+  animation-name: Toastify__flipOut;
+}
+
+@keyframes Toastify__slideInRight {
+  from {
+    transform: translate3d(110%, 0, 0);
+    visibility: visible;
+  }
+  to {
+    transform: translate3d(0, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideInLeft {
+  from {
+    transform: translate3d(-110%, 0, 0);
+    visibility: visible;
+  }
+  to {
+    transform: translate3d(0, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideInUp {
+  from {
+    transform: translate3d(0, 110%, 0);
+    visibility: visible;
+  }
+  to {
+    transform: translate3d(0, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideInDown {
+  from {
+    transform: translate3d(0, -110%, 0);
+    visibility: visible;
+  }
+  to {
+    transform: translate3d(0, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideOutRight {
+  from {
+    transform: translate3d(0, var(--y), 0);
+  }
+  to {
+    visibility: hidden;
+    transform: translate3d(110%, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideOutLeft {
+  from {
+    transform: translate3d(0, var(--y), 0);
+  }
+  to {
+    visibility: hidden;
+    transform: translate3d(-110%, var(--y), 0);
+  }
+}
+
+@keyframes Toastify__slideOutDown {
+  from {
+    transform: translate3d(0, var(--y), 0);
+  }
+  to {
+    visibility: hidden;
+    transform: translate3d(0, 500px, 0);
+  }
+}
+
+@keyframes Toastify__slideOutUp {
+  from {
+    transform: translate3d(0, var(--y), 0);
+  }
+  to {
+    visibility: hidden;
+    transform: translate3d(0, -500px, 0);
+  }
+}
+
+.Toastify__slide-enter--top-left,
+.Toastify__slide-enter--bottom-left {
+  animation-name: Toastify__slideInLeft;
+}
+
+.Toastify__slide-enter--top-right,
+.Toastify__slide-enter--bottom-right {
+  animation-name: Toastify__slideInRight;
+}
+
+.Toastify__slide-enter--top-center {
+  animation-name: Toastify__slideInDown;
+}
+
+.Toastify__slide-enter--bottom-center {
+  animation-name: Toastify__slideInUp;
+}
+
+.Toastify__slide-exit--top-left,
+.Toastify__slide-exit--bottom-left {
+  animation-name: Toastify__slideOutLeft;
+  animation-timing-function: ease-in;
+  animation-duration: 0.3s;
+}
+
+.Toastify__slide-exit--top-right,
+.Toastify__slide-exit--bottom-right {
+  animation-name: Toastify__slideOutRight;
+  animation-timing-function: ease-in;
+  animation-duration: 0.3s;
+}
+
+.Toastify__slide-exit--top-center {
+  animation-name: Toastify__slideOutUp;
+  animation-timing-function: ease-in;
+  animation-duration: 0.3s;
+}
+
+.Toastify__slide-exit--bottom-center {
+  animation-name: Toastify__slideOutDown;
+  animation-timing-function: ease-in;
+  animation-duration: 0.3s;
+}
+
+@keyframes Toastify__spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style><meta name="robots" content="index, follow" data-rh="true"><meta name="description" content="Explore the decentralized micro-app architecture and external ecosystem tools powering the Axim/Ellars infrastructure." data-rh="true"></head>
+  <body class="bg-void text-text-main" style="overflow: unset;">
+    <div id="root"><div class="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]"><nav class="fixed w-full z-[100] will-change-transform transition-colors duration-300 bg-void/80 backdrop-blur-md border-b border-white/10" style="transform: none;"><div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center relative z-10"><div class="flex flex-col"><a class="font-editorial font-black text-2xl tracking-tighter text-white leading-none" href="/" data-discover="true">JAMES <span class="text-yellow-electric">ELLARS</span></a><span class="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Business Development • Community Leader</span></div><div class="hidden lg:flex space-x-10 font-editorial font-bold text-[11px] uppercase tracking-[0.2em]"><a class="transition-colors hover:text-yellow-electric text-gray-400" href="/about" data-discover="true">About</a><a class="transition-colors hover:text-yellow-electric text-gray-400" href="/platform" data-discover="true">Platform</a><a class="transition-colors hover:text-yellow-electric text-gray-400" href="/news-media" data-discover="true">News &amp; Media</a></div><div class="flex items-center space-x-4"><button class="btn-gold hidden sm:flex">Join the Newsletter</button><button class="lg:hidden text-white hover:text-yellow-electric transition-colors" aria-expanded="false" aria-label="Toggle navigation menu"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button></div></div></nav><main class="flex-grow relative z-10 min-h-screen"><div class="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid"><div class="max-w-7xl mx-auto px-6"><div class="text-center mb-20"><span class="font-editorial text-[10px] text-white uppercase tracking-widest font-bold block mb-4">Infrastructure &amp; Tools</span><h1 class="font-editorial font-black text-5xl md:text-7xl text-white leading-tight">THE <span class="text-yellow-electric">ECOSYSTEM.</span></h1><p class="text-text-muted mt-6 max-w-2xl mx-auto text-lg font-light">Decentralized micro-apps and core API integrations powering modern civic infrastructure.</p></div><div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-24"><div class="lg:col-span-7"><div class="w-full"><div class="mb-10 text-center md:text-left"><h2 class="font-editorial font-black text-3xl md:text-4xl text-white uppercase tracking-tight mb-2">AXIM CORE API <span class="text-yellow-electric">INTEGRATIONS</span></h2><p class="text-text-muted font-light text-sm">The decentralized pillars powering the Ellars/Axim infrastructure.</p></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="opacity: 1;"><div class="interactive-card p-6 rounded-sm bg-surface border border-white/5 border-b-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-300 flex flex-col h-full group will-change-transform" style="opacity: 1; transform: none;"><div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-void border border-white/10 flex items-center justify-center rounded-sm group-hover:border-yellow-electric/50 transition-colors"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-electric" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div><span class="text-[10px] font-mono uppercase tracking-widest text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 border border-[#4ade80]/20">Active</span></div><h3 class="font-editorial text-lg text-white mb-2 uppercase tracking-wide group-hover:text-yellow-electric transition-colors">Noota</h3><p class="text-text-muted text-xs font-light leading-relaxed flex-grow">Audio to Text transcriptions.</p><div class="mt-6 pt-4 border-t border-white/5"><button class="text-[10px] font-mono text-yellow-electric uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-white transition-colors">View Protocol<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div><div class="interactive-card p-6 rounded-sm bg-surface border border-white/5 border-b-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-300 flex flex-col h-full group will-change-transform" style="opacity: 1; transform: none;"><div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-void border border-white/10 flex items-center justify-center rounded-sm group-hover:border-yellow-electric/50 transition-colors"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-electric" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></div><span class="text-[10px] font-mono uppercase tracking-widest text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 border border-[#4ade80]/20">Active</span></div><h3 class="font-editorial text-lg text-white mb-2 uppercase tracking-wide group-hover:text-yellow-electric transition-colors">Deskera / SuiteDash</h3><p class="text-text-muted text-xs font-light leading-relaxed flex-grow">Primary CRM &amp; Automation routing.</p><div class="mt-6 pt-4 border-t border-white/5"><button class="text-[10px] font-mono text-yellow-electric uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-white transition-colors">View Protocol<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div><div class="interactive-card p-6 rounded-sm bg-surface border border-white/5 border-b-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-300 flex flex-col h-full group will-change-transform" style="opacity: 1; transform: none;"><div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-void border border-white/10 flex items-center justify-center rounded-sm group-hover:border-yellow-electric/50 transition-colors"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-electric" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg></div><span class="text-[10px] font-mono uppercase tracking-widest text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 border border-[#4ade80]/20">Active</span></div><h3 class="font-editorial text-lg text-white mb-2 uppercase tracking-wide group-hover:text-yellow-electric transition-colors">Internxt</h3><p class="text-text-muted text-xs font-light leading-relaxed flex-grow">Decentralized secure storage.</p><div class="mt-6 pt-4 border-t border-white/5"><button class="text-[10px] font-mono text-yellow-electric uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-white transition-colors">View Protocol<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div><div class="interactive-card p-6 rounded-sm bg-surface border border-white/5 border-b-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-300 flex flex-col h-full group will-change-transform" style="opacity: 1; transform: none;"><div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-void border border-white/10 flex items-center justify-center rounded-sm group-hover:border-yellow-electric/50 transition-colors"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-electric" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"></path></svg></div><span class="text-[10px] font-mono uppercase tracking-widest text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 border border-[#4ade80]/20">Active</span></div><h3 class="font-editorial text-lg text-white mb-2 uppercase tracking-wide group-hover:text-yellow-electric transition-colors">Retable</h3><p class="text-text-muted text-xs font-light leading-relaxed flex-grow">Data management and list building.</p><div class="mt-6 pt-4 border-t border-white/5"><button class="text-[10px] font-mono text-yellow-electric uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-white transition-colors">View Protocol<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div><div class="interactive-card p-6 rounded-sm bg-surface border border-white/5 border-b-2 border-yellow-electric/20 hover:border-yellow-electric transition-all duration-300 flex flex-col h-full group will-change-transform" style="opacity: 1; transform: none;"><div class="flex justify-between items-start mb-6"><div class="w-12 h-12 bg-void border border-white/10 flex items-center justify-center rounded-sm group-hover:border-yellow-electric/50 transition-colors"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-electric" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div><span class="text-[10px] font-mono uppercase tracking-widest text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 border border-[#4ade80]/20">Active</span></div><h3 class="font-editorial text-lg text-white mb-2 uppercase tracking-wide group-hover:text-yellow-electric transition-colors">Illusto</h3><p class="text-text-muted text-xs font-light leading-relaxed flex-grow">Video editing and rendering.</p><div class="mt-6 pt-4 border-t border-white/5"><button class="text-[10px] font-mono text-yellow-electric uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-white transition-colors">View Protocol<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div></div></div></div><div class="lg:col-span-5"><div class="sticky top-32"><div class="mb-6"><h2 class="font-editorial font-black text-2xl text-white uppercase tracking-tight mb-2">ACTIVE <span class="text-yellow-electric">MICRO-APP</span></h2><p class="text-text-muted font-light text-sm">Demonstrating localized state management and future API bridging.</p></div><div class="deco-frame p-8 sm:p-12 bg-void/90 backdrop-blur-md min-h-[400px] flex flex-col items-center justify-center border border-yellow-electric/30"><div class="relative flex flex-col items-center"><div class="w-20 h-20 border-2 border-yellow-electric/30 rounded-sm mb-8 flex items-center justify-center relative overflow-hidden" style=""><div class="absolute inset-0 bg-yellow-electric/10 animate-pulse"></div><div class="w-12 h-12 border-t-2 border-r-2 border-yellow-electric rounded-full" style="transform: rotate(27.9deg);"></div><div class="absolute inset-2 border border-yellow-electric/20 rounded-full"></div></div><p class="font-mono text-yellow-electric text-sm tracking-[0.2em] uppercase blink">[SYNTHESIZING LEGAL DIRECTIVE]</p><p class="font-mono text-text-muted text-[10px] tracking-widest mt-3 uppercase">Transmitting to Axim Core</p><div class="w-48 h-1 bg-white/5 mt-6 relative overflow-hidden rounded-full"><div class="absolute top-0 left-0 w-1/2 h-full bg-yellow-electric/50" style="transform: translateX(-12.6667%);"></div></div></div></div></div></div></div></div></div><section class="Toastify" aria-live="polite" aria-atomic="false" aria-relevant="additions text" aria-label="Notifications Alt+T"></section></main><footer class="bg-void border-t border-white/10 pt-20 pb-10"><div class="max-w-7xl mx-auto px-6"><div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-12 mb-16"><div class="lg:col-span-4 flex flex-col"><span class="font-editorial font-black text-2xl tracking-tighter text-white block mb-2">JAMES <span class="text-yellow-electric">ELLARS</span></span><span class="text-text-muted text-sm mb-6 max-w-sm">Leading American Innovation through Sustainable Systems, Forward-Thinking Ideas and a Blue-Collar Work Ethic.</span><div class="flex space-x-6"><a href="https://twitter.com/ellars" target="_blank" rel="noopener noreferrer" class="text-white hover:text-yellow-electric transition-colors" aria-label="Twitter"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg></a><a href="https://www.instagram.com/ellarsjames" target="_blank" rel="noopener noreferrer" class="text-white hover:text-yellow-electric transition-colors" aria-label="Instagram"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a><a href="https://www.threads.net/@ellarsjames" target="_blank" rel="noopener noreferrer" class="text-white hover:text-yellow-electric transition-colors" aria-label="Threads"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg></a></div></div><div class="lg:col-span-4 flex flex-col"><h3 class="font-editorial font-bold text-xs uppercase tracking-widest text-white mb-6">Sitemap</h3><nav class="flex flex-col space-y-4"><a class="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="About Page" href="/about" data-discover="true">About</a><a class="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Platform Page" href="/platform" data-discover="true">Platform</a><a class="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="News &amp; Media Page" href="/news-media" data-discover="true">News &amp; Media</a></nav></div><div class="lg:col-span-4 flex flex-col"><h3 class="font-editorial font-bold text-xs uppercase tracking-widest text-white mb-6">Stay Informed</h3><div class="min-h-[80px]"><form class="flex flex-col gap-3" name="footer-newsletter-signup" method="POST" style="opacity: 1;"><div class="relative"><input type="email" id="footer-email" name="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="YOUR EMAIL ADDRESS" class="w-full bg-white/5 border text-white px-4 py-3 font-editorial text-xs tracking-widest outline-none focus:border-yellow-electric transition-colors rounded-sm border-white/10" required="" value="" style=""></div><button type="submit" name="submit" class="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-6 py-3 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.2)] disabled:opacity-50 relative overflow-hidden text-center mt-2"><span style="opacity: 1;">Join the Newsletter</span></button></form></div></div></div><div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"><div class="text-gray-600 text-[10px] uppercase tracking-widest font-editorial font-bold">© 2026 James Ellars. All Rights Reserved.</div><div class="flex space-x-6 text-gray-600 text-[10px] uppercase tracking-widest font-editorial font-bold"><a class="hover:text-white transition-colors" href="/ecosystem" data-discover="true">Privacy Policy</a><a class="hover:text-white transition-colors" href="/ecosystem" data-discover="true">System Logistics</a></div></div></div></footer></div></div>
+
+</body></html>
