@@ -61,7 +61,7 @@ const RantsFeed = () => {
                 key={post.id}
                 className={`block group ${isFeatured ? 'md:col-span-2' : ''}`}
               >
-                <article className={`interactive-card p-8 flex flex-col h-full rounded-sm hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric hover:bg-yellow-electric/5 transition-all duration-300 ${isFeatured ? 'deco-frame border-yellow-electric shadow-[0_0_15px_rgba(253,224,71,0.2)]' : ''}`}>
+                <article className={`interactive-card p-8 flex flex-col h-full rounded-sm hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric hover:bg-yellow-electric/5 transition-all duration-300 ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
                 <div className="mb-auto">
                   <div className="font-editorial text-[10px] text-gold-base uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
                     <SafeIcon name="Activity" className="w-4 h-4" />
