@@ -141,6 +141,10 @@ const NewsMedia = () => {
     return false;
   });
 
+  const isDailyNewsPost = (post) => (post.title?.rendered || '').toLowerCase().includes('daily news') || (post.acf?.category_label || '').toLowerCase() === 'daily news';
+  const dailyNewsPosts = filteredPosts.filter(isDailyNewsPost);
+  const archivePosts = filteredPosts.filter(post => !isDailyNewsPost(post));
+
   return (
     <div className="pt-32 pb-20 min-h-screen bg-transparent">
       <Helmet>
@@ -177,85 +181,150 @@ const NewsMedia = () => {
           </div>
         </header>
 
-        {/* Custom Audio Player Integration */}
-        <div className="interactive-card p-8 mb-16 border border-white/10 rounded-sm bg-surface flex flex-col md:flex-row items-center gap-8">
-            <div className="w-full md:w-1/3 flex flex-col gap-4">
-               <h3 className="text-white font-editorial font-bold text-2xl uppercase">Featured Media</h3>
-               <p className="text-text-muted text-sm leading-relaxed">Now Playing: The All-American Tax Credit vs. Reactive Welfare Structures</p>
-               <div className="flex items-center gap-4">
-                    <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-                        <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
-                    </button>
-                    <div className="text-[#4ade80] font-mono text-sm uppercase tracking-widest">
-                        {isPlaying ? 'Playing...' : 'Paused'}
-                    </div>
-               </div>
+        {/* Tier 1: Featured Daily News */}
+        {(dailyNewsPosts.length > 0 || ((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL')))) && (
+          <section className="mb-16">
+            <header className="mb-8 pb-4 border-b border-white/5">
+              <h2 className="font-editorial text-2xl text-white uppercase font-bold flex items-center">
+                <SafeIcon name="Activity" className="w-5 h-5 mr-3 text-yellow-electric" />
+                Featured Daily News
+              </h2>
+            </header>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) ? (
+                <div className="col-span-full"><SocialSkeleton /></div>
+              ) : (
+                dailyNewsPosts.map((post, index) => {
+                  const isFeatured = index === 0;
+                  return (
+                    <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
+                      <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 p-8 ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
+                        <div className="mb-auto">
+                          <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
+                            <SafeIcon name="Activity" className="w-4 h-4" />
+                            <span>Daily News</span>
+                          </div>
+                          <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
+                            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
+                          </h3>
+                          {post.isExternal ? (
+                             <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
+                          ) : (
+                             <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
+                               <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
+                             </p>
+                          )}
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
+                          <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
+                        </div>
+                      </article>
+                    </Link>
+                  );
+                })
+              )}
             </div>
-            <div className="w-full md:w-2/3 h-24 bg-void border border-white/5 rounded-sm p-4 relative overflow-hidden">
-                <FrequencyVisualizer isPlaying={isPlaying} />
-            </div>
-        </div>
+          </section>
+        )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
-            <SocialSkeleton />
-          )}
-          {filteredPosts.length > 0 ? (
-            filteredPosts.map((post, index) => {
-              if (post.isSocialError) {
+        {/* Tier 2: Audio & Video Hub */}
+        {(activeFilter === 'ALL' || activeFilter === 'AUDIO' || activeFilter === 'VIDEO') && (
+          <section className="mb-16">
+            <header className="mb-8 pb-4 border-b border-white/5">
+              <h2 className="font-editorial text-2xl text-white uppercase font-bold flex items-center">
+                <SafeIcon name="Mic" className="w-5 h-5 mr-3 text-yellow-electric" />
+                Audio & Video Hub
+              </h2>
+            </header>
+            <div className="interactive-card p-8 border border-white/10 rounded-sm bg-surface flex flex-col md:flex-row items-center gap-8">
+                <div className="w-full md:w-1/3 flex flex-col gap-4">
+                   <h3 className="text-white font-editorial font-bold text-2xl uppercase">Featured Media</h3>
+                   <p className="text-text-muted text-sm leading-relaxed">Now Playing: The All-American Tax Credit vs. Reactive Welfare Structures</p>
+                   <div className="flex items-center gap-4">
+                        <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
+                            <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
+                        </button>
+                        <div className="text-[#4ade80] font-mono text-sm uppercase tracking-widest">
+                            {isPlaying ? 'Playing...' : 'Paused'}
+                        </div>
+                   </div>
+                </div>
+                <div className="w-full md:w-2/3 h-24 bg-void border border-white/5 rounded-sm p-4 relative overflow-hidden">
+                    <FrequencyVisualizer isPlaying={isPlaying} />
+                </div>
+            </div>
+          </section>
+        )}
+
+        {/* Tier 3: The Archive */}
+        <section>
+          <header className="mb-8 pb-4 border-b border-white/5">
+            <h2 className="font-editorial text-2xl text-white uppercase font-bold flex items-center">
+              <SafeIcon name="Archive" className="w-5 h-5 mr-3 text-yellow-electric" />
+              The Archive
+            </h2>
+          </header>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
+              <div className="col-span-full"><SocialSkeleton /></div>
+            )}
+            {archivePosts.length > 0 ? (
+              archivePosts.map((post, index) => {
+                if (post.isSocialError) {
+                  return (
+                    <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 justify-center items-center">
+                       <span className="font-mono text-sm tracking-widest text-yellow-electric">[FEED_UNAVAILABLE] - Content Currently Offline</span>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div key={post.id} className="interactive-card p-8 flex flex-col group h-full rounded-sm border-b-yellow-electric/20 justify-center items-center">
-                     <span className="font-mono text-sm tracking-widest text-yellow-electric">[FEED_UNAVAILABLE] - Content Currently Offline</span>
-                  </div>
+                  <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
+                    <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
+                      {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
+                        <div className="relative w-full aspect-square md:aspect-video mb-6">
+                          <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                          <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
+                            <SafeIcon name="Globe" className="w-4 h-4" />
+                            <span>{post.acf?.category_label || 'SOCIAL'}</span>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'px-8 pb-8' : ''}`}>
+                        {(!post.imageUrl || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
+                          <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
+                            <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
+                            <span>{post.acf?.category_label || 'Article'}</span>
+                          </div>
+                        )}
+                        <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
+                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
+                        </h3>
+                        {post.isExternal ? (
+                           <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
+                        ) : (
+                           <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
+                             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
+                           </p>
+                        )}
+                      </div>
+                      <div className={`mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'mx-8 mb-8' : ''}`}>
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
+                        <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
+                      </div>
+                    </article>
+                  </Link>
                 );
-              }
-              const isDailyNews = (post.title?.rendered || '').toLowerCase().includes('daily news') || (post.acf?.category_label || '').toLowerCase() === 'daily news';
-              const isFeatured = index === 0 && isDailyNews;
-
-              return (
-                            <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
-              <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'} ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
-                {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
-                  <div className="relative w-full aspect-square md:aspect-video mb-6">
-                    <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
-                      <SafeIcon name="Globe" className="w-4 h-4" />
-                      <span>{post.acf?.category_label || 'SOCIAL'}</span>
-                    </div>
-                  </div>
-                ) : null}
-                <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'px-8 pb-8' : ''}`}>
-                  {(!post.imageUrl || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
-                    <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
-                      <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
-                      <span>{post.acf?.category_label || 'Article'}</span>
-                    </div>
-                  )}
-                  <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
-                    <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
-                  </h3>
-                  {post.isExternal ? (
-                     <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
-                  ) : (
-                     <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
-                       <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
-                     </p>
-                  )}
-                </div>
-                <div className={`mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'mx-8 mb-8' : ''}`}>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
-                  <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
-                </div>
-              </article>
-              </Link>
-            )})
-          ) : (!loadingPosts && !loadingSocial) ? (
-            <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
-              No entries found for {activeFilter}.
-            </div>
-          ) : null}
-        </div>
+              })
+            ) : (!loadingPosts && !loadingSocial && dailyNewsPosts.length === 0) ? (
+              <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
+                No entries found for {activeFilter}.
+              </div>
+            ) : null}
+          </div>
+        </section>
 
       </div>
     </div>

@@ -105,7 +105,7 @@ const About = () => {
             </span>
           </div>
           <h1 className="font-deco font-normal text-white uppercase tracking-wider text-5xl md:text-7xl leading-tight mb-4">
-            THE PROFILE
+            MEET JAMES
           </h1>
           <h2 className="text-yellow-electric text-2xl font-editorial font-bold mb-6">
             A New Kind of Working-Class Advocate
@@ -142,23 +142,10 @@ const About = () => {
             className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
           >
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
-              Born in February 1989 in Victorville, California, and growing up
-              in Hesperia as the fourth of six children to John and Kandie
-              Ellars, James's foundation was built on physical resilience and
-              community.
+              Born in February 1989 in Victorville, California, and growing up in Hesperia as the fourth of six children to John and Kandie Ellars, James's foundation was built on physical resilience and community.
             </p>
-            <p className="text-text-muted font-light text-sm leading-relaxed">
-              His grandfather, Bill Ellars, founded Ellars Trucking in the
-              1980s, establishing a strong family legacy in logistics. This
-              localized family operation, navigating the grueling physical
-              resilience required during the era of deregulation, stood in stark
-              contrast to the massive corporate monopolies of today. James grew
-              up witnessing the rapid evolution of this industry from grounded,
-              human-operated fleets into the automated, AI-driven logistics
-              networks that currently define the modern supply chain. This
-              permanent logistical shift from manual transport to automated
-              sorting served as the explicit catalyst for his future-of-work
-              focus, directly informing his stance on{" "}
+            <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
+              His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in business and blue-collar work. This local, grassroots operation—navigating as a family-first business—stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the rapid evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks of today. He saw firsthand the shift from family-run local businesses fueling our economy to the current reality of stockholder-driven corporate monopolies attempting to control every aspect of the market. This experience served as a permanent catalyst for his future-of-work focus, directly informing his stance on{" "}
               <Link
                 to="/platform"
                 className="underline hover:text-yellow-electric transition-colors"
