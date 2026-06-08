@@ -65,7 +65,7 @@ const Navbar = () => {
           <span className="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Business Development • Community Leader</span>
         </div>
         
-        <div className="hidden lg:flex space-x-10 font-editorial font-bold text-[11px] uppercase tracking-[0.2em]">
+        <div className="hidden lg:flex space-x-10 items-center font-editorial font-bold text-[11px] uppercase tracking-[0.2em]">
           {navLinks.map(link => (
             <Link 
               key={link.path}
@@ -75,6 +75,12 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
+          <Link
+            to="/volunteer"
+            className={`px-4 py-2 border border-yellow-electric text-yellow-electric hover:bg-yellow-electric/10 transition-colors ${location.pathname === '/volunteer' ? 'bg-yellow-electric/10' : ''}`}
+          >
+            VOLUNTEER
+          </Link>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -119,6 +125,19 @@ const Navbar = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: navLinks.length * 0.1 + 0.1 }}
+            >
+               <Link
+                  to="/volunteer"
+                  onClick={() => setIsOpen(false)}
+                  className="font-editorial font-bold text-xs uppercase tracking-widest text-yellow-electric hover:text-white transition-colors block"
+                >
+                  VOLUNTEER
+                </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (navLinks.length + 1) * 0.1 + 0.1 }}
             >
               <button className="btn-gold w-full">Join the Newsletter</button>
             </motion.div>
