@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import { useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
+import AutomationCalculator from '@/components/intel/AutomationCalculator';
 
 const Platform = () => {
   useEffect(() => {
@@ -206,7 +207,9 @@ const Platform = () => {
                   animate={{ height: 'auto', opacity: 1 }}
                   className="overflow-hidden mb-6"
                 >
+                  {m.status === 'Directive 03' && <AutomationCalculator />}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
                     {loadingArticles ? (
                       <div className="col-span-full font-mono text-xs text-zinc-500 uppercase tracking-widest p-4 border border-white/5 bg-white/5">
                         [DISPATCH_BUFFER_ACTIVE]

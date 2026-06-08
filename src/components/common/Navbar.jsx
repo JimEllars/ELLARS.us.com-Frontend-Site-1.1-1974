@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
+import SearchOverlay from '@/components/common/SearchOverlay';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -144,6 +146,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </motion.nav>
   );
 };
