@@ -10,6 +10,7 @@ const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
+const Volunteer = React.lazy(() => import('./pages/Volunteer'));
 import NotFound from './pages/NotFound';
 
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/platform" element={<Platform />} />
           <Route path="/news-media" element={<NewsMedia />} />
+          <Route path="/volunteer" element={<Volunteer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
