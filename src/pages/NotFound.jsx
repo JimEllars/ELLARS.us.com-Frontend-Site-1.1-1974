@@ -1,8 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 
 const NotFound = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate('/');
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
   return (
     <div className="bg-[#050505] min-h-screen flex flex-col items-center justify-center text-center px-6">
       <div className="deco-frame max-w-lg w-full border border-yellow-electric/30 p-12 text-center rounded-sm font-mono text-zinc-400">
@@ -11,11 +21,11 @@ const NotFound = () => {
           404 // SIGNAL LOST
         </h1>
         <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-8">
-          The requested transmission could not be located.
+          The requested transmission could not be located. Returning to hub in 10 seconds...
         </p>
         <Link to="/" className="inline-flex items-center space-x-2 border border-yellow-electric/30 text-yellow-electric hover:bg-yellow-electric/10 font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.2)]">
           <SafeIcon name="ArrowLeft" className="w-4 h-4" />
-          <span>RETURN TO HUB</span>
+          <span>RETURN TO HUB NOW</span>
         </Link>
       </div>
     </div>

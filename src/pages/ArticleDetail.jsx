@@ -5,12 +5,50 @@ import { motion } from 'framer-motion';
 import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
-import { subscribeToNewsletter } from '@/lib/email';
 import { useAppStore } from '@/store/useAppStore';
+import { subscribeToNewsletter } from '@/lib/email';
 import { useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 const ArticleDetail = () => {
+  const { showToast } = useAppStore();
+
+  const handleCopyLink = () => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => {
+          showToast("// TRANSMISSION LINK COPIED TO CLIPBOARD");
+        })
+        .catch(err => {
+          console.error("Clipboard write failed", err);
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = window.location.href;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            document.execCommand('copy');
+            showToast("// TRANSMISSION LINK COPIED TO CLIPBOARD");
+        } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
+        }
+
+        document.body.removeChild(textArea);
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(post?.title?.rendered || 'Read this transmission');
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
   const navigate = useNavigate();
   const { slug } = useParams();
   const articles = useAppStore(state => state.articles);
@@ -176,10 +214,21 @@ const ArticleDetail = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
                 >
-                  <Link to="/news-media" className="inline-flex items-center space-x-2 text-yellow-electric mb-6 hover:bg-yellow-electric/10 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold px-3 py-2 border border-transparent rounded-sm">
-                    <SafeIcon name="ArrowLeft" className="w-4 h-4" />
-                    <span>Return to Hub</span>
-          </Link>
+                  <div className="flex justify-between items-center mb-6">
+                    <Link to="/news-media" className="inline-flex items-center space-x-2 text-yellow-electric hover:bg-yellow-electric/10 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold px-3 py-2 border border-transparent rounded-sm">
+                      <SafeIcon name="ArrowLeft" className="w-4 h-4" />
+                      <span>Return to Hub</span>
+                    </Link>
+                    <div className="flex space-x-4 items-center">
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500">SHARE TRANSMISSION:</span>
+                      <button onClick={handleCopyLink} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Copy Link" title="Copy Link">
+                        <SafeIcon name="Link" className="w-4 h-4" />
+                      </button>
+                      <button onClick={handleShareTwitter} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Share to X" title="Share to X">
+                        <SafeIcon name="Twitter" className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-deco text-yellow-electric leading-tight mb-4 break-words hyphens-auto">
                     {title}
                   </h1>
@@ -201,13 +250,18 @@ const ArticleDetail = () => {
               />
 
 
-              <div className="mt-16 pt-8 border-t border-white/10 flex justify-between items-center">
+              <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 text-center md:text-left">
+                  SHARE TRANSMISSION
+                </div>
                 <div className="flex space-x-4">
-                  <button className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric transition-colors rounded-sm text-yellow-electric">
-                    <SafeIcon name="Share2" className="w-5 h-5" />
+                  <button onClick={handleCopyLink} className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric hover:text-yellow-electric transition-colors rounded-sm text-zinc-400 flex items-center gap-2">
+                    <SafeIcon name="Link" className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Copy Link</span>
                   </button>
-                  <button className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric transition-colors rounded-sm text-gray-400 hover:text-yellow-electric">
-                    <SafeIcon name="Twitter" className="w-5 h-5" />
+                  <button onClick={handleShareTwitter} className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric hover:text-yellow-electric transition-colors rounded-sm text-zinc-400 flex items-center gap-2">
+                    <SafeIcon name="Twitter" className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Share to X</span>
                   </button>
                 </div>
               </div>

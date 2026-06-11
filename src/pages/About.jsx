@@ -3,8 +3,15 @@ import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import SafeIcon from "../common/SafeIcon";
+import { useAppStore } from '@/store/useAppStore';
 
 const About = () => {
+  const { showToast } = useAppStore();
+
+  const handleAssetDownload = (assetName) => {
+    showToast(`// DOWNLOADING: ${assetName}`);
+    // Placeholder for actual download logic
+  };
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -488,6 +495,60 @@ const About = () => {
             </div>
           </motion.div>
         </motion.div>
+      </section>
+
+      <div className="deco-divider"></div>
+      {/* OFFICIAL PRESS ASSETS */}
+      <section className="max-w-7xl mx-auto px-6 pb-24">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
+          <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
+            <SafeIcon name="Download" className="w-6 h-6 mr-4 text-yellow-electric" />
+            Official Press Assets
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            variants={itemVariants}
+            className="deco-frame p-6 flex flex-col justify-between group border border-white/10 hover:border-yellow-electric/30 transition-colors"
+          >
+            <div>
+              <div className="bg-gray-800 text-gray-400 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
+                .ZIP ARCHIVE
+              </div>
+              <h4 className="font-editorial text-xl text-white font-bold mb-2">High-Resolution Headshots</h4>
+              <p className="text-text-muted text-sm font-light mb-6">
+                Official high-resolution photography for media use. Includes standard and isolated subjects.
+              </p>
+            </div>
+            <button
+              onClick={() => handleAssetDownload('HEADSHOTS_ARCHIVE.ZIP')}
+              className="w-full border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors py-3 font-bold rounded-sm text-center"
+            >
+              Download Asset 01
+            </button>
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            className="deco-frame p-6 flex flex-col justify-between group border border-white/10 hover:border-yellow-electric/30 transition-colors"
+          >
+            <div>
+              <div className="bg-gray-800 text-gray-400 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
+                .PDF DOCUMENT
+              </div>
+              <h4 className="font-editorial text-xl text-white font-bold mb-2">Official Biographical Brief</h4>
+              <p className="text-text-muted text-sm font-light mb-6">
+                Standardized biographic summary, legislative priorities, and platform statistics.
+              </p>
+            </div>
+            <button
+              onClick={() => handleAssetDownload('BIOGRAPHICAL_BRIEF.PDF')}
+              className="w-full border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors py-3 font-bold rounded-sm text-center"
+            >
+              Download Asset 02
+            </button>
+          </motion.div>
+        </div>
       </section>
     </div>
   );

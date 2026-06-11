@@ -192,6 +192,13 @@ const Footer = () => {
             <Link to="#" className="hover:text-white transition-colors">System Logistics</Link>
           </div>
         </div>
+
+        {/* Compliance Disclosure */}
+        <div className="border border-white/20 p-4 max-w-2xl mx-auto text-center mt-12">
+          <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
+            PAID FOR BY ELLARS FOR CONGRESS. Not authorized by any candidate or candidate's committee.
+          </p>
+        </div>
       </div>
     </footer>
   );

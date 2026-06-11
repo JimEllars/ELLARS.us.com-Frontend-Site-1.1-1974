@@ -1,6 +1,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import Navbar from './common/Navbar';
 import Footer from './common/Footer';
+import Toast from './common/Toast';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
@@ -69,6 +70,7 @@ const Layout = ({ children }) => {
           {children}
         </main>
         <Footer />
+        <Toast />
       </div>
     </LoaderContext.Provider>
   );
