@@ -6,11 +6,14 @@ import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 import { subscribeToNewsletter } from '@/lib/email';
+import { useAppStore } from '@/store/useAppStore';
+import { useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 const ArticleDetail = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
+  const articles = useAppStore(state => state.articles);
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,14 @@ const ArticleDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  const recentArticles = useMemo(() => {
+    if (!articles || articles.length === 0) return [];
+    return articles
+      .filter(a => a.slug !== slug)
+      .slice(0, 4);
+  }, [articles, slug]);
+
 
 
   useEffect(() => {
@@ -138,7 +149,7 @@ const ArticleDetail = () => {
     <div className="pt-24 min-h-screen bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>{title} | James Ellars | Official</title>
+        <title>{title} | James Ellars Official</title>
         <meta name="description" content={cleanExcerpt} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={cleanExcerpt} />
@@ -169,7 +180,7 @@ const ArticleDetail = () => {
                     <SafeIcon name="ArrowLeft" className="w-4 h-4" />
                     <span>Return to Hub</span>
           </Link>
-                  <h1 className="text-4xl md:text-6xl font-deco text-yellow-electric leading-tight mb-4">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-deco text-yellow-electric leading-tight mb-4 break-words hyphens-auto">
                     {title}
                   </h1>
                   <div className="flex items-center space-x-4 text-gray-400 text-xs uppercase tracking-[0.2em] font-bold">
@@ -306,6 +317,27 @@ const ArticleDetail = () => {
               </AnimatePresence>
 
             </div>
+
+            {/* RECENT TRANSMISSIONS LOOP */}
+            {recentArticles.length > 0 && (
+              <div className="mt-8 bg-gradient-to-br from-[#050505] to-zinc-900 border border-white/5 rounded-sm p-8 shadow-2xl">
+                <h3 className="font-deco tracking-widest text-sm text-white uppercase border-b border-white/10 pb-2 mb-4">
+                  RECENT TRANSMISSIONS
+                </h3>
+                <div className="flex flex-col space-y-4">
+                  {recentArticles.map(recentPost => (
+                    <Link to={`/articles/${recentPost.slug}`} key={recentPost.id} className="block group">
+                      <h4 className="text-sm text-zinc-400 group-hover:text-yellow-electric transition-colors leading-relaxed line-clamp-2">
+                        {stripHtml(recentPost.title?.rendered || '')}
+                      </h4>
+                      <div className="text-[10px] text-zinc-600 font-mono tracking-widest mt-1">
+                        {formatDate(recentPost.date)}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
