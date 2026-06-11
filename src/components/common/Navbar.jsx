@@ -47,12 +47,18 @@ const Navbar = () => {
   }, [isOpen]);
 
     const navLinks = [
-    { name: 'About', path: '/about' },
-    { name: 'Platform', path: '/platform' },
-    { name: 'Events', path: '/events' },
-    { name: 'News & Media', path: '/news-media' },
-    { name: 'Volunteer', path: '/volunteer' }
+    { name: 'About', path: '/about', prefetch: () => import('@/pages/About') },
+    { name: 'Platform', path: '/platform', prefetch: () => import('@/pages/Platform') },
+    { name: 'Events', path: '/events', prefetch: () => import('@/pages/Events') },
+    { name: 'News & Media', path: '/news-media', prefetch: () => import('@/pages/NewsMedia') },
+    { name: 'Volunteer', path: '/volunteer', prefetch: () => import('@/pages/Volunteer') }
   ];
+
+  const handleMouseEnter = (prefetchFn) => {
+    if (prefetchFn) {
+      prefetchFn().catch(err => console.error("Prefetch failed", err));
+    }
+  };
 
   return (
     <motion.nav
@@ -76,6 +82,7 @@ const Navbar = () => {
             <Link 
               key={link.path}
               to={link.path} 
+              onMouseEnter={() => handleMouseEnter(link.prefetch)}
               className={`transition-colors hover:text-yellow-electric ${location.pathname === link.path ? 'text-white' : 'text-gray-400'}`}
             >
               {link.name}
