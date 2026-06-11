@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 import { stripHtml, formatDate } from '@/lib/api';
 
-const ArticleCard = ({ post }) => {
+const ArticleCard = ({ post, date }) => {
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
   return (
@@ -39,9 +39,8 @@ const ArticleCard = ({ post }) => {
         </div>
         
         <div className="p-8 flex flex-col flex-grow">
-          <div className="flex items-center space-x-2 text-[10px] text-yellow-electric font-bold uppercase tracking-widest mb-4">
-            <SafeIcon name="Calendar" className="w-3 h-3 text-gray-500" />
-            <span>{formatDate(post.date)}</span>
+          <div className="font-mono text-[10px] text-zinc-500 tracking-widest uppercase mb-4">
+            {date ? date : formatDate(post.date)}
           </div>
 
           <h3 className="font-editorial font-bold text-xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-2">

@@ -3,7 +3,7 @@ import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { getLatestPosts, getSocialFeed, stripHtml } from '@/lib/api';
+import { getLatestPosts, getSocialFeed, stripHtml, formatDate } from '@/lib/api';
 import DOMPurify from 'dompurify';
 import { motion } from 'framer-motion';
 
@@ -223,9 +223,12 @@ const NewsMedia = () => {
                           )}
                         </div>
                         <div className="mb-auto">
-                          <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
+                          <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-2 flex items-center space-x-2">
                             <SafeIcon name="Activity" className="w-4 h-4" />
                             <span>Daily News</span>
+                          </div>
+                          <div className="font-mono text-[10px] text-zinc-500 tracking-widest uppercase mb-4">
+                            {formatDate(post.date)}
                           </div>
                           <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
                             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
@@ -317,10 +320,15 @@ const NewsMedia = () => {
                       ) : null}
                       <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'px-8 pb-8' : ''}`}>
                         {(!post.imageUrl || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
-                          <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-4 flex items-center space-x-2">
-                            <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
-                            <span>{post.acf?.category_label || 'Article'}</span>
-                          </div>
+                          <>
+                            <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-2 flex items-center space-x-2">
+                              <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
+                              <span>{post.acf?.category_label || 'Article'}</span>
+                            </div>
+                            <div className="font-mono text-[10px] text-zinc-500 tracking-widest uppercase mb-4">
+                              {formatDate(post.date)}
+                            </div>
+                          </>
                         )}
                         <h3 className="font-editorial font-bold text-2xl text-white mb-4 group-hover:text-yellow-electric transition-colors line-clamp-3">
                           <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
