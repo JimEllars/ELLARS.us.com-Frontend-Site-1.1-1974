@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
+import Honeypot from '@/components/common/Honeypot';
 import { submitVolunteerForm } from '@/lib/volunteer';
 import { toast } from 'react-toastify';
 
@@ -17,6 +18,7 @@ const Volunteer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [botValue, setBotValue] = useState('');
 
   const interestOptions = [
     'Phone Banking',
@@ -47,6 +49,16 @@ const Volunteer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (botValue) {
+      setIsSubmitting(true);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setIsSuccess(true);
+        setFormData({ firstName: '', lastName: '', email: '', phone: '', zipCode: '', interests: [], message: '' });
+      }, 500);
+      return;
+    }
 
     // Sanitize basic inputs
     const sanitizedFirstName = DOMPurify.sanitize(formData.firstName).trim();

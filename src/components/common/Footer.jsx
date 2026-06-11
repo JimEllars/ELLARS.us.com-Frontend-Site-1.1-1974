@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
 import SafeIcon from '@/common/SafeIcon';
+import Honeypot from '@/components/common/Honeypot';
 import { subscribeToNewsletter } from '@/lib/email';
 
 const Footer = () => {
@@ -10,9 +11,17 @@ const Footer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [botValue, setBotValue] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (botValue) {
+      setEmail('');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      return;
+    }
 
     const sanitizedEmail = DOMPurify.sanitize(email).trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,6 +79,7 @@ const Footer = () => {
             <nav className="flex flex-col space-y-4">
               <Link to="/about" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="About Page">About</Link>
               <Link to="/platform" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Platform Page">Platform</Link>
+              <Link to="/events" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Events Page">Events</Link>
               <Link to="/news-media" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="News & Media Page">News & Media</Link>
               <Link to="/volunteer" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Volunteer Page">Volunteer</Link>
             </nav>
@@ -91,6 +101,7 @@ const Footer = () => {
                     name="footer-newsletter-signup"
                     method="POST"
                   >
+                    <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
                     <div className="relative">
                       <input
                         type="email"
