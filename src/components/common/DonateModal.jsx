@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
+import Honeypot from '@/components/common/Honeypot';
 
 // Mock hook since useTelemetry wasn't explicitly provided, falling back gracefully
 const useTelemetry = () => {
@@ -16,9 +17,64 @@ const DonateModal = () => {
   const { isDonateModalOpen, setDonateModalOpen } = useAppStore();
   const [selectedTier, setSelectedTier] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setDonateModalOpen(false);
+      }
+      if (e.key === 'Tab') {
+        const focusableElements = modalRef.current?.querySelectorAll(
+          'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select, input[type="number"]'
+        );
+        if (!focusableElements || focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    if (isDonateModalOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // set focus to the first element when modal opens
+      setTimeout(() => {
+        const focusableElements = modalRef.current?.querySelectorAll(
+          'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select, input[type="number"]'
+        );
+        if (focusableElements && focusableElements.length > 0) {
+          focusableElements[0].focus();
+        }
+      }, 100);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDonateModalOpen, setDonateModalOpen]);
+  const [botValue, setBotValue] = useState('');
   const { trackEvent } = useTelemetry();
 
   const tiers = [10, 25, 50, 100];
+
+  useEffect(() => {
+    if (!isDonateModalOpen) {
+      setSelectedTier(null);
+      setCustomAmount('');
+      setBotValue('');
+    }
+  }, [isDonateModalOpen]);
 
   useEffect(() => {
     if (isDonateModalOpen) {
@@ -42,6 +98,10 @@ const DonateModal = () => {
   };
 
   const handleConfirm = () => {
+    if (botValue) {
+      setDonateModalOpen(false);
+      return;
+    }
     const amount = selectedTier || customAmount;
     if (!amount) return;
 
@@ -72,6 +132,7 @@ const DonateModal = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            ref={modalRef}
             className="relative w-full max-w-md bg-void border border-yellow-electric shadow-[0_0_40px_rgba(250,204,21,0.15)] rounded-sm p-8"
           >
             <button
@@ -80,6 +141,8 @@ const DonateModal = () => {
             >
               <SafeIcon name="X" className="w-6 h-6" />
             </button>
+
+            <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
 
             <div className="text-center mb-8">
               <h2 className="font-editorial text-2xl font-black text-white uppercase tracking-tighter mb-2">

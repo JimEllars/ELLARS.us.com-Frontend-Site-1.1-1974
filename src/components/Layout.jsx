@@ -65,7 +65,7 @@ const Layout = ({ children }) => {
           <meta name="description" content="Leading the modernization of American civic infrastructure through private-sector rigor and algorithmic economic equity." />
         </Helmet>
         <Navbar />
-        <main className="flex-grow relative z-10 min-h-screen">
+        <main id="content" className="flex-grow relative z-10 min-h-screen">
           {children}
         </main>
         <Footer />

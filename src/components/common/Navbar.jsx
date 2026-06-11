@@ -46,10 +46,12 @@ const Navbar = () => {
     };
   }, [isOpen]);
 
-  const navLinks = [
+    const navLinks = [
     { name: 'About', path: '/about' },
     { name: 'Platform', path: '/platform' },
-    { name: 'News & Media', path: '/news-media' }
+    { name: 'Events', path: '/events' },
+    { name: 'News & Media', path: '/news-media' },
+    { name: 'Volunteer', path: '/volunteer' }
   ];
 
   return (

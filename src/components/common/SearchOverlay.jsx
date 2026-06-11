@@ -10,6 +10,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const inputRef = useRef(null);
+  const modalRef = useRef(null);
 
   const { articles, setArticles } = useAppStore();
 
@@ -76,6 +77,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          ref={modalRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

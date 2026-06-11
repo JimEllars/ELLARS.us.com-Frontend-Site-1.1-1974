@@ -3,17 +3,27 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
 import { subscribeToNewsletter } from '@/lib/email';
+import Honeypot from '@/components/common/Honeypot';
 
 const Newsletter = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [botValue, setBotValue] = useState('');
 
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (botValue) {
+      // Fake success for bots
+      setEmail('');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      return;
+    }
 
     // Clean strings and check email pattern
     const sanitizedEmail = DOMPurify.sanitize(email).trim().toLowerCase();
@@ -64,6 +74,7 @@ const Newsletter = () => {
                 method="POST"
                 action="/api/leads/submit"
               >
+                <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
                 <div className="flex-grow relative">
                   <input
                     type="email"
