@@ -1,3 +1,4 @@
+import DonateModal from './components/common/DonateModal';
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -42,6 +43,7 @@ function App() {
         </Routes>
         </Suspense>
         <ToastContainer position="bottom-right" />
+        <DonateModal />
       </Layout>
     </Router>
     </HelmetProvider>
