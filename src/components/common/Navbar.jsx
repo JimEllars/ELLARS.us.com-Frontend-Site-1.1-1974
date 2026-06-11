@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 import SearchOverlay from '@/components/common/SearchOverlay';
+import { useAppStore } from '@/store/useAppStore';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +12,7 @@ const Navbar = () => {
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { setDonateModalOpen } = useAppStore();
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -83,10 +85,23 @@ const Navbar = () => {
           >
             VOLUNTEER
           </Link>
+          <motion.button
+            onClick={() => setDonateModalOpen(true)}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatDelay: 10,
+              ease: "easeInOut"
+            }}
+            className="px-4 py-2 bg-yellow-electric text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.3)]"
+          >
+            CONTRIBUTE
+          </motion.button>
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="btn-gold hidden sm:flex">Join the Newsletter</button>
+          <button className="btn-gold hidden sm:flex lg:hidden">Join the Newsletter</button>
           <button 
             className="lg:hidden text-white hover:text-yellow-electric transition-colors"
             onClick={() => setIsOpen(!isOpen)}
@@ -141,7 +156,22 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (navLinks.length + 1) * 0.1 + 0.1 }}
             >
-              <button className="btn-gold w-full">Join the Newsletter</button>
+              <motion.button
+                onClick={() => {
+                  setIsOpen(false);
+                  setDonateModalOpen(true);
+                }}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 10,
+                  ease: "easeInOut"
+                }}
+                className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors"
+              >
+                CONTRIBUTE
+              </motion.button>
             </motion.div>
           </motion.div>
         )}

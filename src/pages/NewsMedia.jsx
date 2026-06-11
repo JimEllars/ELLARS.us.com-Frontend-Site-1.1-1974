@@ -1,3 +1,4 @@
+import MediaPlaylist from '../components/intel/MediaPlaylist';
 import React, { useEffect, useState, useRef } from 'react';
 import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
@@ -263,23 +264,7 @@ const NewsMedia = () => {
                 Audio & Video Hub
               </h2>
             </header>
-            <div className="interactive-card p-8 border border-white/10 rounded-sm bg-surface flex flex-col md:flex-row items-center gap-8">
-                <div className="w-full md:w-1/3 flex flex-col gap-4">
-                   <h3 className="text-white font-editorial font-bold text-2xl uppercase">Featured Media</h3>
-                   <p className="text-text-muted text-sm leading-relaxed">Now Playing: The All-American Tax Credit vs. Reactive Welfare Structures</p>
-                   <div className="flex items-center gap-4">
-                        <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-yellow-electric flex items-center justify-center text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-                            <SafeIcon name={isPlaying ? "Pause" : "Play"} className={`w-6 h-6 ${!isPlaying && 'ml-1'}`} />
-                        </button>
-                        <div className="text-[#4ade80] font-mono text-sm uppercase tracking-widest">
-                            {isPlaying ? 'Playing...' : 'Paused'}
-                        </div>
-                   </div>
-                </div>
-                <div className="w-full md:w-2/3 h-24 bg-void border border-white/5 rounded-sm p-4 relative overflow-hidden">
-                    <FrequencyVisualizer isPlaying={isPlaying} />
-                </div>
-            </div>
+            <MediaPlaylist />
           </section>
         )}
 
