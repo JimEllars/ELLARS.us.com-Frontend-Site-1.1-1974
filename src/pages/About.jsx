@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -10,8 +10,49 @@ const About = () => {
 
   const handleAssetDownload = (assetName) => {
     showToast(`// DOWNLOADING: ${assetName}`);
-    // Placeholder for actual download logic
   };
+
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    organization: '',
+    email: '',
+    type: 'General',
+    details: ''
+  });
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setIsBookingSubmitting(true);
+
+    // Simulate API bridge
+    const payload = {
+      source: 'media_booking',
+      ...bookingForm
+    };
+
+    // Telemetry ping simulated
+    console.log('[Telemetry] Booking payload:', payload);
+
+    setTimeout(() => {
+      setIsBookingSubmitting(false);
+      showToast('// INQUIRY TRANSMITTED');
+      setBookingForm({
+        name: '',
+        organization: '',
+        email: '',
+        type: 'General',
+        details: ''
+      });
+    }, 800);
+  };
+
+  const handleBookingChange = (e) => {
+    const { name, value } = e.target;
+    setBookingForm(prev => ({ ...prev, [name]: value }));
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -550,6 +591,121 @@ const About = () => {
           </motion.div>
         </div>
       </section>
+
+      <div className="deco-divider"></div>
+      {/* BOOKING & MEDIA INQUIRIES */}
+      <section className="max-w-7xl mx-auto px-6 pb-24">
+        <div className="mb-12 pb-4 border-b border-white/5 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-transparent after:via-yellow-electric/30 after:to-transparent">
+          <h3 className="font-editorial text-3xl text-white uppercase font-bold flex items-center">
+            <SafeIcon name="Mail" className="w-6 h-6 mr-4 text-yellow-electric" />
+            Booking & Media Inquiries
+          </h3>
+        </div>
+
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-100px" }}
+            className="deco-frame bg-surface/50 backdrop-blur-md p-8 relative"
+          >
+            <form onSubmit={handleBookingSubmit} className="flex flex-col gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label htmlFor="bookingName" className="font-editorial text-[10px] uppercase tracking-widest text-text-muted mb-2">Name *</label>
+                  <input
+                    type="text"
+                    id="bookingName"
+                    name="name"
+                    required
+                    value={bookingForm.name}
+                    onChange={handleBookingChange}
+                    className="bg-zinc-900 border border-white/10 text-white px-4 py-3 font-inter text-sm outline-none focus:border-yellow-electric transition-colors"
+                    disabled={isBookingSubmitting}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="bookingOrg" className="font-editorial text-[10px] uppercase tracking-widest text-text-muted mb-2">Organization / Publication *</label>
+                  <input
+                    type="text"
+                    id="bookingOrg"
+                    name="organization"
+                    required
+                    value={bookingForm.organization}
+                    onChange={handleBookingChange}
+                    className="bg-zinc-900 border border-white/10 text-white px-4 py-3 font-inter text-sm outline-none focus:border-yellow-electric transition-colors"
+                    disabled={isBookingSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label htmlFor="bookingEmail" className="font-editorial text-[10px] uppercase tracking-widest text-text-muted mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    id="bookingEmail"
+                    name="email"
+                    required
+                    value={bookingForm.email}
+                    onChange={handleBookingChange}
+                    className="bg-zinc-900 border border-white/10 text-white px-4 py-3 font-inter text-sm outline-none focus:border-yellow-electric transition-colors"
+                    disabled={isBookingSubmitting}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="bookingType" className="font-editorial text-[10px] uppercase tracking-widest text-text-muted mb-2">Inquiry Type *</label>
+                  <select
+                    id="bookingType"
+                    name="type"
+                    required
+                    value={bookingForm.type}
+                    onChange={handleBookingChange}
+                    className="bg-zinc-900 border border-white/10 text-white px-4 py-3 font-inter text-sm outline-none focus:border-yellow-electric transition-colors appearance-none"
+                    disabled={isBookingSubmitting}
+                  >
+                    <option value="Speaking">Speaking</option>
+                    <option value="Interview">Interview</option>
+                    <option value="Podcast">Podcast</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col">
+                <label htmlFor="bookingDetails" className="font-editorial text-[10px] uppercase tracking-widest text-text-muted mb-2">Details *</label>
+                <textarea
+                  id="bookingDetails"
+                  name="details"
+                  required
+                  rows="4"
+                  value={bookingForm.details}
+                  onChange={handleBookingChange}
+                  className="bg-zinc-900 border border-white/10 text-white px-4 py-3 font-inter text-sm outline-none focus:border-yellow-electric transition-colors resize-none"
+                  disabled={isBookingSubmitting}
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isBookingSubmitting}
+                className="w-full bg-transparent text-yellow-electric border border-yellow-electric px-8 py-4 font-editorial font-bold uppercase tracking-[0.2em] text-xs transition-all duration-300 hover:bg-yellow-electric/10 disabled:opacity-50 relative overflow-hidden text-center mt-4"
+              >
+                {isBookingSubmitting ? (
+                  <span className="flex items-center justify-center space-x-2">
+                    <span className="w-1.5 h-1.5 bg-yellow-electric rounded-full animate-pulse"></span>
+                    <span>TRANSMITTING...</span>
+                  </span>
+                ) : (
+                  <span>TRANSMIT INQUIRY</span>
+                )}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      </section>
+
     </div>
   );
 };
