@@ -1,3 +1,4 @@
+import PrivacyBanner from "./common/PrivacyBanner";
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import Navbar from './common/Navbar';
 import Footer from './common/Footer';
@@ -70,6 +71,7 @@ const Layout = ({ children }) => {
           {children}
         </main>
         <Footer />
+        <PrivacyBanner />
         <Toast />
       </div>
     </LoaderContext.Provider>

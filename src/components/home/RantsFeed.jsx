@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml, formatDate } from '@/lib/api';
+import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 
 const RantsFeed = () => {
   const [posts, setPosts] = useState([]);
@@ -43,13 +44,7 @@ const RantsFeed = () => {
 
         <div className="grid md:grid-cols-3 gap-8">
           {loading ? (
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="interactive-card p-8 min-h-[380px] animate-pulse">
-                <div className="w-24 h-4 bg-white/10 mb-6"></div>
-                <div className="w-full h-8 bg-white/10 mb-4"></div>
-                <div className="w-full h-24 bg-white/5"></div>
-              </div>
-            ))
+            Array(3).fill(0).map((_, i) => (<ArticleSkeleton key={i} />))
           ) : posts.length === 0 ? (
             <div className="col-span-full min-h-[200px] border border-white/10 bg-bg-void flex items-center justify-center font-mono text-zinc-500 uppercase tracking-widest">
               No recent transmissions available.

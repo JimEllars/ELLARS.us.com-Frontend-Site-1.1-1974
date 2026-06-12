@@ -61,14 +61,14 @@ const Footer = () => {
               Leading American Innovation through Sustainable Systems, Forward-Thinking Ideas and a Blue-Collar Work Ethic.
             </span>
             <div className="flex space-x-6">
-              <a href="https://twitter.com/ellars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors" aria-label="Twitter">
+              <a href="https://x.com/JamesEllars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="X (Twitter)">
                 <SafeIcon name="Twitter" className="w-5 h-5" />
               </a>
-              <a href="https://www.instagram.com/ellarsjames" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors" aria-label="Instagram">
-                <SafeIcon name="Instagram" className="w-5 h-5" />
+              <a href="https://linkedin.com/in/jamesellars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="LinkedIn">
+                <SafeIcon name="Linkedin" className="w-5 h-5" />
               </a>
-              <a href="https://www.threads.net/@ellarsjames" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric transition-colors" aria-label="Threads">
-                <SafeIcon name="AtSign" className="w-5 h-5" />
+              <a href="https://youtube.com/@JamesEllars" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="YouTube">
+                <SafeIcon name="Youtube" className="w-5 h-5" />
               </a>
             </div>
           </div>

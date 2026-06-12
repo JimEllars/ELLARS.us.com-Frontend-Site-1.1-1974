@@ -193,7 +193,9 @@ const NewsMedia = () => {
             </header>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) ? (
-                <div className="col-span-full"><SocialSkeleton /></div>
+                <>
+                  {[1, 2, 3, 4, 5, 6].map(i => <ArticleSkeleton key={i} />)}
+                </>
               ) : (
                 dailyNewsPosts.map((post, index) => {
                   const isFeatured = index === 0;
@@ -278,7 +280,9 @@ const NewsMedia = () => {
           </header>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
-              <div className="col-span-full"><SocialSkeleton /></div>
+              <>
+                  {[1, 2, 3, 4, 5, 6].map(i => <ArticleSkeleton key={i} />)}
+                </>
             )}
             {archivePosts.length > 0 ? (
               archivePosts.map((post, index) => {
