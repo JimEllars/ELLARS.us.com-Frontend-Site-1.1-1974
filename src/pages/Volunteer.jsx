@@ -96,7 +96,7 @@ const Volunteer = () => {
 
       setIsSubmitting(false);
       setIsSuccess(true);
-      toast.success("Enlistment confirmed.", {
+      toast.success("Join confirmed. Transmission secured.", {
         theme: "dark",
         style: { border: '1px solid #fde047', background: '#0a0a0a', color: '#fde047' }
       });
@@ -134,14 +134,14 @@ const Volunteer = () => {
         >
           <div className="flex justify-center mb-6">
             <span className="text-yellow-electric font-mono text-[10px] tracking-[0.3em] uppercase border border-yellow-electric/20 px-3 py-1 bg-yellow-electric/5">
-              Initiative Enlistment
+              Join the Initiative
             </span>
           </div>
           <h1 className="font-editorial font-black text-4xl md:text-5xl text-white tracking-tighter uppercase mb-6">
             JOIN THE <span className="text-yellow-electric">INITIATIVE</span>
           </h1>
           <p className="text-text-muted text-sm md:text-base max-w-2xl mx-auto font-inter font-light leading-relaxed">
-            Grassroots action is the foundation of our movement. We must build community-driven infrastructure to fight corporate monopolies and implement the People-First Economy. Enlist today to secure the future of American innovation.
+            Grassroots action is the foundation of our movement. We must build community-driven infrastructure to fight corporate monopolies and implement the People-First Economy. Join today to secure the future of American innovation.
           </p>
           <div className="deco-divider mx-auto w-1/2"></div>
         </motion.div>
@@ -294,7 +294,7 @@ const Volunteer = () => {
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
                             >
-                              ENLIST NOW
+                              JOIN
                             </motion.span>
                           )}
                         </AnimatePresence>
@@ -317,7 +317,7 @@ const Volunteer = () => {
                    </div>
                 </div>
                 <div className="font-mono text-sm md:text-base tracking-widest text-[#4ade80] uppercase mb-4">
-                  // ENLISTMENT CONFIRMED. TRANSMISSION SECURED.
+                  // JOIN CONFIRMED. TRANSMISSION SECURED.
                 </div>
                 <div className="text-xs text-text-muted font-inter uppercase tracking-widest leading-loose">
                   Your data has been securely logged in our systems. <br className="hidden md:block" />

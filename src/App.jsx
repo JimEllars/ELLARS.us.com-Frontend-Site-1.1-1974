@@ -14,6 +14,8 @@ const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
 const Volunteer = React.lazy(() => import('./pages/Volunteer'));
 const Events = React.lazy(() => import('./pages/Events'));
 import NotFound from './pages/NotFound';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
+import OfflineScreen from './components/common/OfflineScreen';
 
 
 function ScrollToTop() {
@@ -27,6 +29,8 @@ function ScrollToTop() {
 }
 
 function App() {
+  const isOnline = useNetworkStatus();
+
   return (
     <HelmetProvider>
       <Router>
@@ -34,6 +38,7 @@ function App() {
         <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[9999] focus:p-4 focus:bg-void focus:text-yellow-electric focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest">
           Skip to Main Content
         </a>
+        {!isOnline && <OfflineScreen />}
         <Layout>
         <Suspense fallback={<div className="fixed top-0 left-0 w-full h-[2px] bg-yellow-electric z-[9999]" style={{ background: "linear-gradient(90deg, transparent 0%, #fbbf24 50%, transparent 100%)", transformOrigin: "left", animation: "pulse 1.5s linear infinite" }}></div>}>
         <Routes>

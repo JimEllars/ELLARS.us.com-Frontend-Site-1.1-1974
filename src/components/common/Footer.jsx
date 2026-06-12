@@ -184,21 +184,15 @@ const Footer = () => {
         
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-gray-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
-            &copy; {new Date().getFullYear()} James Ellars. All Rights Reserved.
+          <div className="text-zinc-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
+            &copy; {new Date().getFullYear()} James Ellars. All Rights Reserved. An independent policy and advocacy initiative.
           </div>
-          <div className="flex space-x-6 text-gray-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
+          <div className="flex space-x-6 text-zinc-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
             <Link to="#" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="#" className="hover:text-white transition-colors">System Logistics</Link>
           </div>
         </div>
 
-        {/* Compliance Disclosure */}
-        <div className="border border-white/20 p-4 max-w-2xl mx-auto text-center mt-12">
-          <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-            PAID FOR BY ELLARS FOR CONGRESS. Not authorized by any candidate or candidate's committee.
-          </p>
-        </div>
       </div>
     </footer>
   );
