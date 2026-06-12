@@ -4,14 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 import Honeypot from '@/components/common/Honeypot';
 
-// Mock hook since useTelemetry wasn't explicitly provided, falling back gracefully
-const useTelemetry = () => {
-  return {
-    trackEvent: (eventName, data) => {
-      console.log(`[Telemetry Mock] ${eventName}`, data);
-    }
-  };
-};
+import { useTelemetry } from '../../hooks/useTelemetry';
 
 const DonateModal = () => {
   const { isDonateModalOpen, setDonateModalOpen } = useAppStore();
