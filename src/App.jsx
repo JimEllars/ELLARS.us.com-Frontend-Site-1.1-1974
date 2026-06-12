@@ -12,7 +12,6 @@ const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
 const Volunteer = React.lazy(() => import('./pages/Volunteer'));
-const Events = React.lazy(() => import('./pages/Events'));
 import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
@@ -48,7 +47,6 @@ function App() {
           <Route path="/platform" element={<Platform />} />
           <Route path="/news-media" element={<NewsMedia />} />
           <Route path="/volunteer" element={<Volunteer />} />
-          <Route path="/events" element={<Events />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>

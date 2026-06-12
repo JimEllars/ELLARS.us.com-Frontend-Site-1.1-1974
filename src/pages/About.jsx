@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import SafeIcon from "../common/SafeIcon";
 import { useAppStore } from '@/store/useAppStore';
+import { submitBookingInquiry } from '@/lib/email';
 
 const About = () => {
   const { showToast } = useAppStore();
@@ -26,17 +27,15 @@ const About = () => {
     e.preventDefault();
     setIsBookingSubmitting(true);
 
-    // Simulate API bridge
     const payload = {
       source: 'media_booking',
       ...bookingForm
     };
 
-    // Telemetry ping simulated
     console.log('[Telemetry] Booking payload:', payload);
 
-    setTimeout(() => {
-      setIsBookingSubmitting(false);
+    try {
+      await submitBookingInquiry(payload);
       showToast('// INQUIRY TRANSMITTED');
       setBookingForm({
         name: '',
@@ -45,7 +44,12 @@ const About = () => {
         type: 'General',
         details: ''
       });
-    }, 800);
+    } catch (error) {
+      showToast('// TRANSMISSION FAILED');
+      console.error(error);
+    } finally {
+      setIsBookingSubmitting(false);
+    }
   };
 
   const handleBookingChange = (e) => {

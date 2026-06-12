@@ -179,8 +179,16 @@ const ArticleDetail = () => {
       "name": "James Ellars",
       "url": "https://ellars.us.com"
     },
+    "image": featuredImage,
     "datePublished": post.date,
-    "image": featuredImage
+    "publisher": {
+      "@type": "Organization",
+      "name": "James Ellars Official",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://ellars.us.com/favicon.svg"
+      }
+    }
   };
 
   return (
