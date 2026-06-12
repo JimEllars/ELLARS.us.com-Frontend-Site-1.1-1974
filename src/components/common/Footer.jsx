@@ -79,7 +79,6 @@ const Footer = () => {
             <nav className="flex flex-col space-y-4">
               <Link to="/about" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="About Page">About</Link>
               <Link to="/platform" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Platform Page">Platform</Link>
-              <Link to="/events" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Events Page">Events</Link>
               <Link to="/news-media" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="News & Media Page">News & Media</Link>
               <Link to="/volunteer" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Volunteer Page">Volunteer</Link>
             </nav>

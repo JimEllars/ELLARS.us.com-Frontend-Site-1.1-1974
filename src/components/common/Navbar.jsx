@@ -49,7 +49,6 @@ const Navbar = () => {
     const navLinks = [
     { name: 'About', path: '/about', prefetch: () => import('@/pages/About') },
     { name: 'Platform', path: '/platform', prefetch: () => import('@/pages/Platform') },
-    { name: 'Events', path: '/events', prefetch: () => import('@/pages/Events') },
     { name: 'News & Media', path: '/news-media', prefetch: () => import('@/pages/NewsMedia') },
     { name: 'Volunteer', path: '/volunteer', prefetch: () => import('@/pages/Volunteer') }
   ];
