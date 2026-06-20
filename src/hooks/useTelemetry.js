@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const QUEUE_KEY = 'axim_telemetry_queue';
+const QUEUE_KEY = 'ellars_telemetry_queue';
 
 const enqueuePayload = (payload) => {
   try {
@@ -84,9 +84,12 @@ export const useTelemetry = () => {
 
     const sendTelemetry = async () => {
       const payload = {
-        event: 'page_view',
-        path: pathname,
-        timestamp: new Date().toISOString(),
+        telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
+        event_payload: {
+          event: 'page_view',
+          path: pathname,
+          timestamp: new Date().toISOString(),
+        }
       };
 
       try {
@@ -136,9 +139,12 @@ export const useTelemetry = () => {
       }
 
       const payload = {
-        event: eventName,
-        data: eventData,
-        timestamp: new Date().toISOString(),
+        telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
+        event_payload: {
+          event: eventName,
+          data: eventData,
+          timestamp: new Date().toISOString(),
+        }
       };
 
       try {
