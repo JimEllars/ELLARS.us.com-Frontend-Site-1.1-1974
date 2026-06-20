@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 import { useTelemetry } from '@/hooks/useTelemetry';
@@ -47,6 +47,29 @@ const MediaPlaylist = () => {
   const { trackEvent } = useTelemetry();
   const [activeMedia, setActiveMedia] = useState(mockPlaylist[0]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup video element on unmount to prevent memory leak
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute('src');
+        videoRef.current.load();
+      }
+    };
+  }, []);
+
+  const togglePlay = () => {
+    if (activeMedia.type === 'video' && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(e => console.warn('Video play failed', e));
+      }
+    }
+    setIsPlaying(!isPlaying);
+  };
 
   const handleMediaSelect = (media) => {
     setActiveMedia(media);
@@ -72,8 +95,8 @@ const MediaPlaylist = () => {
                 playsInline
                 muted
                 preload="metadata"
-                // This is a mockup, in a real app you'd bind a ref and call .play() / .pause() based on isPlaying
-                // onClick={() => setIsPlaying(!isPlaying)}
+                ref={videoRef}
+                onClick={togglePlay}
               />
             </>
           ) : (
@@ -96,7 +119,7 @@ const MediaPlaylist = () => {
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-void/90 backdrop-blur-md border-t border-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={togglePlay}
                 className="text-yellow-electric hover:text-white transition-colors focus:outline-none"
               >
                 <SafeIcon name={isPlaying ? "Pause" : "Play"} className="w-6 h-6" />
