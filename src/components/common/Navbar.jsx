@@ -50,7 +50,6 @@ const Navbar = () => {
     { name: 'About', path: '/about', prefetch: () => import('@/pages/About') },
     { name: 'Platform', path: '/platform', prefetch: () => import('@/pages/Platform') },
     { name: 'News & Media', path: '/news-media', prefetch: () => import('@/pages/NewsMedia') },
-    { name: 'Volunteer', path: '/volunteer', prefetch: () => import('@/pages/Volunteer') }
   ];
 
   const handleMouseEnter = (prefetchFn) => {
@@ -87,12 +86,7 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Link
-            to="/volunteer"
-            className={`px-4 py-2 border border-yellow-electric text-yellow-electric hover:bg-yellow-electric/10 transition-colors ${location.pathname === '/volunteer' ? 'bg-yellow-electric/10' : ''}`}
-          >
-            VOLUNTEER
-          </Link>
+
           <motion.button
             onClick={() => setDonateModalOpen(true)}
             animate={{ scale: [1, 1.05, 1] }}
@@ -151,13 +145,7 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: navLinks.length * 0.1 + 0.1 }}
             >
-               <Link
-                  to="/volunteer"
-                  onClick={() => setIsOpen(false)}
-                  className="font-editorial font-bold text-xs uppercase tracking-widest text-yellow-electric hover:text-white transition-colors block"
-                >
-                  VOLUNTEER
-                </Link>
+
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}

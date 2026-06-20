@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 import { useAppStore } from '@/store/useAppStore';
 import { getLatestPosts, stripHtml } from '@/lib/api';
+import { useTelemetry } from '@/hooks/useTelemetry';
+
 
 const SearchOverlay = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
@@ -13,6 +15,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   const modalRef = useRef(null);
 
   const { articles, setArticles } = useAppStore();
+  const { trackEvent } = useTelemetry();
 
   // Initial fetch if articles are empty
   useEffect(() => {
@@ -40,6 +43,13 @@ const SearchOverlay = ({ isOpen, onClose }) => {
     }, 300);
     return () => clearTimeout(handler);
   }, [query]);
+
+
+  useEffect(() => {
+    if (debouncedQuery.trim() !== '') {
+      trackEvent('search_execution', { query: debouncedQuery });
+    }
+  }, [debouncedQuery, trackEvent]);
 
   // Trap focus and handle Escape
   useEffect(() => {

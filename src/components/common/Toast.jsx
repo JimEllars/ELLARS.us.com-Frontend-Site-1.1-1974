@@ -12,7 +12,7 @@ const Toast = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[1000] bg-zinc-900 border border-yellow-electric text-yellow-electric font-mono text-[10px] tracking-widest uppercase px-6 py-3 shadow-[0_0_15px_rgba(250,204,21,0.2)] pointer-events-none"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[1000] bg-void border-2 border-yellow-electric text-yellow-electric font-mono text-[10px] tracking-widest uppercase px-8 py-4 shadow-none rounded-none pointer-events-none"
         >
           {toastMessage}
         </motion.div>
