@@ -18,6 +18,11 @@ const AutomationCalculator = () => {
 
   const [efficiency, setEfficiency] = useState(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      const urlEff = params.get('efficiency') || params.get('roi');
+      if (urlEff && !isNaN(Number(urlEff))) {
+        return Number(urlEff);
+      }
       const saved = localStorage.getItem('automation_efficiency');
       return saved ? Number(saved) : 15;
     } catch {
@@ -48,7 +53,10 @@ const AutomationCalculator = () => {
   useEffect(() => {
     try {
       localStorage.setItem('automation_efficiency', efficiency);
-    } catch (e) { console.warn('Failed to save efficiency', e); }
+      const params = new URLSearchParams(window.location.search);
+      params.set('efficiency', efficiency);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
 
     const timer = setTimeout(() => {
       trackEvent('calculator_interaction', {
