@@ -1,9 +1,16 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const OfflineScreen = () => {
   return (
-    <div className="min-h-screen z-[999] absolute inset-0 bg-void/95 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto select-none">
-      <div className="deco-frame border border-red-500/30 bg-black/60 p-12 text-center relative overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      className="min-h-screen z-[999] absolute inset-0 bg-void/95 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto select-none"
+    >
+      <div className="deco-frame border border-red-500/30 bg-black/60 p-12 text-center relative overflow-hidden shadow-[0_0_30px_rgba(239,68,68,0.15)]">
         <div className="deco-brackets before:border-red-500/50 after:border-red-500/50"></div>
         <div className="flex justify-center mb-6">
           <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/50 animate-pulse">
@@ -26,7 +33,7 @@ const OfflineScreen = () => {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

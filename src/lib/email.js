@@ -17,6 +17,12 @@ export const subscribeToNewsletter = async (cleanEmail) => {
 
   const url = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/subscribe` : '/api/v1/subscribe';
 
+  const metadata = {
+    form_version: "v5.40-core",
+    source_url: typeof window !== "undefined" ? window.location.href : "",
+    signup_timestamp: new Date().toISOString()
+  };
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -24,7 +30,12 @@ export const subscribeToNewsletter = async (cleanEmail) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ email: cleanEmail, source: "Ellars_Web_App", footprint: "v5.40-core" })
+      body: JSON.stringify({
+        email: cleanEmail,
+        source: "Ellars_Web_App",
+        footprint: "v5.40-core",
+        ...metadata
+      })
     });
 
     if (!response.ok) {
