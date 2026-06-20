@@ -18,6 +18,15 @@ const AutomationCalculator = () => {
 
   const [efficiency, setEfficiency] = useState(() => {
     try {
+      // 1. Prioritize URL query parameters
+      const params = new URLSearchParams(window.location.search);
+      const urlEfficiency = params.get('efficiency');
+      if (urlEfficiency !== null) {
+        const val = Number(urlEfficiency);
+        if (!isNaN(val) && val >= 1 && val <= 100) return val;
+      }
+
+      // 2. Fallback to localStorage
       const saved = localStorage.getItem('automation_efficiency');
       return saved ? Number(saved) : 15;
     } catch {
@@ -48,7 +57,13 @@ const AutomationCalculator = () => {
   useEffect(() => {
     try {
       localStorage.setItem('automation_efficiency', efficiency);
-    } catch (e) { console.warn('Failed to save efficiency', e); }
+
+      // Silently update the URL to make it shareable
+      const params = new URLSearchParams(window.location.search);
+      params.set('efficiency', efficiency);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
 
     const timer = setTimeout(() => {
       trackEvent('calculator_interaction', {
