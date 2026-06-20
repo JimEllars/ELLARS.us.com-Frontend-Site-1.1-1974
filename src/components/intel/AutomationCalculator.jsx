@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
+import { useTelemetry } from '@/hooks/useTelemetry';
+
 
 const AutomationCalculator = () => {
+  const { trackEvent } = useTelemetry();
   const [efficiency, setEfficiency] = useState(15);
 
   // Base constants for the conceptual calculation
@@ -10,6 +13,13 @@ const AutomationCalculator = () => {
 
   // Spring animation for smooth numbers
   const springEfficiency = useSpring(efficiency, { stiffness: 50, damping: 20 });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      trackEvent('calculator_interaction', { efficiency_value: efficiency });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [efficiency, trackEvent]);
+
 
   // Effect to update spring when state changes
   useEffect(() => {

@@ -24,7 +24,7 @@ export const subscribeToNewsletter = async (cleanEmail) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ email: cleanEmail, source: "Ellars_Web_App" })
+      body: JSON.stringify({ email: cleanEmail, source: "Ellars_Web_App", footprint: "v5.40-core" })
     });
 
     if (!response.ok) {

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
+import { useTelemetry } from '@/hooks/useTelemetry';
+
 
 const mockPlaylist = [
   {
@@ -42,6 +44,7 @@ const mockPlaylist = [
 ];
 
 const MediaPlaylist = () => {
+  const { trackEvent } = useTelemetry();
   const [activeMedia, setActiveMedia] = useState(mockPlaylist[0]);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -130,6 +133,32 @@ const MediaPlaylist = () => {
             <span>{activeMedia.duration}</span>
           </div>
         </div>
+        <div className="mt-8 pt-6 border-t border-white/10">
+          <h3 className="font-editorial font-bold text-xs text-white uppercase tracking-widest mb-4">
+            Subscribe On
+          </h3>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => trackEvent('syndication_click', { platform: 'spotify' })}
+              className="px-4 py-2 border border-white/10 hover:border-yellow-electric text-white hover:text-yellow-electric transition-colors text-xs font-editorial uppercase tracking-widest flex items-center space-x-2"
+            >
+              <span>Spotify</span>
+            </button>
+            <button
+              onClick={() => trackEvent('syndication_click', { platform: 'apple_podcasts' })}
+              className="px-4 py-2 border border-white/10 hover:border-yellow-electric text-white hover:text-yellow-electric transition-colors text-xs font-editorial uppercase tracking-widest flex items-center space-x-2"
+            >
+              <span>Apple Podcasts</span>
+            </button>
+            <button
+              onClick={() => trackEvent('syndication_click', { platform: 'youtube' })}
+              className="px-4 py-2 border border-white/10 hover:border-yellow-electric text-white hover:text-yellow-electric transition-colors text-xs font-editorial uppercase tracking-widest flex items-center space-x-2"
+            >
+              <span>YouTube</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Playlist (Right Pane) md:col-span-1 */}

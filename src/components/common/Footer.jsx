@@ -80,7 +80,6 @@ const Footer = () => {
               <Link to="/about" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="About Page">About</Link>
               <Link to="/platform" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Platform Page">Platform</Link>
               <Link to="/news-media" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="News & Media Page">News & Media</Link>
-              <Link to="/volunteer" className="text-zinc-500 hover:text-yellow-electric transition-colors uppercase tracking-widest text-xs font-deco" aria-label="Volunteer Page">Volunteer</Link>
             </nav>
           </div>
 
