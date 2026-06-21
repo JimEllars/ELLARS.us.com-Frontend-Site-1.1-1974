@@ -57,10 +57,11 @@ const flushQueue = async () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
             'Accept': 'application/json',
+            'X-Project-Scope': 'ELLARS_FRONTEND'
           },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
       } catch (error) {
         // Silently fail if unable to send a flushed item
       } finally {
@@ -104,7 +105,8 @@ export const useTelemetry = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
-        },
+            'X-Project-Scope': 'ELLARS_FRONTEND'
+          },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });

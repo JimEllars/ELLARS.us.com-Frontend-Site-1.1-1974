@@ -71,7 +71,7 @@ const modulesData = [
 const DirectiveDetail = () => {
   const handleShareDirective = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
-      toast('Transmission link copied to clipboard', {
+      toast('Configuration link copied to clipboard', {
         position: "bottom-center",
         autoClose: 2000,
         hideProgressBar: true,
@@ -93,14 +93,21 @@ const DirectiveDetail = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const directive = modulesData.find(d => d?.slug === directiveSlug);
+  const [directive, setDirective] = useState(null);
+  const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
-    // Structural guard check on mount
-    if (!directiveSlug || !modulesData.find(d => d.slug === directiveSlug)) {
-      // Safe fallback handled by conditional below
+    if (!directiveSlug) {
+      setIsValidating(false);
+      return;
+    }
+    const found = modulesData.find(d => d?.slug === directiveSlug);
+    if (found) {
+      setDirective(found);
+    } else {
       console.warn('Invalid directive parameter detected');
     }
+    setIsValidating(false);
   }, [directiveSlug]);
 
   useEffect(() => {
@@ -139,6 +146,23 @@ const DirectiveDetail = () => {
     });
     return exactMatches.slice(0, 4);
   }, [directive, articles]);
+
+  if (isValidating) {
+    return (
+      <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex items-center justify-center bg-grid relative">
+        <Helmet>
+          <title>Validating Directive | James Ellars</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-lg bg-surface">
+          <div className="w-8 h-8 border-2 border-yellow-electric border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
+            Decrypting Transmission
+          </h1>
+        </div>
+      </div>
+    );
+  }
 
   if (!directive) {
     return (
