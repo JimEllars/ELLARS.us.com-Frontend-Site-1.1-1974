@@ -51,14 +51,14 @@ const AutomationCalculator = () => {
   const springEfficiency = useSpring(efficiency, { stiffness: 50, damping: 20 });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('automation_efficiency', efficiency);
-      const params = new URLSearchParams(window.location.search);
-      params.set('efficiency', efficiency);
-      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-    } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
-
     const timer = setTimeout(() => {
+      try {
+        localStorage.setItem('automation_efficiency', efficiency);
+        const params = new URLSearchParams(window.location.search);
+        params.set('efficiency', efficiency);
+        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+      } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
+
       trackEvent('calculator_interaction', {
         efficiency_value: efficiency,
         session_uuid: sessionUuid
