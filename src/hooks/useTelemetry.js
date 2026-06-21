@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
 
@@ -66,15 +67,14 @@ const flushQueue = async () => {
 export const useTelemetry = () => {
   const { pathname } = useLocation();
 
+  const isOnline = useNetworkStatus();
+
   useEffect(() => {
-    const handleOnline = () => {
+    if (isOnline) {
       flushQueue();
-    };
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-    };
-  }, []);
+    }
+    return () => {};
+  }, [isOnline]);
 
   useEffect(() => {
     const hasConsented = localStorage.getItem('ellars_privacy_consent');
@@ -128,6 +128,7 @@ export const useTelemetry = () => {
     (async () => {
       await sendTelemetry();
     })();
+    return () => {};
   }, [pathname]);
 
   const trackEvent = (eventName, eventData = {}) => {
