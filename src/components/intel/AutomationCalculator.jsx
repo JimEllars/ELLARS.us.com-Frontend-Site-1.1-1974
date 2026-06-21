@@ -63,7 +63,9 @@ const AutomationCalculator = () => {
         params.set('efficiency', efficiency);
         // Replace history state to update search params without triggering re-render cascades
         window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-      } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
+      } catch (e) {
+        // Silent failure for history API
+      }
 
       trackEvent('calculator_interaction', {
         efficiency_value: efficiency,
