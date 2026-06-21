@@ -155,7 +155,7 @@ const DirectiveDetail = () => {
         </Link>
 
         <motion.div variants={containerVariants} initial="hidden" animate="show">
-          <motion.div variants={itemVariants} className="mb-12">
+          <motion.div variants={itemVariants} className="mb-12 deco-frame p-6 sm:p-10 border border-white/10 bg-surface min-w-0 break-words">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 bg-surface border border-white/10 flex items-center justify-center rounded-sm">
                 <SafeIcon name={directive.icon} className={`w-6 h-6 ${directive.color}`} />
@@ -174,7 +174,7 @@ const DirectiveDetail = () => {
 
           <div className="deco-divider mb-12"></div>
 
-          <motion.div variants={itemVariants} className="prose prose-invert prose-yellow max-w-none mb-16">
+          <motion.div variants={itemVariants} className="prose prose-invert prose-yellow max-w-none mb-16 deco-frame p-6 sm:p-10 border border-white/10 bg-surface min-w-0 break-words">
             <p className="text-text-muted text-lg leading-relaxed">
               {directive.content}
             </p>
@@ -186,7 +186,7 @@ const DirectiveDetail = () => {
             </motion.div>
           )}
 
-          <motion.div variants={itemVariants} className="bg-surface border border-white/5 p-8 rounded-sm mb-16">
+          <motion.div variants={itemVariants} className="bg-surface border border-white/10 p-6 sm:p-10 rounded-sm mb-16 deco-frame min-w-0 break-words">
             <h3 className="tracking-[0.2em] uppercase font-deco font-normal text-xs text-yellow-electric mb-6">
               Implementation Metrics
             </h3>
