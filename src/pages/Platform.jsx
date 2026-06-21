@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import { useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import AutomationCalculator from '@/components/intel/AutomationCalculator';
+
 
 const Platform = () => {
   useEffect(() => {
@@ -15,7 +15,7 @@ const Platform = () => {
   }, []);
 
   const [showAll, setShowAll] = useState(false);
-  const [activeDirective, setActiveDirective] = useState(null);
+
   const [articles, setArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(false);
 
@@ -42,6 +42,7 @@ const Platform = () => {
 
   const modules = [
     {
+      slug: "working-class-foundation",
       title: "WORKING CLASS FOUNDATION",
       icon: "Home",
       status: "Directive 01",
@@ -52,6 +53,7 @@ const Platform = () => {
       revisions: 14
     },
     {
+      slug: "political-reform",
       title: "POLITICAL REFORM",
       icon: "Vote",
       status: "Directive 02",
@@ -62,6 +64,7 @@ const Platform = () => {
       revisions: 9
     },
     {
+      slug: "the-automation-dividend-and-taxation",
       title: "THE AUTOMATION DIVIDEND & TAXATION",
       icon: "Cpu",
       status: "Directive 03",
@@ -72,6 +75,7 @@ const Platform = () => {
       revisions: 12
     },
     {
+      slug: "future-infrastructure",
       title: "FUTURE INFRASTRUCTURE",
       icon: "Zap",
       status: "Directive 04",
@@ -84,27 +88,7 @@ const Platform = () => {
   ];
 
   // Memoize the filtering logic to prevent unnecessary re-renders when expanding directives.
-  const activeDirectiveArticles = useMemo(() => {
-    if (activeDirective === null || articles.length === 0) return [];
 
-    const idx = activeDirective;
-    const exactMatches = articles.filter(post => {
-      // Match by title keywords for demo, or tags if present
-      const moduleTitle = modules[idx].title.toLowerCase();
-      const keywords = moduleTitle.split(' ').filter(w => w.length > 3);
-
-      const postTitle = (post.title?.rendered || '').toLowerCase();
-      const postContent = (post.content?.rendered || '').toLowerCase();
-
-      return keywords.some(kw => postTitle.includes(kw) || postContent.includes(kw)) || idx === 0 || idx === 1;
-      // Forcing matches for first 2 directives to show the UI
-    });
-
-    if (exactMatches.length === 0) return [];
-
-    const startIndex = (idx * 2) % (Math.max(exactMatches.length, 1));
-    return exactMatches.slice(startIndex, startIndex + 2);
-  }, [activeDirective, articles]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -191,50 +175,17 @@ const Platform = () => {
               <h2 className="tracking-[0.2em] uppercase font-deco font-normal text-xs text-yellow-electric mb-4">{m.title}</h2>
               <p className="text-text-muted font-light leading-relaxed mb-6">{m.description}</p>
 
+
               <div className="mb-6">
-                <button
-                  onClick={() => setActiveDirective(activeDirective === idx ? null : idx)}
-                  className="text-xs uppercase tracking-widest text-yellow-electric hover:text-white transition-colors flex items-center gap-2 border border-yellow-electric/20 px-3 py-1.5"
+                <Link
+                  to={`/platform/${m.slug}`}
+                  className="text-xs uppercase tracking-widest text-yellow-electric hover:text-white transition-colors flex items-center gap-2 border border-yellow-electric/20 px-3 py-1.5 w-fit"
                 >
-                  {activeDirective === idx ? 'Collapse Transmission' : 'View Related Transmissions'}
-                  <SafeIcon name={activeDirective === idx ? 'ChevronUp' : 'ChevronDown'} className="w-4 h-4" />
-                </button>
+                  View Full Directive
+                  <SafeIcon name="ArrowRight" className="w-4 h-4" />
+                </Link>
               </div>
 
-              {activeDirective === idx && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  className="overflow-hidden mb-6"
-                >
-                  {m.status === 'Directive 03' && <AutomationCalculator />}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-
-                    {loadingArticles ? (
-                      <div className="col-span-full font-mono text-xs text-zinc-500 uppercase tracking-widest p-4 border border-white/5 bg-white/5">
-                        [DISPATCH_BUFFER_ACTIVE]
-                      </div>
-                    ) : activeDirectiveArticles.length > 0 ? (
-                      activeDirectiveArticles.map((post, i) => (
-                        <Link key={post.id || i} to={`/articles/${post.slug}`} className="block group">
-                          <div className="p-4 border border-white/10 bg-white/5 hover:border-yellow-electric hover:bg-yellow-electric/10 transition-colors h-full flex flex-col">
-                            <h4 className="font-editorial text-sm text-white group-hover:text-yellow-electric transition-colors mb-2 line-clamp-2">
-                              {stripHtml(post.title.rendered)}
-                            </h4>
-                            <span className="mt-auto text-[10px] font-mono text-gray-500 uppercase">
-                              Read Transmission
-                            </span>
-                          </div>
-                        </Link>
-                      ))
-                    ) : (
-                      <div className="col-span-full text-xs text-zinc-500 font-mono tracking-widest p-4 border border-white/5 bg-white/5">
-                        Intelligence gathering in progress. Transmissions forthcoming.
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
 
               <div className="mt-auto space-y-4 pt-6 border-t border-white/10">
                  <div className="flex justify-between items-center text-xs font-mono text-gray-400">
