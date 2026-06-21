@@ -4,6 +4,17 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
 
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 const enqueuePayload = (payload) => {
   try {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
@@ -45,6 +56,7 @@ const flushQueue = async () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
             'Accept': 'application/json',
+            'X-Project-Scope': 'ELLARS_FRONTEND',
           },
           body: JSON.stringify(payload),
           signal: controller.signal,
@@ -92,6 +104,7 @@ export const useTelemetry = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
+          'X-Project-Scope': 'ELLARS_FRONTEND',
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -112,41 +125,46 @@ export const useTelemetry = () => {
     }
   }, []);
 
+  const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
+    return {
+      telemetry_envelope: {
+        project_id: 'ELLARS_FRONTEND',
+        environment: 'production',
+        timestamp: new Date().toISOString(),
+        idempotency_key: generateUUID(),
+        session: { context_scope: 'public_facing_umbrella' }
+      },
+      event_payload: {
+        event_type: eventType,
+        severity: severity,
+        component_origin: componentOrigin,
+        error_message: errorMessage,
+        stack_trace: stackTrace,
+        metadata: {
+          current_route: pathname,
+          network_status: isOnline ? 'online' : 'offline',
+          ...metadata
+        }
+      }
+    };
+  }, [pathname, isOnline]);
+
   useEffect(() => {
     const sendTelemetry = async () => {
-      const payload = {
-        telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
-        event_payload: {
-          event: 'page_view',
-          path: pathname,
-          timestamp: new Date().toISOString(),
-          // Assume regular page views might not be critical, but if it is, set it.
-          // The prompt specifically talks about anomalies or events with severity.
-        }
-      };
-
+      const payload = createTelemetryPayload('page_view', 'LOW', 'ROUTER', '', '', { path: pathname });
       await dispatchTelemetry(payload);
     };
 
     // Background isolation
     sendTelemetry();
     return () => {};
-  }, [pathname, dispatchTelemetry]);
+  }, [pathname, dispatchTelemetry, createTelemetryPayload]);
 
-  const trackEvent = useCallback((eventName, eventData = {}, severity = 'NORMAL') => {
+  const trackEvent = useCallback((eventName, eventData = {}, severity = 'MEDIUM', componentOrigin = 'UI_INTERACTION', errorMessage = "", stackTrace = "") => {
     // Isolate telemetry from UI thread execution
-    const payload = {
-      telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
-      event_payload: {
-        event: eventName,
-        data: eventData,
-        timestamp: new Date().toISOString(),
-        severity: severity
-      }
-    };
-
+    const payload = createTelemetryPayload(eventName, severity, componentOrigin, errorMessage, stackTrace, { data: eventData });
     dispatchTelemetry(payload);
-  }, [dispatchTelemetry]);
+  }, [createTelemetryPayload, dispatchTelemetry]);
 
   return { trackEvent, dispatchTelemetry };
 };

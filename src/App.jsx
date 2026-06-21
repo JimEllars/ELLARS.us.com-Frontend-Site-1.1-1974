@@ -12,6 +12,7 @@ const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
+const DirectiveDetail = React.lazy(() => import('./pages/DirectiveDetail'));
 import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
@@ -59,6 +60,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/platform" element={<Platform />} />
+          <Route path="/platform/:directiveSlug" element={<DirectiveDetail />} />
           <Route path="/news-media" element={<NewsMedia />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
