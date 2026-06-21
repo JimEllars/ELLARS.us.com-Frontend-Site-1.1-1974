@@ -19,7 +19,8 @@ const enqueuePayload = (payload) => {
   try {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     queue.push(payload);
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    const limitedQueue = queue.slice(-50);
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
   } catch (e) {
     // Silence errors to prevent network identifiers in console
   }
@@ -56,7 +57,6 @@ const flushQueue = async () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
             'Accept': 'application/json',
-            'X-Project-Scope': 'ELLARS_FRONTEND',
           },
           body: JSON.stringify(payload),
           signal: controller.signal,
@@ -104,7 +104,6 @@ export const useTelemetry = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
-          'X-Project-Scope': 'ELLARS_FRONTEND',
         },
         body: JSON.stringify(payload),
         signal: controller.signal,

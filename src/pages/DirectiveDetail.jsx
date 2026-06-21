@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import AutomationCalculator from '@/components/intel/AutomationCalculator';
+import { toast } from 'react-toastify';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -68,6 +69,22 @@ const modulesData = [
 ];
 
 const DirectiveDetail = () => {
+  const handleShareDirective = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toast('Transmission link copied to clipboard', {
+        position: "bottom-center",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+        className: 'bg-void border border-yellow-electric/20 text-yellow-electric font-mono text-xs uppercase tracking-widest text-center',
+      });
+    }).catch(err => {
+      console.error('Failed to copy link', err);
+    });
+  };
+
   const { directiveSlug } = useParams();
   const [articles, setArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(false);
@@ -76,7 +93,15 @@ const DirectiveDetail = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const directive = modulesData.find(d => d.slug === directiveSlug);
+  const directive = modulesData.find(d => d?.slug === directiveSlug);
+
+  useEffect(() => {
+    // Structural guard check on mount
+    if (!directiveSlug || !modulesData.find(d => d.slug === directiveSlug)) {
+      // Safe fallback handled by conditional below
+      console.warn('Invalid directive parameter detected');
+    }
+  }, [directiveSlug]);
 
   useEffect(() => {
     let isMounted = true;
@@ -134,7 +159,7 @@ const DirectiveDetail = () => {
             to="/platform"
             className="border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 px-6 py-3 text-xs tracking-widest uppercase transition-colors inline-block"
           >
-            Return to Platform
+            {'<- Return to Platform Core'}
           </Link>
         </div>
       </div>
@@ -206,6 +231,15 @@ const DirectiveDetail = () => {
                 <span>Revisions: {directive.revisions}</span>
               </div>
             </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleShareDirective}
+                className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-4 py-2"
+              >
+                Share Configuration
+              </button>
+            </div>
+
           </motion.div>
 
           <motion.div variants={itemVariants}>
