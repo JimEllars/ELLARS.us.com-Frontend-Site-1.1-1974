@@ -35,6 +35,25 @@ const AutomationCalculator = () => {
     }
   });
 
+  const [hours, setHours] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlHours = params.get('hours');
+      if (urlHours && !isNaN(Number(urlHours))) {
+        const val = Number(urlHours);
+        return val < 0 ? 0 : val > 168 ? 168 : val;
+      }
+      const saved = localStorage.getItem('automation_hours');
+      if (saved) {
+        const val = Number(saved);
+        return val < 0 ? 0 : val > 168 ? 168 : val;
+      }
+      return 40;
+    } catch {
+      return 40;
+    }
+  });
+
   const [sessionUuid, setSessionUuid] = useState(() => {
     try {
       let uuid = localStorage.getItem('calculator_session_uuid');
@@ -54,13 +73,21 @@ const AutomationCalculator = () => {
 
   // Spring animation for smooth numbers
   const springEfficiency = useSpring(efficiency, { stiffness: 50, damping: 20 });
+  const springHours = useSpring(hours, { stiffness: 50, damping: 20 });
 
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
         localStorage.setItem('automation_efficiency', efficiency);
+        localStorage.setItem('automation_hours', hours);
+
         const params = new URLSearchParams(window.location.search);
-        params.set('efficiency', efficiency);
+        params.set('roi', efficiency);
+        params.set('hours', hours);
+        // Remove old 'efficiency' param if it exists to clean up
+        if (params.has('efficiency')) {
+          params.delete('efficiency');
+        }
         // Replace history state to update search params without triggering re-render cascades
         window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
       } catch (e) {
@@ -69,11 +96,12 @@ const AutomationCalculator = () => {
 
       trackEvent('calculator_interaction', {
         efficiency_value: efficiency,
+        hours_value: hours,
         session_uuid: sessionUuid
       });
     }, 400); // 400ms debounce
     return () => clearTimeout(timer);
-  }, [efficiency, trackEvent, sessionUuid]);
+  }, [efficiency, hours, trackEvent, sessionUuid]);
 
 
   // Effect to update spring when state changes
@@ -82,9 +110,16 @@ const AutomationCalculator = () => {
     return () => {};
   }, [efficiency, springEfficiency]);
 
+  useEffect(() => {
+    springHours.set(hours);
+    return () => {};
+  }, [hours, springHours]);
+
   // Derived calculations using framer-motion transforms
-  const annualDividend = useTransform(springEfficiency, (eff) => {
-    const savingsPool = totalCorporateTaxBase * (eff / 100);
+  const annualDividend = useTransform([springEfficiency, springHours], ([eff, hrs]) => {
+    // A conceptual formula: Savings scale with hours to show impact. Baseline is 40 hours = 1x.
+    const hoursMultiplier = hrs / 40;
+    const savingsPool = totalCorporateTaxBase * (eff / 100) * hoursMultiplier;
     return Math.round(savingsPool / populationEligible);
   });
 
@@ -119,7 +154,7 @@ const AutomationCalculator = () => {
         </div>
 
         <p className="text-text-muted text-xs mb-8 leading-relaxed">
-          Adjust the projected Corporate AI Efficiency Savings percentage to see the conceptual
+          Adjust the projected Corporate AI Efficiency Savings percentage and Weekly Automated Hours to see the conceptual
           Negative Income Tax Return distributed to American citizens.
         </p>
 
@@ -140,9 +175,30 @@ const AutomationCalculator = () => {
               background: `linear-gradient(to right, #fde047 ${efficiency}%, #0a0a0a ${efficiency}%)`
             }}
           />
-          <div className="flex justify-between text-[10px] text-gray-600 mt-2 font-mono uppercase tracking-widest min-w-0">
+          <div className="flex justify-between text-[10px] text-gray-600 mt-2 font-mono uppercase tracking-widest min-w-0 mb-6">
             <span className="truncate mr-2">Conservative (1%)</span>
             <span className="truncate">Aggressive (100%)</span>
+          </div>
+
+          <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
+            <span className="truncate mr-2">Weekly Automated Hours</span>
+            <span className="text-yellow-electric font-bold shrink-0">{hours}</span>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="168"
+            value={hours}
+            onChange={(e) => setHours(Number(e.target.value))}
+            className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
+            style={{
+              background: `linear-gradient(to right, #fde047 ${(hours / 168) * 100}%, #0a0a0a ${(hours / 168) * 100}%)`
+            }}
+          />
+          <div className="flex justify-between text-[10px] text-gray-600 mt-2 font-mono uppercase tracking-widest min-w-0">
+            <span className="truncate mr-2">Low (0h)</span>
+            <span className="truncate">High (168h)</span>
           </div>
         </div>
 

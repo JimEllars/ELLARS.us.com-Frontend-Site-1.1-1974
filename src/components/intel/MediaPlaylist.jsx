@@ -151,9 +151,9 @@ const MediaPlaylist = () => {
           <h2 className="font-editorial font-bold text-2xl text-white mb-2 leading-tight">
             {activeMedia.title}
           </h2>
-          <div className="flex items-center text-zinc-500 font-mono text-[10px] uppercase tracking-widest space-x-4">
-            <span>{new Date(activeMedia.date).toLocaleDateString()}</span>
-            <span>{activeMedia.duration}</span>
+          <div className="flex items-center text-zinc-500 font-mono text-[10px] uppercase tracking-widest space-x-4 min-w-0 overflow-hidden">
+            <span className="truncate">{new Date(activeMedia.date).toLocaleDateString()}</span>
+            <span className="truncate">{activeMedia.duration}</span>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-white/10">
@@ -210,7 +210,7 @@ const MediaPlaylist = () => {
                 <h4 className={`font-editorial font-bold text-xs mb-1 line-clamp-2 ${activeMedia.id === media.id ? 'text-yellow-electric' : 'text-white'}`}>
                   {media.title}
                 </h4>
-                <div className="font-mono text-[9px] text-zinc-500 tracking-widest uppercase">
+                <div className="font-mono text-[9px] text-zinc-500 tracking-widest uppercase min-w-0 overflow-hidden truncate">
                   {media.duration}
                 </div>
               </div>
