@@ -23,12 +23,12 @@ const AutomationCalculator = () => {
       const urlEff = params.get('efficiency') || params.get('roi');
       if (urlEff && !isNaN(Number(urlEff))) {
         const val = Number(urlEff);
-        return val < 1 ? 1 : val > 100 ? 100 : val;
+        return val < 1 || val > 100 ? 15 : val;
       }
       const saved = localStorage.getItem('automation_efficiency');
       if (saved) {
         const val = Number(saved);
-        return val < 1 ? 1 : val > 100 ? 100 : val;
+        return val < 1 || val > 100 ? 15 : val;
       }
       return 15;
     } catch {
@@ -42,12 +42,12 @@ const AutomationCalculator = () => {
       const urlHours = params.get('hours');
       if (urlHours && !isNaN(Number(urlHours))) {
         const val = Number(urlHours);
-        return val < 0 ? 0 : val > 168 ? 168 : val;
+        return val < 0 || val > 168 ? 40 : val;
       }
       const saved = localStorage.getItem('automation_hours');
       if (saved) {
         const val = Number(saved);
-        return val < 0 ? 0 : val > 168 ? 168 : val;
+        return val < 0 || val > 168 ? 40 : val;
       }
       return 40;
     } catch {
