@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useTelemetry } from '@/hooks/useTelemetry';
+import { toast } from 'react-toastify';
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -129,6 +130,24 @@ const AutomationCalculator = () => {
 
   // Formatting for display
   const [displayAnnual, setDisplayAnnual] = useState(0);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toast('Configuration link copied to clipboard', {
+        position: "bottom-center",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+        className: 'bg-void border border-yellow-electric/20 text-yellow-electric font-mono text-xs uppercase tracking-widest text-center',
+      });
+      trackEvent('share_configuration', { url: window.location.href });
+    }).catch(err => {
+      console.error('Failed to copy link', err);
+    });
+  };
+
   const [displayMonthly, setDisplayMonthly] = useState(0);
 
   useEffect(() => {
@@ -222,6 +241,15 @@ const AutomationCalculator = () => {
               <span className="truncate">{displayAnnual.toLocaleString()}</span>
             </motion.div>
           </div>
+        </div>
+
+        <div className="mt-6 flex justify-end min-w-0">
+          <button
+            onClick={handleShare}
+            className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-4 py-2"
+          >
+            Share Configuration
+          </button>
         </div>
       </div>
     </div>
