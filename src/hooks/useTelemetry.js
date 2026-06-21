@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
@@ -10,7 +10,7 @@ const enqueuePayload = (payload) => {
     queue.push(payload);
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch (e) {
-    console.warn('Failed to enqueue telemetry', e);
+    // Silence errors to prevent network identifiers in console
   }
 };
 
@@ -19,25 +19,27 @@ let isFlushing = false;
 const flushQueue = async () => {
   if (isFlushing) return;
   isFlushing = true;
-  const hasConsented = localStorage.getItem('ellars_privacy_consent');
-  if (hasConsented !== 'true') return;
-
-  const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-  const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
-  if (!apiKey) return;
 
   try {
+    const hasConsented = localStorage.getItem('ellars_privacy_consent');
+    if (hasConsented !== 'true') return;
+
+    const apiKey = import.meta.env.VITE_AXIM_API_KEY;
+    const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+    if (!apiKey) return;
+
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     if (queue.length === 0) return;
 
-    // We process sequentially or batch? The prompt implies "flush the queued items".
-    // Axim API seems to take single items based on current fetch, but we can do a loop.
-    const remainingQueue = [];
+    // Clear the array cache buffer entirely immediately
+    localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+
+    // Sequentially extract all queued events from storage and dispatch them down the edge worker stream
     for (const payload of queue) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       try {
-        const response = await fetch(apiUrl, {
+        await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -47,18 +49,14 @@ const flushQueue = async () => {
           body: JSON.stringify(payload),
           signal: controller.signal,
         });
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-           remainingQueue.push(payload);
-        }
       } catch (error) {
+        // Silently fail if unable to send a flushed item
+      } finally {
         clearTimeout(timeoutId);
-        remainingQueue.push(payload);
       }
     }
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue));
   } catch (e) {
-    console.warn('Failed to flush telemetry queue', e);
+    // Silently fail
   } finally {
     isFlushing = false;
   }
@@ -66,7 +64,6 @@ const flushQueue = async () => {
 
 export const useTelemetry = () => {
   const { pathname } = useLocation();
-
   const isOnline = useNetworkStatus();
 
   useEffect(() => {
@@ -76,12 +73,46 @@ export const useTelemetry = () => {
     return () => {};
   }, [isOnline]);
 
-  useEffect(() => {
+  const dispatchTelemetry = useCallback(async (payload) => {
     const hasConsented = localStorage.getItem('ellars_privacy_consent');
-    if (hasConsented !== 'true') {
-      return;
-    }
+    if (hasConsented !== 'true') return;
 
+    const apiKey = import.meta.env.VITE_AXIM_API_KEY;
+    const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+
+    if (!apiKey) return;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error('Server error');
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      // If a 'CRITICAL' or 'HIGH' severity anomaly capture request fails to deliver
+      const severity = payload?.event_payload?.severity;
+      if (severity === 'CRITICAL' || severity === 'HIGH') {
+        enqueuePayload(payload);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const sendTelemetry = async () => {
       const payload = {
         telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
@@ -89,95 +120,33 @@ export const useTelemetry = () => {
           event: 'page_view',
           path: pathname,
           timestamp: new Date().toISOString(),
+          // Assume regular page views might not be critical, but if it is, set it.
+          // The prompt specifically talks about anomalies or events with severity.
         }
       };
 
-      try {
-        const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-        const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
-
-        if (!apiKey) {
-          return;
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-           throw new Error('Server error');
-        }
-      } catch (error) {
-        console.warn('Telemetry payload failed to send, queuing', error);
-        enqueuePayload(payload);
-      }
+      await dispatchTelemetry(payload);
     };
 
     // Background isolation
-    (async () => {
-      await sendTelemetry();
-    })();
+    sendTelemetry();
     return () => {};
-  }, [pathname]);
+  }, [pathname, dispatchTelemetry]);
 
-  const trackEvent = (eventName, eventData = {}) => {
+  const trackEvent = useCallback((eventName, eventData = {}, severity = 'NORMAL') => {
     // Isolate telemetry from UI thread execution
-    (async () => {
-      const hasConsented = localStorage.getItem('ellars_privacy_consent');
-      if (hasConsented !== 'true') {
-        return;
+    const payload = {
+      telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
+      event_payload: {
+        event: eventName,
+        data: eventData,
+        timestamp: new Date().toISOString(),
+        severity: severity
       }
+    };
 
-      const payload = {
-        telemetry_envelope: { project_id: 'ELLARS_FRONTEND' },
-        event_payload: {
-          event: eventName,
-          data: eventData,
-          timestamp: new Date().toISOString(),
-        }
-      };
+    dispatchTelemetry(payload);
+  }, [dispatchTelemetry]);
 
-      try {
-        const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-        const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
-
-        if (!apiKey) return;
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-           throw new Error('Server error');
-        }
-      } catch (error) {
-        console.warn('Telemetry payload failed to send, queuing', error);
-        enqueuePayload(payload);
-      }
-    })();
-  };
-
-  return { trackEvent };
+  return { trackEvent, dispatchTelemetry };
 };
