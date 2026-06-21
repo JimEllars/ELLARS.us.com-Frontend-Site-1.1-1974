@@ -21,10 +21,15 @@ const AutomationCalculator = () => {
       const params = new URLSearchParams(window.location.search);
       const urlEff = params.get('efficiency') || params.get('roi');
       if (urlEff && !isNaN(Number(urlEff))) {
-        return Number(urlEff);
+        const val = Number(urlEff);
+        return val < 1 ? 1 : val > 100 ? 100 : val;
       }
       const saved = localStorage.getItem('automation_efficiency');
-      return saved ? Number(saved) : 15;
+      if (saved) {
+        const val = Number(saved);
+        return val < 1 ? 1 : val > 100 ? 100 : val;
+      }
+      return 15;
     } catch {
       return 15;
     }
@@ -56,7 +61,8 @@ const AutomationCalculator = () => {
         localStorage.setItem('automation_efficiency', efficiency);
         const params = new URLSearchParams(window.location.search);
         params.set('efficiency', efficiency);
-        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        // Replace history state to update search params without triggering re-render cascades
+        window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
       } catch (e) { console.warn('Failed to save efficiency or update URL', e); }
 
       trackEvent('calculator_interaction', {
@@ -71,6 +77,7 @@ const AutomationCalculator = () => {
   // Effect to update spring when state changes
   useEffect(() => {
     springEfficiency.set(efficiency);
+    return () => {};
   }, [efficiency, springEfficiency]);
 
   // Derived calculations using framer-motion transforms
