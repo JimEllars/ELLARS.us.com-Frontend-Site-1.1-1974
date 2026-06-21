@@ -1,0 +1,6 @@
+Sprint V5.44: Hardening layout, linking and telemetry
+
+This commit completes the tasks required for Sprint V5.44:
+- Task 1: Verified that dynamic routing in App.jsx and Platform.jsx connects seamlessly into the DirectiveDetail view and lazy-loads the correct embedded views, particularly the AutomationCalculator nested mapping.
+- Task 2: Upgraded structural wrapper layouts in DirectiveDetail.jsx to use strict Tailwind 'min-w-0 break-words' bounds alongside 'deco-frame' block classes to guarantee uniform cross-platform behavior.
+- Task 3: Audited and verified all component lifecycle teardowns and interval clearances during unmount inside useTelemetry.js and AutomationCalculator.jsx, ensuring out-of-band telemetry pipelines inject the proper tracing headers uniformly.
