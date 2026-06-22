@@ -43,30 +43,28 @@ const flushQueue = async () => {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     if (queue.length === 0) return;
 
-    // Clear the array cache buffer entirely immediately
-    localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
-
-    // Sequentially extract all queued events from storage and dispatch them down the edge worker stream
-    for (const payload of queue) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      try {
-        await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json',
-            'X-Project-Scope': 'ELLARS_FRONTEND'
-          },
-        body: JSON.stringify(payload),
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json',
+          'X-Project-Scope': 'ELLARS_FRONTEND'
+        },
+        body: JSON.stringify(queue), // Single array payload block
         signal: controller.signal,
       });
-      } catch (error) {
-        // Silently fail if unable to send a flushed item
-      } finally {
-        clearTimeout(timeoutId);
+      if (response.ok) {
+        // Safely clear the local browser persistent array cache upon verified gateway reception
+        localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
       }
+    } catch (error) {
+      // Silently fail if unable to send, queue is maintained
+    } finally {
+      clearTimeout(timeoutId);
     }
   } catch (e) {
     // Silently fail

@@ -167,3 +167,12 @@
 .article-content blockquote {
   @apply border-l-4 border-yellow-electric text-text-muted italic pl-4;
 }
+
+@layer utilities {
+  .diagnostic-text {
+    @apply font-mono text-zinc-500 uppercase tracking-widest text-xs leading-relaxed;
+  }
+  .diagnostic-param {
+    @apply font-mono text-zinc-400 break-all;
+  }
+}
