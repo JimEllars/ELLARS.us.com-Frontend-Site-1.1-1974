@@ -20,6 +20,11 @@
 }
 
 @layer utilities {
+  .opacity-duration {
+    transition: opacity 0.5s ease-in-out;
+    will-change: opacity;
+  }
+
   .deco-frame {
     @apply border border-white/10 p-2 relative;
     outline: 1px solid rgba(253, 224, 71, 0.15);

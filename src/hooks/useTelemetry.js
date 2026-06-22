@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
@@ -26,63 +26,72 @@ const enqueuePayload = (payload) => {
   }
 };
 
-let isFlushing = false;
-
-const flushQueue = async () => {
-  if (isFlushing) return;
-  isFlushing = true;
-
-  try {
-    const hasConsented = localStorage.getItem('ellars_privacy_consent');
-    if (hasConsented !== 'true') return;
-
-    const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-    const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
-    if (!apiKey) return;
-
-    const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-    if (queue.length === 0) return;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'application/json',
-          'X-Project-Scope': 'ELLARS_FRONTEND'
-        },
-        body: JSON.stringify(queue), // Single array payload block
-        signal: controller.signal,
-      });
-      if (response.status === 200) {
-        // Safely clear the local browser persistent array cache upon verified gateway reception
-        localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
-      }
-    } catch (error) {
-      // Silently fail if unable to send, queue is maintained
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  } catch (e) {
-    // Silently fail
-  } finally {
-    isFlushing = false;
-  }
-};
-
 export const useTelemetry = () => {
   const { pathname } = useLocation();
   const isOnline = useNetworkStatus();
 
+  // Implement an in-memory boolean flag locker ('isFlushing') directly within the hook layer.
+  const isFlushing = useRef(false);
+
+  const flushQueue = useCallback(async () => {
+    // When a device reconnection event is broadcast by useNetworkStatus, verify the lock flag state before attempting a flush transaction.
+    if (isFlushing.current) return;
+
+    // Toggle the state lock value to true during the active background fetch execution block
+    isFlushing.current = true;
+
+    try {
+      const hasConsented = localStorage.getItem('ellars_privacy_consent');
+      if (hasConsented !== 'true') return;
+
+      const apiKey = import.meta.env.VITE_AXIM_API_KEY;
+      const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+      if (!apiKey) return;
+
+      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      if (queue.length === 0) return;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept': 'application/json',
+            'X-Project-Scope': 'ELLARS_FRONTEND'
+          },
+          body: JSON.stringify(queue), // Single array payload block
+          signal: controller.signal,
+        });
+
+        // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
+        if (response.status === 200 || response.ok) {
+          // Safely clear the local browser persistent array cache upon verified gateway reception
+          localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+        }
+      } catch (error) {
+        // Silently fail if unable to send, queue is maintained
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch (e) {
+      // Silently fail
+    } finally {
+      // Resetting it to false
+      isFlushing.current = false;
+    }
+  }, []);
+
   useEffect(() => {
     if (isOnline) {
-      flushQueue();
+      if (!isFlushing.current) {
+        flushQueue();
+      }
     }
     return () => {};
-  }, [isOnline]);
+  }, [isOnline, flushQueue]);
 
   const dispatchTelemetry = useCallback(async (payload) => {
     const hasConsented = localStorage.getItem('ellars_privacy_consent');
@@ -103,8 +112,8 @@ export const useTelemetry = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'application/json',
-            'X-Project-Scope': 'ELLARS_FRONTEND'
-          },
+          'X-Project-Scope': 'ELLARS_FRONTEND'
+        },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
