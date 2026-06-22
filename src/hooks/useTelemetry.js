@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
+const MAX_RETRIES = 3;
+const BASE_BACKOFF_MS = 1000;
 
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -25,6 +27,8 @@ const enqueuePayload = (payload) => {
     // Silence errors to prevent network identifiers in console
   }
 };
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const useTelemetry = () => {
   const { pathname } = useLocation();
@@ -51,35 +55,48 @@ export const useTelemetry = () => {
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
       if (queue.length === 0) return;
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json',
-            'X-Project-Scope': 'ELLARS_FRONTEND'
-          },
-          body: JSON.stringify(queue), // Single array payload block
-          signal: controller.signal,
-        });
+      let attempt = 0;
+      let success = false;
 
-        // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
-        if (response.status === 200 || response.ok) {
-          // Safely clear the local browser persistent array cache upon verified gateway reception
-          localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+      while (attempt < MAX_RETRIES && !success) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'Accept': 'application/json',
+              'X-Project-Scope': 'ELLARS_FRONTEND'
+            },
+            body: JSON.stringify(queue), // Single array payload block
+            signal: controller.signal,
+          });
+
+          // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
+          if (response.status === 200 || response.ok) {
+            // Safely clear the local browser persistent array cache upon verified gateway reception
+            localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+            success = true;
+          } else {
+             throw new Error('Non-200 response');
+          }
+        } catch (error) {
+          // If a failure occurs, increment attempt and wait exponentially
+          attempt++;
+          if (attempt < MAX_RETRIES) {
+            await wait(BASE_BACKOFF_MS * Math.pow(2, attempt));
+          }
+        } finally {
+          clearTimeout(timeoutId);
         }
-      } catch (error) {
-        // Silently fail if unable to send, queue is maintained
-      } finally {
-        clearTimeout(timeoutId);
       }
     } catch (e) {
       // Silently fail
     } finally {
-      // Resetting it to false
+      // Resetting it to false only when a successful transmission is verified or the backoff ceiling is completely exhausted
       isFlushing.current = false;
     }
   }, []);
