@@ -176,9 +176,9 @@ const DirectiveDetail = () => {
           <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
             Transmission Interrupted
           </h1>
-          <p className="diagnostic-text mb-8 flex flex-wrap justify-center items-center gap-1">
+          <p className="diagnostic-text mb-8 flex flex-wrap justify-center items-center gap-1 leading-relaxed min-w-0 break-words">
             <span className="shrink-0">The requested directive could not be located in our intelligence index.</span>
-            <span className="diagnostic-param">[{directiveSlug}]</span>
+            <span className="diagnostic-param min-w-0 break-words">[{directiveSlug}]</span>
           </p>
           <Link
             to="/platform"

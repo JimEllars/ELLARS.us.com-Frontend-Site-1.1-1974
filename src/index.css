@@ -173,6 +173,6 @@
     @apply font-mono text-zinc-500 uppercase tracking-widest text-xs leading-relaxed;
   }
   .diagnostic-param {
-    @apply font-mono text-zinc-400 break-all;
+    @apply font-mono text-zinc-400 break-words min-w-0;
   }
 }
