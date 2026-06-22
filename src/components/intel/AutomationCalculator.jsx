@@ -132,6 +132,7 @@ const AutomationCalculator = () => {
 
   // Formatting for display
   const [displayAnnual, setDisplayAnnual] = useState(0);
+  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -182,7 +183,7 @@ const AutomationCalculator = () => {
         <div className="mb-8 min-w-0">
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">AI Efficiency Savings</span>
-            <span className="text-yellow-electric font-bold shrink-0">{efficiency}%</span>
+            <div className="flex items-center shrink-0"><input type="number" min="1" max="100" value={efficiency} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setEfficiency(clampValue(v, 1, 100)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0" /><span className="text-yellow-electric font-bold ml-1">%</span></div>
           </div>
 
           <input
@@ -190,7 +191,7 @@ const AutomationCalculator = () => {
             min="1"
             max="100"
             value={efficiency}
-            onChange={(e) => setEfficiency(Number(e.target.value))}
+            onChange={(e) => setEfficiency(clampValue(Number(e.target.value), 1, 100))}
             className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
             style={{
               background: `linear-gradient(to right, #fde047 ${efficiency}%, #0a0a0a ${efficiency}%)`
@@ -203,7 +204,7 @@ const AutomationCalculator = () => {
 
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">Weekly Automated Hours</span>
-            <span className="text-yellow-electric font-bold shrink-0">{hours}</span>
+            <input type="number" min="0" max="168" value={hours} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setHours(clampValue(v, 0, 168)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0 shrink-0" />
           </div>
 
           <input
@@ -211,7 +212,7 @@ const AutomationCalculator = () => {
             min="0"
             max="168"
             value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
+            onChange={(e) => setHours(clampValue(Number(e.target.value), 0, 168))}
             className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
             style={{
               background: `linear-gradient(to right, #fde047 ${(hours / 168) * 100}%, #0a0a0a ${(hours / 168) * 100}%)`
@@ -243,6 +244,30 @@ const AutomationCalculator = () => {
               <span className="truncate">{displayAnnual.toLocaleString()}</span>
             </motion.div>
           </div>
+        </div>
+
+
+        <div className="mt-6 border-t border-white/10 pt-4 min-w-0">
+          <button
+            onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
+            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-yellow-electric transition-colors flex items-center gap-2 outline-none"
+          >
+            <span className="shrink-0">{isBreakdownOpen ? '[-]' : '[+]'}</span>
+            <span className="truncate">View Calculation Metadata Breakdown</span>
+          </button>
+
+          <motion.div
+            initial={false}
+            animate={{ height: isBreakdownOpen ? 'auto' : 0, opacity: isBreakdownOpen ? 1 : 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-void border border-white/5 p-4 mt-4 text-[10px] font-mono text-gray-400 uppercase tracking-widest space-y-2">
+              <div className="flex justify-between"><span className="truncate mr-2">Total Corporate Tax Base</span><span className="shrink-0">2.5 Trillion</span></div>
+              <div className="flex justify-between"><span className="truncate mr-2">Eligible Population</span><span className="shrink-0">200 Million</span></div>
+              <div className="flex justify-between"><span className="truncate mr-2">Current Efficiency Rate</span><span className="shrink-0">{efficiency}%</span></div>
+              <div className="flex justify-between"><span className="truncate mr-2">Current Hours Multiplier</span><span className="shrink-0">{(hours / 40).toFixed(2)}x</span></div>
+            </div>
+          </motion.div>
         </div>
 
         <div className="mt-6 flex justify-end min-w-0">

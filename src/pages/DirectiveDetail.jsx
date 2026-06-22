@@ -192,7 +192,7 @@ const DirectiveDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-void pt-32 pb-20 relative overflow-hidden blueprint-overlay bg-grid">
+    <div className={`min-h-screen bg-void pt-32 pb-20 relative overflow-hidden blueprint-overlay bg-grid opacity-duration ${!loadingArticles && directive ? 'opacity-100' : 'opacity-0'}`}>
       <Helmet>
         <title>{`${directive.title} | The Platform | James Ellars`}</title>
         <meta name="description" content={directive.description} />
