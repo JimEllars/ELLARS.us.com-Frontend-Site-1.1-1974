@@ -57,7 +57,7 @@ const flushQueue = async () => {
         body: JSON.stringify(queue), // Single array payload block
         signal: controller.signal,
       });
-      if (response.ok) {
+      if (response.status === 200) {
         // Safely clear the local browser persistent array cache upon verified gateway reception
         localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
       }

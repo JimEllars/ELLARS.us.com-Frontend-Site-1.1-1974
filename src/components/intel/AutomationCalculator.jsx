@@ -17,18 +17,20 @@ const generateUUID = () => {
 const AutomationCalculator = () => {
   const { trackEvent } = useTelemetry();
 
+  const clampValue = (val, min, max) => Math.min(Math.max(val, min), max);
+
   const [efficiency, setEfficiency] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const urlEff = params.get('efficiency') || params.get('roi');
       if (urlEff && !isNaN(Number(urlEff))) {
         const val = Number(urlEff);
-        return val < 1 || val > 100 ? 15 : val;
+        return clampValue(val, 1, 100);
       }
       const saved = localStorage.getItem('automation_efficiency');
       if (saved) {
         const val = Number(saved);
-        return val < 1 || val > 100 ? 15 : val;
+        return clampValue(val, 1, 100);
       }
       return 15;
     } catch {
@@ -42,12 +44,12 @@ const AutomationCalculator = () => {
       const urlHours = params.get('hours');
       if (urlHours && !isNaN(Number(urlHours))) {
         const val = Number(urlHours);
-        return val < 0 || val > 168 ? 40 : val;
+        return clampValue(val, 0, 168);
       }
       const saved = localStorage.getItem('automation_hours');
       if (saved) {
         const val = Number(saved);
-        return val < 0 || val > 168 ? 40 : val;
+        return clampValue(val, 0, 168);
       }
       return 40;
     } catch {
