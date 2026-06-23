@@ -181,3 +181,11 @@
     @apply font-mono text-zinc-400 break-words min-w-0;
   }
 }
+
+
+@media print {
+  /* Hide global layout elements that shouldn't appear in the print out */
+  nav, footer, .navbar-container, header, [role="navigation"], [role="banner"], [role="contentinfo"] {
+    display: none !important;
+  }
+}
