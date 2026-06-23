@@ -19,6 +19,25 @@ const AutomationCalculator = () => {
 
   const clampValue = (val, min, max) => Math.min(Math.max(val, min), max);
 
+  const handlePaste = (e, min, max, setter) => {
+    e.preventDefault();
+    let paste = (e.clipboardData || window.clipboardData).getData('text');
+
+    // Strip everything except numbers
+    let cleaned = paste.replace(/[^0-9]/g, '');
+
+    if (cleaned === '') {
+      setter('');
+      return;
+    }
+
+    let v = parseInt(cleaned, 10);
+    if (!isNaN(v)) {
+      setter(clampValue(v, min, max));
+    }
+  };
+
+
 
   const [efficiency, setEfficiency] = useState(() => {
     try {
@@ -187,6 +206,22 @@ const AutomationCalculator = () => {
     });
   };
 
+
+  const handleReset = () => {
+    setEfficiency(15);
+    setHours(40);
+    localStorage.setItem('automation_efficiency', '15');
+    localStorage.setItem('automation_hours', '40');
+    trackEvent('reset_configuration');
+
+    // Clear URL params
+    const url = new URL(window.location);
+    url.searchParams.delete('efficiency');
+    url.searchParams.delete('hours');
+    url.searchParams.delete('roi');
+    window.history.replaceState({}, '', url);
+  };
+
   const [displayMonthly, setDisplayMonthly] = useState(0);
 
   useEffect(() => {
@@ -238,10 +273,10 @@ const AutomationCalculator = () => {
           Negative Income Tax Return distributed to American citizens.
         </p>
 
-        <div className="mb-8 min-w-0">
+        <div className="mb-8 min-w-0 print:hidden">
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">AI Efficiency Savings</span>
-            <div className="flex items-center shrink-0"><input type="number" min="1" max="100" value={efficiency} onChange={(e) => { let val = e.target.value; if (val === '') { setEfficiency(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setEfficiency(clampValue(v, 1, 100)); }} onBlur={() => { if (efficiency === '' || isNaN(efficiency)) setEfficiency(1); else setEfficiency(clampValue(efficiency, 1, 100)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0" /><span className="text-yellow-electric font-bold ml-1">%</span></div>
+            <div className="flex items-center shrink-0"><input type="number" min="1" max="100" value={efficiency} onPaste={(e) => handlePaste(e, 1, 100, setEfficiency)} onChange={(e) => { let val = e.target.value; if (val === '') { setEfficiency(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setEfficiency(clampValue(v, 1, 100)); }} onBlur={() => { if (efficiency === '' || isNaN(efficiency)) setEfficiency(1); else setEfficiency(clampValue(efficiency, 1, 100)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0" /><span className="text-yellow-electric font-bold ml-1">%</span></div>
           </div>
 
           <input
@@ -262,7 +297,7 @@ const AutomationCalculator = () => {
 
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">Weekly Automated Hours</span>
-            <input type="number" min="0" max="168" value={hours} onChange={(e) => { let val = e.target.value; if (val === '') { setHours(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setHours(clampValue(v, 0, 168)); }} onBlur={() => { if (hours === '' || isNaN(hours)) setHours(0); else setHours(clampValue(hours, 0, 168)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0 shrink-0" />
+            <input type="number" min="0" max="168" value={hours} onPaste={(e) => handlePaste(e, 0, 168, setHours)} onChange={(e) => { let val = e.target.value; if (val === '') { setHours(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setHours(clampValue(v, 0, 168)); }} onBlur={() => { if (hours === '' || isNaN(hours)) setHours(0); else setHours(clampValue(hours, 0, 168)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0 shrink-0" />
           </div>
 
           <input
@@ -316,7 +351,7 @@ const AutomationCalculator = () => {
             }}
             aria-expanded={isBreakdownOpen}
             aria-controls="metadata-breakdown-drawer"
-            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-yellow-electric transition-colors flex items-center gap-2 outline-none focus-visible:ring-1 focus-visible:ring-yellow-electric/50"
+            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-yellow-electric transition-colors flex items-center gap-2 outline-none focus-visible:ring-1 focus-visible:ring-yellow-electric/50 print:hidden"
           >
             <span className="shrink-0">{isBreakdownOpen ? '[-]' : '[+]'}</span>
             <span className="truncate">View Calculation Metadata Breakdown</span>
@@ -347,7 +382,13 @@ const AutomationCalculator = () => {
           </motion.div>
         </div>
 
-        <div className="mt-6 flex justify-end min-w-0 print:hidden">
+        <div className="mt-6 flex justify-end gap-4 min-w-0 print:hidden">
+          <button
+            onClick={handleReset}
+            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-white transition-colors px-4 py-2 flex items-center"
+          >
+            Reset Configuration
+          </button>
           <button
             onClick={handleShare}
             className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-4 py-2"

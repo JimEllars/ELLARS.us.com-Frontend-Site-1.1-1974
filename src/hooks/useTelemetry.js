@@ -37,6 +37,39 @@ export const useTelemetry = () => {
   // Implement an in-memory boolean flag locker ('isFlushing') directly within the hook layer.
   const isFlushing = useRef(false);
 
+  // Track in-flight payloads to serialize them on unload if they fail or get interrupted
+  const inFlightPayloads = useRef([]);
+
+  // Setup tab unload handlers to serialize pending telemetry queues
+  useEffect(() => {
+    const handleUnload = () => {
+      if (inFlightPayloads.current.length > 0) {
+        try {
+          const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+          const newQueue = [...queue, ...inFlightPayloads.current];
+          const limitedQueue = newQueue.slice(-50);
+          localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+        } catch (e) {
+          // Silent
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleUnload();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const flushQueue = useCallback(async () => {
     // When a device reconnection event is broadcast by useNetworkStatus, verify the lock flag state before attempting a flush transaction.
     if (isFlushing.current) return;
@@ -57,6 +90,9 @@ export const useTelemetry = () => {
 
       let attempt = 0;
       let success = false;
+
+      // Register the payloads we're about to send as "in-flight" in case of unload
+      inFlightPayloads.current = [...queue];
 
       while (attempt < MAX_RETRIES && !success) {
         const controller = new AbortController();
@@ -80,6 +116,7 @@ export const useTelemetry = () => {
             // Safely clear the local browser persistent array cache upon verified gateway reception
             localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
             success = true;
+            inFlightPayloads.current = []; // Clear in-flight payloads on success
           } else {
              throw new Error('Non-200 response');
           }
@@ -122,6 +159,9 @@ export const useTelemetry = () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
+    // Track as an individual in-flight payload
+    inFlightPayloads.current.push(payload);
+
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -139,6 +179,10 @@ export const useTelemetry = () => {
       if (!response.ok) {
         throw new Error('Server error');
       }
+
+      // Successfully sent, remove from in-flight
+      inFlightPayloads.current = inFlightPayloads.current.filter(p => p.telemetry_envelope.idempotency_key !== payload.telemetry_envelope.idempotency_key);
+
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -147,6 +191,9 @@ export const useTelemetry = () => {
       if (severity === 'CRITICAL' || severity === 'HIGH') {
         enqueuePayload(payload);
       }
+
+      // Request completed (though failed), remove from in-flight if it wasn't captured in the beforeunload
+      inFlightPayloads.current = inFlightPayloads.current.filter(p => p.telemetry_envelope.idempotency_key !== payload.telemetry_envelope.idempotency_key);
     }
   }, []);
 
