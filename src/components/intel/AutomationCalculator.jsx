@@ -171,7 +171,7 @@ const AutomationCalculator = () => {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const url = new URL(window.location.href); url.searchParams.set('roi', efficiency); url.searchParams.set('hours', hours); navigator.clipboard.writeText(url.toString()).then(() => {
       toast('Configuration link copied to clipboard', {
         position: "bottom-center",
         autoClose: 2000,
@@ -241,7 +241,7 @@ const AutomationCalculator = () => {
         <div className="mb-8 min-w-0">
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">AI Efficiency Savings</span>
-            <div className="flex items-center shrink-0"><input type="number" min="1" max="100" value={efficiency} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setEfficiency(clampValue(v, 1, 100)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0" /><span className="text-yellow-electric font-bold ml-1">%</span></div>
+            <div className="flex items-center shrink-0"><input type="number" min="1" max="100" value={efficiency} onChange={(e) => { let val = e.target.value; if (val === '') { setEfficiency(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setEfficiency(clampValue(v, 1, 100)); }} onBlur={() => { if (efficiency === '' || isNaN(efficiency)) setEfficiency(1); else setEfficiency(clampValue(efficiency, 1, 100)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0" /><span className="text-yellow-electric font-bold ml-1">%</span></div>
           </div>
 
           <input
@@ -262,7 +262,7 @@ const AutomationCalculator = () => {
 
           <div className="flex justify-between text-xs font-mono text-gray-400 mb-4 min-w-0">
             <span className="truncate mr-2">Weekly Automated Hours</span>
-            <input type="number" min="0" max="168" value={hours} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setHours(clampValue(v, 0, 168)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0 shrink-0" />
+            <input type="number" min="0" max="168" value={hours} onChange={(e) => { let val = e.target.value; if (val === '') { setHours(''); return; } let v = parseInt(val, 10); if (isNaN(v)) return; setHours(clampValue(v, 0, 168)); }} onBlur={() => { if (hours === '' || isNaN(hours)) setHours(0); else setHours(clampValue(hours, 0, 168)); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") e.target.blur(); }} className="w-12 bg-transparent text-yellow-electric font-bold text-right border-b border-white/10 focus:border-yellow-electric focus:outline-none appearance-none m-0 p-0 shrink-0" />
           </div>
 
           <input

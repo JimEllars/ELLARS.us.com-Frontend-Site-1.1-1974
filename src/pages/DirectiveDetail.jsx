@@ -154,7 +154,7 @@ const DirectiveDetail = () => {
           <title>Validating Directive | James Ellars</title>
           <meta name="robots" content="noindex" />
         </Helmet>
-        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-lg bg-surface">
+        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-md bg-surface">
           <div className="w-8 h-8 border-2 border-yellow-electric border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
             Decrypting Transmission
@@ -171,14 +171,14 @@ const DirectiveDetail = () => {
           <title>Directive Not Found | James Ellars</title>
           <meta name="robots" content="noindex" />
         </Helmet>
-        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-lg bg-surface">
+        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-md bg-surface">
           <SafeIcon name="AlertTriangle" className="w-12 h-12 text-yellow-electric mx-auto mb-6" />
           <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
             Transmission Interrupted
           </h1>
           <p className="diagnostic-text mb-8 flex flex-wrap justify-center items-center gap-1 leading-relaxed min-w-0 break-words">
             <span className="shrink-0">The requested directive could not be located in our intelligence index.</span>
-            <span className="diagnostic-param min-w-0 break-words">[{directiveSlug}]</span>
+            <span className="diagnostic-param min-w-0 break-words leading-relaxed">[{directiveSlug}]</span>
           </p>
           <Link
             to="/platform"
