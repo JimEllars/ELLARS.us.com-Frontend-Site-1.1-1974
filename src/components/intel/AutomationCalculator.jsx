@@ -19,6 +19,7 @@ const AutomationCalculator = () => {
 
   const clampValue = (val, min, max) => Math.min(Math.max(val, min), max);
 
+
   const [efficiency, setEfficiency] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -56,6 +57,41 @@ const AutomationCalculator = () => {
       return 40;
     }
   });
+
+  // Initialization check for clamped URL variables
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      let wasClamped = false;
+
+      const urlEff = params.get('efficiency') || params.get('roi');
+      if (urlEff && !isNaN(Number(urlEff))) {
+        const val = Number(urlEff);
+        if (val < 1 || val > 100) wasClamped = true;
+      }
+
+      const urlHours = params.get('hours');
+      if (urlHours && !isNaN(Number(urlHours))) {
+        const val = Number(urlHours);
+        if (val < 0 || val > 168) wasClamped = true;
+      }
+
+      if (wasClamped) {
+        toast("Notice: Shared metrics parameters adjusted safely to meet platform operating bounds.", {
+          position: "bottom-center",
+          autoClose: 3500,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: false,
+          className: 'bg-void border border-yellow-electric/20 text-yellow-electric font-mono text-xs uppercase tracking-widest text-center',
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
+
 
   const [sessionUuid, setSessionUuid] = useState(() => {
     try {
@@ -163,7 +199,29 @@ const AutomationCalculator = () => {
   }, [annualDividend, monthlyDividend]);
 
   return (
-    <div className="deco-frame bg-surface border border-yellow-electric/20 p-6 sm:p-8 mt-6 relative overflow-hidden group min-w-0">
+    <div id="automation-calculator-print-zone" className="deco-frame bg-surface border border-yellow-electric/20 p-6 sm:p-8 mt-6 relative overflow-hidden group min-w-0">
+
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #automation-calculator-print-zone, #automation-calculator-print-zone * {
+            visibility: visible;
+          }
+          #automation-calculator-print-zone {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: #050505 !important;
+            color: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+        }
+      `}</style>
       {/* Background accents */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-electric/5 rounded-full blur-3xl group-hover:bg-yellow-electric/10 transition-colors duration-700 pointer-events-none"></div>
 
@@ -250,13 +308,22 @@ const AutomationCalculator = () => {
         <div className="mt-6 border-t border-white/10 pt-4 min-w-0">
           <button
             onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
-            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-yellow-electric transition-colors flex items-center gap-2 outline-none"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsBreakdownOpen(!isBreakdownOpen);
+              }
+            }}
+            aria-expanded={isBreakdownOpen}
+            aria-controls="metadata-breakdown-drawer"
+            className="text-[10px] font-mono text-gray-500 uppercase tracking-widest hover:text-yellow-electric transition-colors flex items-center gap-2 outline-none focus-visible:ring-1 focus-visible:ring-yellow-electric/50"
           >
             <span className="shrink-0">{isBreakdownOpen ? '[-]' : '[+]'}</span>
             <span className="truncate">View Calculation Metadata Breakdown</span>
           </button>
 
           <motion.div
+            id="metadata-breakdown-drawer"
             initial={false}
             animate={{ height: isBreakdownOpen ? 'auto' : 0, opacity: isBreakdownOpen ? 1 : 0 }}
             className="overflow-hidden"
@@ -266,11 +333,21 @@ const AutomationCalculator = () => {
               <div className="flex justify-between"><span className="truncate mr-2">Eligible Population</span><span className="shrink-0">200 Million</span></div>
               <div className="flex justify-between"><span className="truncate mr-2">Current Efficiency Rate</span><span className="shrink-0">{efficiency}%</span></div>
               <div className="flex justify-between"><span className="truncate mr-2">Current Hours Multiplier</span><span className="shrink-0">{(hours / 40).toFixed(2)}x</span></div>
+
+              <div className="mt-4 pt-4 border-t border-white/5 flex justify-end print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:outline-none"
+                >
+                  <span className="shrink-0">[&gt;]</span>
+                  <span className="truncate">Export Layout Blueprint</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="mt-6 flex justify-end min-w-0">
+        <div className="mt-6 flex justify-end min-w-0 print:hidden">
           <button
             onClick={handleShare}
             className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-4 py-2"
