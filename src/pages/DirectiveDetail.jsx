@@ -71,7 +71,7 @@ const modulesData = [
 const DirectiveDetail = () => {
   const handleShareDirective = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
-      toast('Configuration link copied to clipboard', {
+      toast('Configuration link copied to clipboard', { toastId: "clipboard-share",
         position: "bottom-center",
         autoClose: 2000,
         hideProgressBar: true,
@@ -155,6 +155,12 @@ const DirectiveDetail = () => {
     return exactMatches.slice(0, 4);
   }, [directive, articles]);
 
+  const readingTime = useMemo(() => {
+    if (!directive || !directive.content) return 1;
+    const words = directive.content.trim().split(/\s+/).length;
+    return Math.max(1, Math.ceil(words / 200));
+  }, [directive]);
+
   if (isValidating) {
     return (
       <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex items-center justify-center bg-grid relative">
@@ -236,9 +242,14 @@ const DirectiveDetail = () => {
             <h1 className="font-editorial font-black text-4xl md:text-6xl text-white leading-tight mb-6">
               {directive.title}
             </h1>
-            <p className="text-xl text-yellow-electric font-light max-w-3xl leading-relaxed">
+
+            <p className="text-xl text-yellow-electric font-light max-w-3xl leading-relaxed mb-6">
               {directive.description}
             </p>
+            <div className="font-mono text-xs text-zinc-500 uppercase tracking-widest mt-4">
+              EST. READING TIME: {readingTime} MIN
+            </div>
+
           </motion.div>
 
           <div className="deco-divider mb-12"></div>
