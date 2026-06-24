@@ -235,10 +235,18 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-12 gap-12 items-center"
         >
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp"
+              alt="Bridging Main Street and Corporate"
+              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+            />
+          </motion.div>
           <motion.div
             variants={itemVariants}
-            className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
+            className="col-span-12 md:col-span-8 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
           >
             <h4 className="font-deco uppercase tracking-wide text-yellow-electric text-xl mb-4">
               A Unique Perspective on Regional Economies
@@ -350,6 +358,13 @@ const About = () => {
               </div>
             </div>
           </motion.div>
+          <motion.div variants={itemVariants} className="col-span-12 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl mt-8">
+            <img
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp"
+              alt="Taking on the establishment"
+              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+            />
+          </motion.div>
         </motion.div>
       </section>
 
@@ -370,10 +385,11 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-12 gap-12 items-center"
         >
           <motion.div
             variants={itemVariants}
-            className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
+            className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
           >
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               During the unprecedented challenges of the pandemic, James engaged
@@ -388,6 +404,13 @@ const About = () => {
               racial justice. His stance was clear: framing economic empowerment
               as the ultimate mechanism for achieving true social equity.
             </p>
+          </motion.div>
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp"
+              alt="Activism in an Age of Crisis"
+              className="w-full aspect-square object-cover transition-transform duration-500 hover:scale-102"
+            />
           </motion.div>
         </motion.div>
       </section>
@@ -520,10 +543,18 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-12 gap-12 items-center"
         >
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp"
+              alt="The Road Ahead"
+              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+            />
+          </motion.div>
           <motion.div
             variants={itemVariants}
-            className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
+            className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
           >
             <p className="text-text-muted font-light text-sm leading-relaxed">
               In conclusion, James Ellars's political brand combines authentic
