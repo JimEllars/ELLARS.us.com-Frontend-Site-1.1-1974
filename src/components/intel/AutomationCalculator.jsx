@@ -285,7 +285,17 @@ const AutomationCalculator = () => {
             min="1"
             max="100"
             value={efficiency}
-            onChange={(e) => setEfficiency(clampValue(Number(e.target.value), 1, 100))}
+            onChange={(e) => {
+              const scrubbed = e.target.value.replace(/[^0-9]/g, '');
+              if (scrubbed === '') {
+                setEfficiency('');
+                return;
+              }
+              const v = parseInt(scrubbed, 10);
+              if (!isNaN(v)) {
+                setEfficiency(clampValue(v, 1, 100));
+              }
+            }}
             className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
             style={{
               background: `linear-gradient(to right, #fde047 ${efficiency}%, #0a0a0a ${efficiency}%)`
@@ -306,7 +316,17 @@ const AutomationCalculator = () => {
             min="0"
             max="168"
             value={hours}
-            onChange={(e) => setHours(clampValue(Number(e.target.value), 0, 168))}
+            onChange={(e) => {
+              const scrubbed = e.target.value.replace(/[^0-9]/g, '');
+              if (scrubbed === '') {
+                setHours('');
+                return;
+              }
+              const v = parseInt(scrubbed, 10);
+              if (!isNaN(v)) {
+                setHours(clampValue(v, 0, 168));
+              }
+            }}
             className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
             style={{
               background: `linear-gradient(to right, #fde047 ${(hours / 168) * 100}%, #0a0a0a ${(hours / 168) * 100}%)`

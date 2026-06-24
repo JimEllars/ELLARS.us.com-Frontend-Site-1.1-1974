@@ -27,6 +27,7 @@ const enqueuePayload = (payload) => {
     } catch (storageError) {
       if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
         try {
+          // Slice the oldest 20 records out of the existing queue and re-attempt the write
           const recoveredQueue = limitedQueue.slice(20);
           localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
         } catch (retryError) {
