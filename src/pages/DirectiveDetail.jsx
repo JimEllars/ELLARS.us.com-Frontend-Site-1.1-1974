@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
@@ -89,6 +89,14 @@ const DirectiveDetail = () => {
   const [articles, setArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(false);
 
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -150,7 +158,13 @@ const DirectiveDetail = () => {
   if (isValidating) {
     return (
       <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex items-center justify-center bg-grid relative">
-        <Helmet>
+
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-[2px] bg-yellow-electric z-[9999]"
+        style={{ scaleX, transformOrigin: '0%' }}
+      />
+
+      <Helmet>
           <title>Validating Directive | James Ellars</title>
           <meta name="robots" content="noindex" />
         </Helmet>
@@ -193,6 +207,11 @@ const DirectiveDetail = () => {
 
   return (
     <div className={`min-h-screen bg-void pt-32 pb-20 relative overflow-hidden blueprint-overlay bg-grid opacity-duration ${!loadingArticles && directive ? 'opacity-100' : 'opacity-0'}`}>
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-[2px] bg-yellow-electric z-[9999]"
+        style={{ scaleX, transformOrigin: '0%' }}
+      />
+
       <Helmet>
         <title>{`${directive.title} | The Platform | James Ellars`}</title>
         <meta name="description" content={directive.description} />

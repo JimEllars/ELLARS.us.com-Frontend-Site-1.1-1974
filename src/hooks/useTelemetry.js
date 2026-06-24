@@ -48,7 +48,23 @@ export const useTelemetry = () => {
           const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
           const newQueue = [...queue, ...inFlightPayloads.current];
           const limitedQueue = newQueue.slice(-50);
-          localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+          try {
+            localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+          } catch (storageError) {
+            if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+              try {
+                // Slicing to remove the oldest 20 elements as recovery
+                const recoveredQueue = limitedQueue.slice(20);
+                localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
+              } catch (retryError) {
+                try {
+                  sessionStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+                } catch (sessionError) {
+                  // Fallback failed
+                }
+              }
+            }
+          }
         } catch (e) {
           // Silent
         }
