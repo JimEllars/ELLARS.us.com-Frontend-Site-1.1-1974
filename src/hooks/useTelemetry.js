@@ -22,7 +22,22 @@ const enqueuePayload = (payload) => {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     queue.push(payload);
     const limitedQueue = queue.slice(-50);
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+    try {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+    } catch (storageError) {
+      if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        try {
+          const recoveredQueue = limitedQueue.slice(20);
+          localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
+        } catch (retryError) {
+          try {
+            sessionStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+          } catch (sessionError) {
+            // Silence
+          }
+        }
+      }
+    }
   } catch (e) {
     // Silence errors to prevent network identifiers in console
   }
