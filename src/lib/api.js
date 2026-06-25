@@ -36,15 +36,19 @@ const FALLBACK_POSTS = [
   }
 ];
 
-const POSTS_CACHE = {
-  data: null,
-  timestamp: null,
-  CACHE_DURATION: 1000 * 60 * 5 // 5 minutes
-};
+
 
 
 function logApiErrorToTelemetry(url, error) {
   try {
+    if (url.includes('/api/telemetry') || url.includes('v1/telemetry')) {
+      if (import.meta.env.DEV) {
+        console.warn('Telemetry endpoint failed, skipping telemetry logging loop.');
+      } else {
+        localStorage.setItem('telemetry_error_flag', 'true');
+      }
+      return;
+    }
     const payload = {
       telemetry_envelope: {
         project_id: 'ELLARS_FRONTEND',
@@ -126,33 +130,50 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
 }
 
 export async function getLatestPosts(limit = 10, categoryId = null) {
-  const cacheKey = `${limit}-${categoryId}`;
-
-  if (!POSTS_CACHE[cacheKey]) {
-    POSTS_CACHE[cacheKey] = { data: null, timestamp: null };
-  }
-
-  const now = Date.now();
-  if (POSTS_CACHE[cacheKey].data && POSTS_CACHE[cacheKey].timestamp && (now - POSTS_CACHE[cacheKey].timestamp < POSTS_CACHE.CACHE_DURATION)) {
-    return POSTS_CACHE[cacheKey].data;
-  }
+  const cacheKey = `posts-${limit}-${categoryId}`;
 
   try {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
     if (categoryId) url += `&categories=${categoryId}`;
     
-    const res = await fetchWithRetry(url, {
+    // Check sessionStorage for cache
+    const cachedItem = sessionStorage.getItem(cacheKey);
+    let cachedData = null;
+    const now = Date.now();
+    const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+
+    if (cachedItem) {
+      try {
+        const parsed = JSON.parse(cachedItem);
+        if (now - parsed.timestamp < CACHE_DURATION) {
+          cachedData = parsed.data;
+        }
+      } catch (e) {
+        // Silent
+      }
+    }
+
+    const networkFetch = fetchWithRetry(url, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       }
+    }).then(async res => {
+      const data = await res.json();
+      if (data.isError) return FALLBACK_POSTS.slice(0, limit);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+      } catch (e) { /* silent */ }
+      return data;
     });
 
-    const data = await res.json();
-    if (data.isError) return FALLBACK_POSTS.slice(0, limit);
-    POSTS_CACHE[cacheKey].data = data;
-    POSTS_CACHE[cacheKey].timestamp = now;
-    return data;
+    if (cachedData) {
+      // Revalidate in background without awaiting
+      networkFetch.catch(() => { /* handle background error silently */ });
+      return cachedData;
+    }
+
+    return await networkFetch;
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol:", error.message);
@@ -161,17 +182,47 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 }
 
 export async function getPostBySlug(slug) {
+  const cacheKey = `post-${slug}`;
+
   try {
-    const res = await fetchWithRetry(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
+    // Check sessionStorage for cache
+    const cachedItem = sessionStorage.getItem(cacheKey);
+    let cachedData = null;
+    const now = Date.now();
+    const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+
+    if (cachedItem) {
+      try {
+        const parsed = JSON.parse(cachedItem);
+        if (now - parsed.timestamp < CACHE_DURATION) {
+          cachedData = parsed.data;
+        }
+      } catch (e) {
+        // Silent
+      }
+    }
+
+    const networkFetch = fetchWithRetry(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       }
+    }).then(async res => {
+      const data = await res.json();
+      if (data.isError) return data;
+      const result = data[0] || null;
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data: result, timestamp: Date.now() }));
+      } catch (e) { /* silent */ }
+      return result;
     });
 
-    const data = await res.json();
-    if (data.isError) return data; // Return the standardized error object
-    return data[0] || null; // Trigger fallback
+    if (cachedData) {
+      networkFetch.catch(() => { /* silent */ });
+      return cachedData;
+    }
+
+    return await networkFetch;
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol for post:", error.message);
@@ -208,45 +259,60 @@ const SOCIAL_FALLBACK = [
 export async function getSocialFeed(limit = 10) {
   const cacheKey = `social-${limit}`;
 
-  if (!POSTS_CACHE[cacheKey]) {
-    POSTS_CACHE[cacheKey] = { data: null, timestamp: null };
-  }
-
-  const now = Date.now();
-  if (POSTS_CACHE[cacheKey].data && POSTS_CACHE[cacheKey].timestamp && (now - POSTS_CACHE[cacheKey].timestamp < POSTS_CACHE.CACHE_DURATION)) {
-    return POSTS_CACHE[cacheKey].data;
-  }
-
   try {
+    // Check sessionStorage for cache
+    const cachedItem = sessionStorage.getItem(cacheKey);
+    let cachedData = null;
+    const now = Date.now();
+    const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+
+    if (cachedItem) {
+      try {
+        const parsed = JSON.parse(cachedItem);
+        if (now - parsed.timestamp < CACHE_DURATION) {
+          cachedData = parsed.data;
+        }
+      } catch (e) {
+        // Silent
+      }
+    }
+
     const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?feed=390&per_page=${limit}`;
 
-    const res = await fetchWithRetry(url, {
+    const networkFetch = fetchWithRetry(url, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       }
+    }).then(async res => {
+      const data = await res.json();
+      if (data.isError) return SOCIAL_FALLBACK;
+
+      const mappedData = (data.media || data).map((item, index) => ({
+          id: `social-${index}-${item.id || index}`,
+          slug: item.permalink || '#',
+          title: { rendered: "Social Update" },
+          excerpt: { rendered: item.caption || '' },
+          date: item.timestamp || new Date().toISOString(),
+          acf: { category_label: "SOCIAL", read_time: "1 Min" },
+          _embedded: {},
+          isExternal: true, // Marker for social links
+          externalUrl: item.permalink,
+          imageUrl: item.media_url || item.thumbnail_url || null
+      }));
+
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data: mappedData, timestamp: Date.now() }));
+      } catch (e) { /* silent */ }
+      return mappedData;
     });
 
-    const data = await res.json();
-    if (data.isError) return SOCIAL_FALLBACK;
+    if (cachedData) {
+      networkFetch.catch(() => { /* silent */ });
+      return cachedData;
+    }
 
-    // Map Spotlight format to match WordPress Posts format for generic rendering
-    const mappedData = (data.media || data).map((item, index) => ({
-        id: `social-${index}-${item.id || index}`,
-        slug: item.permalink || '#',
-        title: { rendered: "Social Update" },
-        excerpt: { rendered: item.caption || '' },
-        date: item.timestamp || new Date().toISOString(),
-        acf: { category_label: "SOCIAL", read_time: "1 Min" },
-        _embedded: {},
-        isExternal: true, // Marker for social links
-        externalUrl: item.permalink,
-        imageUrl: item.media_url || item.thumbnail_url || null
-    }));
-
-    POSTS_CACHE[cacheKey].data = mappedData;
-    POSTS_CACHE[cacheKey].timestamp = now;
-    return mappedData;
+    return await networkFetch;
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol for social:", error.message);

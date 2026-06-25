@@ -10,6 +10,7 @@ import Newsletter from '@/components/home/Newsletter';
 
 const Home = () => {
   useEffect(() => {
+    document.title = "Ellars for Congress | Home";
     window.scrollTo(0, 0);
   }, []);
 
