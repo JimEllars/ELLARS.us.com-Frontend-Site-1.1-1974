@@ -83,7 +83,7 @@ const ArticleDetail = () => {
       try {
         const data = await getPostBySlug(slug);
         if (isMounted) {
-          if (!data) {
+          if (!data || data.isError) {
             setFallbackMode(true);
           } else {
             setPost(data);
@@ -277,7 +277,7 @@ const ArticleDetail = () => {
               <div className="mt-8 pt-8 border-t border-white/5">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                   <div className="w-16 h-16 rounded-sm overflow-hidden border border-white/10 shrink-0 bg-zinc-900">
-                    <img src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" alt="James Ellars" className="w-full h-full object-cover grayscale" />
+                    <img src="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" alt="James Ellars" className="w-full h-full object-cover grayscale" />
                   </div>
                   <div>
                     <h4 className="font-editorial text-lg text-white font-bold uppercase tracking-widest mb-2">James Ellars</h4>

@@ -153,7 +153,7 @@ const NewsMedia = () => {
         <title>News & Media Hub | James Ellars | Official</title>
         <meta property="og:type" content="website" />
         <meta property="og:title" content="News & Media Hub | James Ellars" />
-        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" />
         <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
         <meta property="og:description" content="James Ellars' updates on American innovation and economic freedom" />
       </Helmet>

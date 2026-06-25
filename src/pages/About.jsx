@@ -93,7 +93,7 @@ const About = () => {
         />
         <meta
           property="og:image"
-          content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp"
+          content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1"
         />
 
         <script type="application/ld+json">
@@ -210,7 +210,7 @@ const About = () => {
 
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
               <img loading="lazy"
-                src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
+                src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp?v=1.1"
                 alt="Ellars Inc Legacy Fleet"
                 className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
               />
@@ -239,7 +239,7 @@ const About = () => {
         >
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
             <img loading="lazy"
-              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp"
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp?v=1.1"
               alt="Bridging Main Street and Corporate"
               className="w-full h-64 md:h-96 max-h-96 object-cover object-top transition-transform duration-500 hover:scale-102"
             />
@@ -302,16 +302,16 @@ const About = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid md:grid-cols-12 gap-12 items-start"
+          className="grid lg:grid-cols-12 gap-12 items-start"
         >
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl order-last md:order-first relative group/image">
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
             <img loading="lazy"
-              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp"
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp?v=1.1"
               alt="Taking on the establishment"
               className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
           </motion.div>
-          <motion.div className="col-span-12 md:col-span-7 flex flex-col gap-12">
+          <motion.div className="col-span-12 lg:col-span-7 flex flex-col gap-12">
             <motion.div
               variants={itemVariants}
               className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
@@ -414,7 +414,7 @@ const About = () => {
           </motion.div>
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
             <img loading="lazy"
-              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp"
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp?v=1.1"
               alt="Activism in an Age of Crisis"
               className="w-full aspect-square object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
@@ -457,7 +457,7 @@ const About = () => {
               delivered in predictable $1,000 monthly installments designed to
               avoid the welfare trap.
             </p>
-            <blockquote className="deco-frame my-12 font-deco text-xl italic text-white/90 max-w-3xl">
+            <blockquote className="border-l-4 border-yellow-electric bg-white/5 p-6 md:p-8 my-12 font-deco text-lg md:text-xl italic text-white/90 max-w-3xl rounded-r-sm shadow-lg">
               "We can no longer measure our country's success solely by the
               stock market or GDP. If corporate profits are hitting record highs
               but everyday families can't afford housing, the system is broken."
@@ -557,7 +557,7 @@ const About = () => {
         >
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
             <img loading="lazy"
-              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp"
+              src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp?v=1.1"
               alt="The Road Ahead"
               className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
