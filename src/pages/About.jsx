@@ -241,7 +241,7 @@ const About = () => {
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp"
               alt="Bridging Main Street and Corporate"
-              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+              className="w-full h-64 md:h-96 max-h-96 object-cover object-top transition-transform duration-500 hover:scale-102"
             />
           </motion.div>
           <motion.div
@@ -304,66 +304,73 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
           className="grid md:grid-cols-12 gap-12 items-start"
         >
-          <motion.div
-            variants={itemVariants}
-            className="col-span-12 md:col-span-7 interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
-          >
-            <p className="text-text-muted font-light text-sm leading-relaxed">
-              In 2020, James launched a frugal "tester campaign" for the U.S.
-              House of Representatives in California's 8th Congressional
-              District. The campaign proved that widespread community engagement
-              doesn't require exorbitant corporate funding. He achieved maximum
-              name recognition with minimal spending through a strategy of
-              "minimum money raised and minimum events."
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="col-span-12 md:col-span-5 grid grid-cols-2 md:grid-cols-1 gap-4"
-          >
-            <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
-                Campaign Raised
-              </div>
-              <div className="font-editorial text-3xl font-black text-white">
-                $2,056.20
-              </div>
-            </div>
-            <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
-                Campaign Spent
-              </div>
-              <div className="font-editorial text-3xl font-black text-white">
-                $1,890.25
-              </div>
-            </div>
-            <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
-                Grassroots Votes
-              </div>
-              <div className="font-editorial text-3xl font-black text-white">
-                ~4,000
-              </div>
-            </div>
-            <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
-                Efficiency Metric
-              </div>
-              <div className="font-editorial text-3xl font-black text-white">
-                $0.48{" "}
-                <span className="text-sm text-yellow-electric font-mono uppercase">
-                  / Vote
-                </span>
-              </div>
-            </div>
-          </motion.div>
-          <motion.div variants={itemVariants} className="col-span-12 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl mt-8 w-full max-w-full">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl order-last md:order-first relative group/image">
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp"
               alt="Taking on the establishment"
-              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+              className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
+          </motion.div>
+          <motion.div className="col-span-12 md:col-span-7 flex flex-col gap-12">
+            <motion.div
+              variants={itemVariants}
+              className="interactive-card p-8 bg-black/40 backdrop-blur-sm relative overflow-hidden group"
+            >
+              <p className="text-text-muted font-light text-sm leading-relaxed">
+                In 2020, James launched a frugal "tester campaign" for the U.S.
+                House of Representatives in California's 8th Congressional
+                District. The campaign proved that widespread community engagement
+                doesn't require exorbitant corporate funding. He achieved maximum
+                name recognition with minimal spending through a strategy of
+                "minimum money raised and minimum events."
+              </p>
+            </motion.div>
+            <motion.div
+              variants={itemVariants}
+              className="grid grid-cols-2 gap-4"
+            >
+              <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
+                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                  Campaign Raised
+                </div>
+                <div className="font-editorial text-3xl font-black text-white">
+                  $2,056{" "}
+                  <span className="text-sm text-yellow-electric font-mono">
+                    .20
+                  </span>
+                </div>
+              </div>
+              <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
+                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                  Campaign Spent
+                </div>
+                <div className="font-editorial text-3xl font-black text-white">
+                  $1,890{" "}
+                  <span className="text-sm text-yellow-electric font-mono">
+                    .25
+                  </span>
+                </div>
+              </div>
+              <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
+                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                  Total Votes
+                </div>
+                <div className="font-editorial text-3xl font-black text-white">
+                  ~4,000{" "}
+                </div>
+              </div>
+              <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
+                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                  Cost Efficiency
+                </div>
+                <div className="font-editorial text-3xl font-black text-white">
+                  $0.48{" "}
+                  <span className="text-sm text-yellow-electric font-mono uppercase">
+                    / Vote
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       </section>
@@ -405,12 +412,15 @@ const About = () => {
               as the ultimate mechanism for achieving true social equity.
             </p>
           </motion.div>
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp"
               alt="Activism in an Age of Crisis"
-              className="w-full aspect-square object-cover transition-transform duration-500 hover:scale-102"
+              className="w-full aspect-square object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
+            <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex items-end p-4 pointer-events-none">
+              <span className="text-[10px] uppercase tracking-widest text-white/50 font-mono">Archived correspondence, 2020</span>
+            </div>
           </motion.div>
         </motion.div>
       </section>
@@ -545,12 +555,15 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
           className="grid md:grid-cols-12 gap-12 items-center"
         >
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp"
               alt="The Road Ahead"
-              className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+              className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
+            <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex items-end p-4 pointer-events-none">
+              <span className="text-[10px] uppercase tracking-widest text-white/50 font-mono">The Road Ahead</span>
+            </div>
           </motion.div>
           <motion.div
             variants={itemVariants}

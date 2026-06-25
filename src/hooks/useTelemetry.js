@@ -128,7 +128,7 @@ export const useTelemetry = () => {
 
       while (attempt < MAX_RETRIES && !success) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         try {
           const response = await fetch(apiUrl, {
@@ -189,7 +189,7 @@ export const useTelemetry = () => {
     if (!apiKey) return;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     // Track as an individual in-flight payload
     inFlightPayloads.current.push(payload);
@@ -220,7 +220,7 @@ export const useTelemetry = () => {
 
       // If a 'CRITICAL' or 'HIGH' severity anomaly capture request fails to deliver
       const severity = payload?.event_payload?.severity;
-      if (severity === 'CRITICAL' || severity === 'HIGH') {
+      if (severity === 'CRITICAL' || severity === 'HIGH' || error.name === 'AbortError') {
         enqueuePayload(payload);
       }
 
