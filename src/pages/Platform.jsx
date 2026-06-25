@@ -147,7 +147,7 @@ const Platform = () => {
         <title>The Platform | James Ellars | Official</title>
         <meta property="og:type" content="article" />
         <meta property="og:title" content="The Platform | James Ellars" />
-        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" />
         <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
         <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
         <script type="application/ld+json">

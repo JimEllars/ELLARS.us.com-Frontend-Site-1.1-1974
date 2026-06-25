@@ -6,7 +6,7 @@ const QUEUE_KEY = 'ellars_telemetry_queue';
 const MAX_RETRIES = 3;
 const BASE_BACKOFF_MS = 1000;
 
-const generateUUID = () => {
+export const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
@@ -17,7 +17,7 @@ const generateUUID = () => {
   });
 };
 
-const enqueuePayload = (payload) => {
+export const enqueuePayload = (payload) => {
   try {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     queue.push(payload);

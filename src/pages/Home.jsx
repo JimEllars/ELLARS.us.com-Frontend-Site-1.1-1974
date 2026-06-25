@@ -20,7 +20,7 @@ const Home = () => {
         <title>Home | James Ellars | Official</title>
         <meta property="og:type" content="website" />
         <meta property="og:title" content="James Ellars | The Blueprint" />
-        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp" />
+        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" />
         <meta name="description" content="Leading American Innovation through Sustainable Systems , Forward-Thinking Ideas and a Blue-Collar Work Ethic." />
         <meta property="og:description" content="Leading American Innovation through Sustainable Systems , Forward-Thinking Ideas and a Blue-Collar Work Ethic." />
         <meta name="twitter:description" content="Leading American Innovation through Sustainable Systems , Forward-Thinking Ideas and a Blue-Collar Work Ethic." />

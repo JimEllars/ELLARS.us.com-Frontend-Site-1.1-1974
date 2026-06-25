@@ -1,3 +1,5 @@
+import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
+
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
 
 // Fallback data for development and reliability
@@ -40,6 +42,35 @@ const POSTS_CACHE = {
   CACHE_DURATION: 1000 * 60 * 5 // 5 minutes
 };
 
+
+function logApiErrorToTelemetry(url, error) {
+  try {
+    const payload = {
+      telemetry_envelope: {
+        project_id: 'ELLARS_FRONTEND',
+        environment: 'production',
+        timestamp: new Date().toISOString(),
+        idempotency_key: generateUUID(),
+        session: { context_scope: 'public_facing_umbrella' }
+      },
+      event_payload: {
+        event_type: 'API_FETCH_ERROR',
+        severity: 'HIGH',
+        component_origin: 'API_UTILITY',
+        error_message: error.message || 'Unknown API Error',
+        stack_trace: error.stack || '',
+        metadata: {
+          url: url,
+          network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline',
+        }
+      }
+    };
+    enqueuePayload(payload);
+  } catch(e) {
+    // Silent
+  }
+}
+
 async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   try {
     const controller = new AbortController();
@@ -76,12 +107,20 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
       await new Promise(resolve => setTimeout(resolve, backoff));
       return fetchWithRetry(url, options, retries - 1, backoff * 2);
     } else {
+      let finalError = error;
       if (error.name === 'AbortError') {
-        throw new Error('API request timed out');
+        finalError = new Error('API request timed out');
       } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('Network offline');
+        finalError = new Error('Network offline');
       }
-      throw error;
+      logApiErrorToTelemetry(url, finalError);
+      return {
+        ok: false,
+        status: finalError.status || 500,
+        isError: true,
+        message: finalError.message || 'API request failed',
+        json: async () => ({ isError: true, message: finalError.message || 'API request failed' })
+      };
     }
   }
 }
@@ -110,6 +149,7 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     });
 
     const data = await res.json();
+    if (data.isError) return FALLBACK_POSTS.slice(0, limit);
     POSTS_CACHE[cacheKey].data = data;
     POSTS_CACHE[cacheKey].timestamp = now;
     return data;
@@ -130,11 +170,12 @@ export async function getPostBySlug(slug) {
     });
 
     const data = await res.json();
+    if (data.isError) return data; // Return the standardized error object
     return data[0] || null; // Trigger fallback
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol for post:", error.message);
-    throw error; // Let component handle fallback mode
+    return { isError: true, message: error.message };
   }
 }
 
@@ -187,6 +228,7 @@ export async function getSocialFeed(limit = 10) {
     });
 
     const data = await res.json();
+    if (data.isError) return SOCIAL_FALLBACK;
 
     // Map Spotlight format to match WordPress Posts format for generic rendering
     const mappedData = (data.media || data).map((item, index) => ({
