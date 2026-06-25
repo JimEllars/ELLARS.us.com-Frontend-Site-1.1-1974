@@ -208,11 +208,11 @@ const About = () => {
             </p>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-              <img
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+              <img loading="lazy"
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp"
                 alt="Ellars Inc Legacy Fleet"
-                className="w-full h-auto object-contain transition-transform duration-500 hover:scale-102"
+                className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
               />
             </motion.div>
         </motion.div>
@@ -237,8 +237,8 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
           className="grid md:grid-cols-12 gap-12 items-center"
         >
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-            <img
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp"
               alt="Bridging Main Street and Corporate"
               className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
@@ -358,8 +358,8 @@ const About = () => {
               </div>
             </div>
           </motion.div>
-          <motion.div variants={itemVariants} className="col-span-12 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl mt-8">
-            <img
+          <motion.div variants={itemVariants} className="col-span-12 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl mt-8 w-full max-w-full">
+            <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp"
               alt="Taking on the establishment"
               className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
@@ -405,8 +405,8 @@ const About = () => {
               as the ultimate mechanism for achieving true social equity.
             </p>
           </motion.div>
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-            <img
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp"
               alt="Activism in an Age of Crisis"
               className="w-full aspect-square object-cover transition-transform duration-500 hover:scale-102"
@@ -545,8 +545,8 @@ const About = () => {
           viewport={{ once: true, margin: "-100px" }}
           className="grid md:grid-cols-12 gap-12 items-center"
         >
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-            <img
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
+            <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp"
               alt="The Road Ahead"
               className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
