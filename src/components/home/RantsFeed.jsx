@@ -9,6 +9,17 @@ const RantsFeed = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const handleSWRUpdate = (e) => {
+      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
+        setPosts(e.detail.newData);
+      }
+    };
+    window.addEventListener('swr-update', handleSWRUpdate);
+    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+  }, []);
+
+
+  useEffect(() => {
         async function fetchPosts() {
       const data = await getLatestPosts(5); // Fetch a bit more to ensure we find a Daily News if it exists
 

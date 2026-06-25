@@ -81,9 +81,12 @@ const Navbar = () => {
               key={link.path}
               to={link.path} 
               onMouseEnter={() => handleMouseEnter(link.prefetch)}
-              className={`transition-colors hover:text-yellow-electric ${location.pathname === link.path ? 'text-white' : 'text-gray-400'}`}
+              className={`transition-colors relative overflow-hidden group py-1 ${location.pathname.startsWith(link.path) ? 'text-yellow-electric font-semibold' : 'text-gray-400 hover:text-yellow-electric'}`}
             >
               {link.name}
+              {location.pathname.startsWith(link.path) && (
+                <motion.div layoutId="navbar-active-indicator" className="absolute bottom-0 left-0 w-full h-[1px] bg-yellow-electric" />
+              )}
             </Link>
           ))}
 
@@ -134,7 +137,7 @@ const Navbar = () => {
                 <Link
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className="font-editorial font-bold text-xs uppercase tracking-widest text-white hover:text-yellow-electric transition-colors block"
+                  className={`font-editorial font-bold text-xs uppercase tracking-widest block transition-colors ${location.pathname.startsWith(link.path) ? 'text-yellow-electric' : 'text-white hover:text-yellow-electric'}`}
                 >
                   {link.name}
                 </Link>

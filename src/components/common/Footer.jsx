@@ -32,18 +32,16 @@ const Footer = () => {
     }
 
     setIsSubmitting(true);
-    setHasError(false);
-
-    try {
+    setHasError(false);    try {
       await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
-      setIsSubmitting(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error("Newsletter subscription error:", error);
-      setIsSubmitting(false);
       setHasError(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

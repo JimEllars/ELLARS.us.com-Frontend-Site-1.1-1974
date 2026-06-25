@@ -91,6 +91,19 @@ const NewsMedia = () => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
+    const handleSWRUpdate = (e) => {
+      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
+        setPosts(e.detail.newData);
+      } else if (e.detail?.endpoint === 'social' && e.detail.newData) {
+        setSocialPosts(e.detail.newData);
+      }
+    };
+    window.addEventListener('swr-update', handleSWRUpdate);
+    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+  }, []);
+
+
+  useEffect(() => {
     setIsLoading(false);
   }, [setIsLoading]);
 

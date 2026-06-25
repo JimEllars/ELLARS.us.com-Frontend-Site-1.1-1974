@@ -61,6 +61,17 @@ const ArticleDetail = () => {
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    const handleSWRUpdate = (e) => {
+      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
+        useAppStore.getState().setArticles(e.detail.newData);
+      }
+    };
+    window.addEventListener('swr-update', handleSWRUpdate);
+    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+  }, []);
+
+
   const recentArticles = useMemo(() => {
     if (!articles || articles.length === 0) return [];
     return articles
@@ -148,18 +159,16 @@ const ArticleDetail = () => {
     }
 
     setIsSubmitting(true);
-    setHasError(false);
-
-    try {
+    setHasError(false);    try {
       await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
-      setIsSubmitting(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error("Newsletter subscription error:", error);
-      setIsSubmitting(false);
       setHasError(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
