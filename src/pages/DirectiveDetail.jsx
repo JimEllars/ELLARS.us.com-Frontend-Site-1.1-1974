@@ -21,6 +21,7 @@ const modulesData = [
   {
     slug: "working-class-foundation",
     title: "WORKING CLASS FOUNDATION",
+    updatedAt: "October 2023",
     icon: "Home",
     status: "Directive 01",
     color: "text-yellow-electric",
@@ -33,6 +34,7 @@ const modulesData = [
   {
     slug: "political-reform",
     title: "POLITICAL REFORM",
+    updatedAt: "October 2023",
     icon: "Vote",
     status: "Directive 02",
     color: "text-yellow-electric",
@@ -45,6 +47,7 @@ const modulesData = [
   {
     slug: "the-automation-dividend-and-taxation",
     title: "THE AUTOMATION DIVIDEND & TAXATION",
+    updatedAt: "October 2023",
     icon: "Cpu",
     status: "Directive 03",
     color: "text-yellow-electric",
@@ -57,6 +60,7 @@ const modulesData = [
   {
     slug: "future-infrastructure",
     title: "FUTURE INFRASTRUCTURE",
+    updatedAt: "October 2023",
     icon: "Zap",
     status: "Directive 04",
     color: "text-yellow-electric",
@@ -90,6 +94,12 @@ const DirectiveDetail = () => {
   const [loadingArticles, setLoadingArticles] = useState(false);
 
   const { scrollYProgress } = useScroll();
+
+  useEffect(() => {
+    return () => {
+      scrollYProgress.destroy();
+    };
+  }, [scrollYProgress]);
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
@@ -239,9 +249,14 @@ const DirectiveDetail = () => {
                 {directive.status}
               </span>
             </div>
-            <h1 className="font-editorial font-black text-4xl md:text-6xl text-white leading-tight mb-6">
+            <h1 className="font-editorial font-black text-4xl md:text-6xl text-white leading-tight mb-2">
               {directive.title}
             </h1>
+            {directive.updatedAt && (
+              <div className="text-text-muted text-xs font-mono uppercase tracking-widest mb-6">
+                Updated: {directive.updatedAt}
+              </div>
+            )}
 
             <p className="text-xl text-yellow-electric font-light max-w-3xl leading-relaxed mb-6">
               {directive.description}
