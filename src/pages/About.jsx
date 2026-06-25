@@ -58,6 +58,7 @@ const About = () => {
   };
 
   useEffect(() => {
+    document.title = "Ellars for Congress | About";
     window.scrollTo(0, 0);
   }, []);
 
@@ -212,7 +213,7 @@ const About = () => {
               <img loading="lazy"
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp?v=1.1"
                 alt="Ellars Inc Legacy Fleet"
-                className="w-full h-auto object-cover transition-transform duration-500 hover:scale-102"
+                className="w-full aspect-[598/598] object-cover transition-transform duration-500 hover:scale-102"
               />
             </motion.div>
         </motion.div>
@@ -241,7 +242,7 @@ const About = () => {
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp?v=1.1"
               alt="Bridging Main Street and Corporate"
-              className="w-full h-64 md:h-96 max-h-96 object-cover object-top transition-transform duration-500 hover:scale-102"
+              className="w-full aspect-[1080/1659] object-cover object-top transition-transform duration-500 hover:scale-102"
             />
           </motion.div>
           <motion.div
@@ -308,7 +309,7 @@ const About = () => {
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp?v=1.1"
               alt="Taking on the establishment"
-              className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
+              className="w-full aspect-[2208/1242] object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
           </motion.div>
           <motion.div className="col-span-12 lg:col-span-7 flex flex-col gap-12">
@@ -416,7 +417,7 @@ const About = () => {
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp?v=1.1"
               alt="Activism in an Age of Crisis"
-              className="w-full aspect-square object-cover transition-transform duration-500 group-hover/image:scale-102"
+              className="w-full aspect-[864/874] object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
             <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex items-end p-4 pointer-events-none">
               <span className="text-[10px] uppercase tracking-widest text-white/50 font-mono">Archived correspondence, 2020</span>
@@ -559,7 +560,7 @@ const About = () => {
             <img loading="lazy"
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp?v=1.1"
               alt="The Road Ahead"
-              className="w-full h-auto object-cover transition-transform duration-500 group-hover/image:scale-102"
+              className="w-full aspect-[2048/2048] object-cover transition-transform duration-500 group-hover/image:scale-102"
             />
             <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex items-end p-4 pointer-events-none">
               <span className="text-[10px] uppercase tracking-widest text-white/50 font-mono">The Road Ahead</span>

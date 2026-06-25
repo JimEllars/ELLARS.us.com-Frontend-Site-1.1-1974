@@ -74,10 +74,12 @@ const SocialSkeleton = () => (
 
 const NewsMedia = () => {
   useEffect(() => {
+    document.title = "Ellars for Congress | News & Media";
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
+    document.title = "Ellars for Congress | News & Media";
     window.scrollTo(0, 0);
   }, []);
   const { setIsLoading } = useLoader();

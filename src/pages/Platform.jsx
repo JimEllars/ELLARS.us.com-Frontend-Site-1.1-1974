@@ -11,6 +11,7 @@ import { useAppStore } from '@/store/useAppStore';
 
 const Platform = () => {
   useEffect(() => {
+    document.title = "Ellars for Congress | Platform";
     window.scrollTo(0, 0);
   }, []);
 
