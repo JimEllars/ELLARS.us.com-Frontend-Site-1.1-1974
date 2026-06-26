@@ -60,6 +60,14 @@ const About = () => {
   useEffect(() => {
     document.title = "Ellars for Congress | About";
     window.scrollTo(0, 0);
+
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.name = "description";
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.content = "Discover James Ellars: An 18-year career in business development bringing private-sector rigor and algorithmic economic equity to American politics.";
   }, []);
 
   const containerVariants = {
