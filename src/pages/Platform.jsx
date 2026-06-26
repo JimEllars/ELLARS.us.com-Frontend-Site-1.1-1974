@@ -20,6 +20,17 @@ const Platform = () => {
   const [articles, setArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(false);
 
+  useEffect(() => {
+    const handleSWRUpdate = (e) => {
+      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
+        setArticles(e.detail.newData);
+      }
+    };
+    window.addEventListener('swr-update', handleSWRUpdate);
+    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+  }, []);
+
+
   // Fallback to fetch if useAppStore doesn't hold articles
   useEffect(() => {
     let isMounted = true;
@@ -142,7 +153,7 @@ const Platform = () => {
   };
 
   return (
-    <div className="pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
+    <div className="overflow-x-hidden pt-32 pb-20 min-h-screen blueprint-overlay bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>The Platform | James Ellars | Official</title>

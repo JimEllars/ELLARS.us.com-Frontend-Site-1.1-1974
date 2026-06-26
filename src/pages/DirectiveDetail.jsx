@@ -115,6 +115,17 @@ const DirectiveDetail = () => {
   const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
+    const handleSWRUpdate = (e) => {
+      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
+        setArticles(e.detail.newData);
+      }
+    };
+    window.addEventListener('swr-update', handleSWRUpdate);
+    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+  }, []);
+
+
+  useEffect(() => {
     if (!directiveSlug) {
       setIsValidating(false);
       return;

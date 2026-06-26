@@ -76,7 +76,7 @@ const About = () => {
   };
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-transparent space-y-32 py-24 bg-grid">
+    <div className="overflow-x-hidden pt-32 pb-20 min-h-screen bg-transparent space-y-32 py-24 bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>The Profile | James Ellars | Official</title>

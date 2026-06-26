@@ -162,7 +162,16 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
       const data = await res.json();
       if (data.isError) return FALLBACK_POSTS.slice(0, limit);
       try {
-        sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+        const oldDataString = sessionStorage.getItem(cacheKey);
+        const newDataString = JSON.stringify({ data, timestamp: Date.now() });
+        sessionStorage.setItem(cacheKey, newDataString);
+
+        if (oldDataString) {
+          const oldData = JSON.parse(oldDataString);
+          if (JSON.stringify(oldData.data) !== JSON.stringify(data)) {
+            window.dispatchEvent(new CustomEvent('swr-update', { detail: { endpoint: 'posts', newData: data } }));
+          }
+        }
       } catch (e) { /* silent */ }
       return data;
     });
@@ -302,7 +311,16 @@ export async function getSocialFeed(limit = 10) {
       }));
 
       try {
-        sessionStorage.setItem(cacheKey, JSON.stringify({ data: mappedData, timestamp: Date.now() }));
+        const oldDataString = sessionStorage.getItem(cacheKey);
+        const newDataString = JSON.stringify({ data: mappedData, timestamp: Date.now() });
+        sessionStorage.setItem(cacheKey, newDataString);
+
+        if (oldDataString) {
+          const oldData = JSON.parse(oldDataString);
+          if (JSON.stringify(oldData.data) !== JSON.stringify(mappedData)) {
+            window.dispatchEvent(new CustomEvent('swr-update', { detail: { endpoint: 'social', newData: mappedData } }));
+          }
+        }
       } catch (e) { /* silent */ }
       return mappedData;
     });
