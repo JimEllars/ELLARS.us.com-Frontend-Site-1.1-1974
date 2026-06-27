@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
@@ -11,6 +11,13 @@ const Newsletter = () => {
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [botValue, setBotValue] = useState('');
+  const successRef = useRef(null);
+
+  useEffect(() => {
+    if (success && successRef.current) {
+      successRef.current.focus();
+    }
+  }, [success]);
 
 
 
@@ -135,6 +142,8 @@ const Newsletter = () => {
             ) : (
               <motion.div
                 key="success"
+                ref={successRef}
+                tabIndex="-1"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}

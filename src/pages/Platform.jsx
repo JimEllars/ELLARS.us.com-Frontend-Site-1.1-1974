@@ -13,6 +13,14 @@ const Platform = () => {
   useEffect(() => {
     document.title = "Ellars for Congress | Platform";
     window.scrollTo(0, 0);
+
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.name = "description";
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.content = "Explore The Platform: A strategic blueprint for human-centric systems, economic sovereignty, the American Tax Credit, and the Automation Dividend.";
   }, []);
 
   const [showAll, setShowAll] = useState(false);
@@ -160,7 +168,6 @@ const Platform = () => {
         <meta property="og:type" content="article" />
         <meta property="og:title" content="The Platform | James Ellars" />
         <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" />
-        <meta name="description" content="A strategic blueprint for human-centric systems and economic sovereignty. Sovereign Innovation." />
         <meta property="og:description" content="Leading American innovation through disruptive systems. Sovereign Innovation." />
         <script type="application/ld+json">
           {`

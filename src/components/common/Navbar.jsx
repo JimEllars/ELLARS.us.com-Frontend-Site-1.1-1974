@@ -60,7 +60,7 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      initial={{ y: 0 }}
+      initial={false}
       animate={{ y: showNavbar ? 0 : "-100%" }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={`fixed w-full z-[100] will-change-transform transition-colors duration-300 ${

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 
 const Hero = () => {
   return (
     <header className="relative min-h-[95vh] flex items-center pt-24 pb-12 overflow-hidden bg-grid">
+      <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-16 items-center relative z-10 w-full"
@@ -57,6 +58,7 @@ const Hero = () => {
           </div>
         </div>
       </motion.div>
+      </AnimatePresence>
     </header>
   );
 };
