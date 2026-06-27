@@ -272,7 +272,7 @@ const DirectiveDetail = () => {
             <p className="text-xl text-yellow-electric font-light max-w-3xl leading-relaxed mb-6">
               {directive.description}
             </p>
-            <div className="font-mono text-xs text-zinc-500 uppercase tracking-widest mt-4">
+            <div className="font-mono text-xs text-zinc-600 uppercase tracking-widest mt-4">
               EST. READING TIME: {readingTime} MIN
             </div>
 
@@ -297,7 +297,7 @@ const DirectiveDetail = () => {
               Implementation Metrics
             </h3>
             <div className="space-y-6">
-              <div className="flex justify-between items-center text-xs font-mono text-gray-400">
+              <div className="flex justify-between items-center text-xs font-mono text-gray-600">
                 <span>Public Consensus</span>
                 <span className="text-[#4ade80]">{directive.progress}%</span>
               </div>
@@ -307,7 +307,7 @@ const DirectiveDetail = () => {
                   style={{ width: `${directive.progress}%` }}
                 ></div>
               </div>
-              <div className="flex justify-between text-[10px] font-mono text-gray-500 uppercase tracking-widest mt-4">
+              <div className="flex justify-between text-[10px] font-mono text-gray-600 uppercase tracking-widest mt-4">
                 <span>Sponsor: {directive.sponsor}</span>
                 <span>Revisions: {directive.revisions}</span>
               </div>
@@ -330,7 +330,7 @@ const DirectiveDetail = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {loadingArticles ? (
-                <div className="col-span-full font-mono text-xs text-zinc-500 uppercase tracking-widest p-4 border border-white/5 bg-white/5">
+                <div className="col-span-full font-mono text-xs text-zinc-600 uppercase tracking-widest p-4 border border-white/5 bg-white/5">
                   [DISPATCH_BUFFER_ACTIVE]
                 </div>
               ) : relatedArticles.length > 0 ? (
@@ -340,14 +340,14 @@ const DirectiveDetail = () => {
                       <h4 className="font-editorial text-lg text-white group-hover:text-yellow-electric transition-colors mb-4 line-clamp-2">
                         {stripHtml(post.title.rendered)}
                       </h4>
-                      <span className="mt-auto text-[10px] font-mono text-gray-500 uppercase flex items-center">
+                      <span className="mt-auto text-[10px] font-mono text-gray-600 uppercase flex items-center">
                         Read Transmission <SafeIcon name="ArrowRight" className="w-3 h-3 ml-2" />
                       </span>
                     </div>
                   </Link>
                 ))
               ) : (
-                <div className="col-span-full text-xs text-zinc-500 font-mono tracking-widest p-4 border border-white/5 bg-white/5 uppercase">
+                <div className="col-span-full text-xs text-zinc-600 font-mono tracking-widest p-4 border border-white/5 bg-white/5 uppercase">
                   Intelligence gathering in progress. Transmissions forthcoming.
                 </div>
               )}

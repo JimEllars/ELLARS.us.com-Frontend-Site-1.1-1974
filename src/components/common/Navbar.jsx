@@ -69,7 +69,7 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center relative z-10">
         <div className="flex flex-col">
-          <Link to="/" className="font-editorial font-black text-2xl tracking-tighter text-white leading-none">
+          <Link to="/" className="font-editorial font-black text-2xl tracking-tighter text-white leading-none" aria-label="Home">
             JAMES <span className="text-yellow-electric">ELLARS</span>
           </Link>
           <span className="text-[9px] text-gray-500 font-editorial uppercase tracking-widest mt-1 hidden sm:block">Business Development • Community Leader</span>
@@ -82,6 +82,7 @@ const Navbar = () => {
               to={link.path} 
               onMouseEnter={() => handleMouseEnter(link.prefetch)}
               className={`transition-colors relative overflow-hidden group py-1 ${location.pathname.startsWith(link.path) ? 'text-yellow-electric font-semibold' : 'text-gray-400 hover:text-yellow-electric'}`}
+              aria-label={link.name}
             >
               {link.name}
               {location.pathname.startsWith(link.path) && (
@@ -90,7 +91,7 @@ const Navbar = () => {
             </Link>
           ))}
 
-          <motion.button
+          <motion.button aria-label="Contribute"
             onClick={() => setDonateModalOpen(true)}
             animate={{ scale: [1, 1.05, 1] }}
             transition={{
@@ -106,7 +107,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="btn-gold hidden sm:flex lg:hidden">Join the Newsletter</button>
+          <button className="btn-gold hidden sm:flex lg:hidden" aria-label="Join the Newsletter">Join the Newsletter</button>
           <button 
             className="lg:hidden text-white hover:text-yellow-electric transition-colors"
             onClick={() => setIsOpen(!isOpen)}
@@ -138,6 +139,7 @@ const Navbar = () => {
                   to={link.path}
                   onClick={() => setIsOpen(false)}
                   className={`font-editorial font-bold text-xs uppercase tracking-widest block transition-colors ${location.pathname.startsWith(link.path) ? 'text-yellow-electric' : 'text-white hover:text-yellow-electric'}`}
+                  aria-label={link.name}
                 >
                   {link.name}
                 </Link>
@@ -155,7 +157,7 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (navLinks.length + 1) * 0.1 + 0.1 }}
             >
-              <motion.button
+              <motion.button aria-label="Contribute"
                 onClick={() => {
                   setIsOpen(false);
                   setDonateModalOpen(true);
