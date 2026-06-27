@@ -21,6 +21,16 @@ const Newsletter = () => {
 
 
 
+  useEffect(() => {
+    let timeoutId;
+    if (success) {
+      timeoutId = setTimeout(() => setSuccess(false), 3000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [success]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -28,7 +38,7 @@ const Newsletter = () => {
       // Fake success for bots
       setEmail('');
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+
       return;
     }
 
@@ -46,7 +56,7 @@ const Newsletter = () => {
       await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+
     } catch (error) {
       console.error("Newsletter subscription error:", error);
       setHasError(true);

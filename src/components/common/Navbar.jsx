@@ -126,7 +126,7 @@ const Navbar = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-10%", opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="lg:hidden absolute top-full left-0 w-full bg-void/95 backdrop-blur-md border-b border-white/10 p-6 flex flex-col space-y-6"
+            className="lg:hidden absolute top-full left-0 w-full h-[100dvh] bg-void/95 backdrop-blur-md border-b border-white/10 p-6 flex flex-col space-y-6"
           >
             {navLinks.map((link, index) => (
               <motion.div
