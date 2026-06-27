@@ -466,7 +466,10 @@ const About = () => {
               delivered in predictable $1,000 monthly installments designed to
               avoid the welfare trap.
             </p>
-            <blockquote className="border-l-4 border-yellow-electric bg-white/5 p-6 md:p-8 my-12 font-deco text-lg md:text-xl italic text-white/90 max-w-3xl rounded-r-sm shadow-lg">
+                        <blockquote className="relative border-l-4 border-yellow-electric bg-white/5 p-6 md:p-8 my-12 font-deco text-lg md:text-xl italic text-white/90 max-w-3xl rounded-r-sm shadow-lg">
+              <svg className="absolute -left-3 -top-3 w-8 h-8 text-white/10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+              </svg>
               "We can no longer measure our country's success solely by the
               stock market or GDP. If corporate profits are hitting record highs
               but everyday families can't afford housing, the system is broken."

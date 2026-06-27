@@ -37,6 +37,7 @@ const Newsletter = () => {
     if (botValue) {
       // Fake success for bots
       setEmail('');
+      setBotValue('');
       setSuccess(true);
 
       return;
@@ -55,6 +56,7 @@ const Newsletter = () => {
     setHasError(false);    try {
       await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
+      setBotValue('');
       setSuccess(true);
 
     } catch (error) {

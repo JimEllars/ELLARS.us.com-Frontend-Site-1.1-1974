@@ -45,6 +45,18 @@ const Platform = () => {
     const fetchArticles = async () => {
       setLoadingArticles(true);
       try {
+        const cacheKey = 'posts-20-null';
+        const cachedItem = sessionStorage.getItem(cacheKey);
+        if (cachedItem) {
+          try {
+            const parsed = JSON.parse(cachedItem);
+            if (isMounted) {
+              setArticles(parsed.data);
+              setLoadingArticles(false);
+            }
+          } catch (e) { /* ignore */ }
+        }
+
         const posts = await getLatestPosts(20);
         if (isMounted) {
           setArticles(posts);
@@ -57,6 +69,7 @@ const Platform = () => {
     };
     fetchArticles();
     return () => { isMounted = false; };
+
   }, []);
 
 
