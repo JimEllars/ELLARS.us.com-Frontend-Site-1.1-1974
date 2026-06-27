@@ -18,6 +18,7 @@ const Footer = () => {
 
     if (botValue) {
       setEmail('');
+      setBotValue('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       return;
@@ -35,6 +36,7 @@ const Footer = () => {
     setHasError(false);    try {
       await subscribeToNewsletter(sanitizedEmail);
       setEmail('');
+      setBotValue('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {

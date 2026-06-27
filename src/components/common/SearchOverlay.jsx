@@ -58,9 +58,12 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       // Focus after small delay for animation
       setTimeout(() => inputRef.current?.focus(), 100);
 
-      const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-          onClose();
+            const handleKeyDown = (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          const tagName = e.target.tagName.toLowerCase();
+          if (tagName !== 'input' && tagName !== 'textarea') {
+            onClose();
+          }
         } else if (e.key === 'Tab') {
           if (!modalRef.current) return;
           const focusableElements = modalRef.current.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');

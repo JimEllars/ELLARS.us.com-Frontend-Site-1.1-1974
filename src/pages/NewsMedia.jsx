@@ -112,6 +112,18 @@ const NewsMedia = () => {
 
     async function fetchArticles() {
       try {
+        const cacheKey = 'posts-20-null';
+        const cachedItem = sessionStorage.getItem(cacheKey);
+        if (cachedItem) {
+          try {
+            const parsed = JSON.parse(cachedItem);
+            if (isMounted) {
+              setPosts(parsed.data);
+              setLoadingPosts(false);
+            }
+          } catch (e) { /* ignore */ }
+        }
+
         const articleData = await getLatestPosts(20);
         if (isMounted) {
           setPosts(articleData);
@@ -124,6 +136,18 @@ const NewsMedia = () => {
 
     async function fetchSocial() {
       try {
+        const cacheKey = 'social-20';
+        const cachedItem = sessionStorage.getItem(cacheKey);
+        if (cachedItem) {
+          try {
+            const parsed = JSON.parse(cachedItem);
+            if (isMounted) {
+              setSocialPosts(parsed.data);
+              setLoadingSocial(false);
+            }
+          } catch (e) { /* ignore */ }
+        }
+
         const socialData = await getSocialFeed(20);
         if (isMounted) {
           setSocialPosts(socialData);
@@ -138,6 +162,7 @@ const NewsMedia = () => {
     fetchSocial();
 
     return () => { isMounted = false; };
+
   }, []);
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
