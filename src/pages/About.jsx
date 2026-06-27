@@ -339,7 +339,7 @@ const About = () => {
               className="grid grid-cols-2 gap-4"
             >
               <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                <div className="font-mono text-[10px] uppercase text-gray-600 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
                   Campaign Raised
                 </div>
                 <div className="font-editorial text-3xl font-black text-white">
@@ -350,7 +350,7 @@ const About = () => {
                 </div>
               </div>
               <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                <div className="font-mono text-[10px] uppercase text-gray-600 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
                   Campaign Spent
                 </div>
                 <div className="font-editorial text-3xl font-black text-white">
@@ -361,7 +361,7 @@ const About = () => {
                 </div>
               </div>
               <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                <div className="font-mono text-[10px] uppercase text-gray-600 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
                   Total Votes
                 </div>
                 <div className="font-editorial text-3xl font-black text-white">
@@ -369,7 +369,7 @@ const About = () => {
                 </div>
               </div>
               <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-                <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+                <div className="font-mono text-[10px] uppercase text-gray-600 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
                   Cost Efficiency
                 </div>
                 <div className="font-editorial text-3xl font-black text-white">
@@ -527,7 +527,7 @@ const About = () => {
             className="col-span-12 md:col-span-4 flex flex-col gap-4"
           >
             <div className="bg-surface border border-white/5 p-6 rounded-sm border-b-yellow-electric/20 transition-all duration-500 hover:-translate-y-1 hover:border-yellow-electric group">
-              <div className="font-mono text-[10px] uppercase text-gray-500 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
+              <div className="font-mono text-[10px] uppercase text-gray-600 tracking-widest mb-2 group-hover:text-yellow-electric transition-colors">
                 Sultana High Defense
               </div>
               <div className="font-editorial text-4xl font-black text-white">
@@ -610,7 +610,7 @@ const About = () => {
             className="deco-frame p-6 flex flex-col justify-between group border border-white/10 hover:border-yellow-electric/30 transition-colors"
           >
             <div>
-              <div className="bg-gray-800 text-gray-400 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
+              <div className="bg-gray-800 text-gray-600 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
                 .ZIP ARCHIVE
               </div>
               <h4 className="font-editorial text-xl text-white font-bold mb-2">High-Resolution Headshots</h4>
@@ -631,7 +631,7 @@ const About = () => {
             className="deco-frame p-6 flex flex-col justify-between group border border-white/10 hover:border-yellow-electric/30 transition-colors"
           >
             <div>
-              <div className="bg-gray-800 text-gray-400 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
+              <div className="bg-gray-800 text-gray-600 text-[10px] uppercase font-mono tracking-widest px-2 py-1 inline-block mb-4 rounded-sm">
                 .PDF DOCUMENT
               </div>
               <h4 className="font-editorial text-xl text-white font-bold mb-2">Official Biographical Brief</h4>

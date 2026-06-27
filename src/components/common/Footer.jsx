@@ -130,6 +130,7 @@ const Footer = () => {
                       disabled={isSubmitting}
                       type="submit"
                       name="submit"
+                      aria-label="Submit Newsletter Subscription"
                       className="bg-white text-black font-editorial font-bold text-xs uppercase tracking-widest px-6 py-3 hover:bg-yellow-electric transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.2)] disabled:opacity-50 relative overflow-hidden text-center mt-2"
                     >
                       <AnimatePresence mode="wait">
@@ -184,8 +185,8 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} James Ellars. All Rights Reserved. An independent policy and advocacy initiative.
           </div>
           <div className="flex space-x-6 text-zinc-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
-            <Link to="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="#" className="hover:text-white transition-colors">System Logistics</Link>
+            <Link to="#" className="hover:text-white transition-colors" aria-label="Privacy Policy">Privacy Policy</Link>
+            <Link to="#" className="hover:text-white transition-colors" aria-label="System Logistics">System Logistics</Link>
           </div>
         </div>
 

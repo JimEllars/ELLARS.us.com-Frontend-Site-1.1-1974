@@ -17,22 +17,45 @@ export const generateUUID = () => {
   });
 };
 
+
+const prunePayloadArray = (queue) => {
+  return queue.map(payload => {
+    if (!payload || !payload.event_payload || !payload.event_payload.metadata) return payload;
+    const prunedMetadata = { ...payload.event_payload.metadata };
+    if (prunedMetadata.data && typeof prunedMetadata.data === "object" && prunedMetadata.data !== null) {
+      const prunedData = { ...prunedMetadata.data };
+      ["nativeEvent", "_reactName", "_targetInst", "target", "currentTarget", "view"].forEach(key => {
+        delete prunedData[key];
+      });
+      prunedMetadata.data = prunedData;
+    }
+    return {
+      ...payload,
+      event_payload: {
+        ...payload.event_payload,
+        metadata: prunedMetadata
+      }
+    };
+  });
+};
+
 export const enqueuePayload = (payload) => {
   try {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
     queue.push(payload);
     const limitedQueue = queue.slice(-50);
+    const prunedQueue = prunePayloadArray(limitedQueue);
     try {
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
     } catch (storageError) {
       if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
         try {
           // Slice the oldest 20 records out of the existing queue and re-attempt the write
-          const recoveredQueue = limitedQueue.slice(20);
+          const recoveredQueue = prunedQueue.slice(20);
           localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
         } catch (retryError) {
           try {
-            sessionStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+            sessionStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
           } catch (sessionError) {
             // Silence
           }
@@ -64,17 +87,18 @@ export const useTelemetry = () => {
           const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
           const newQueue = [...queue, ...inFlightPayloads.current];
           const limitedQueue = newQueue.slice(-50);
+          const prunedQueue = prunePayloadArray(limitedQueue);
           try {
-            localStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+            localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
           } catch (storageError) {
             if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
               try {
                 // Slicing to remove the oldest 20 elements as recovery
-                const recoveredQueue = limitedQueue.slice(20);
+                const recoveredQueue = prunedQueue.slice(20);
                 localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
               } catch (retryError) {
                 try {
-                  sessionStorage.setItem(QUEUE_KEY, JSON.stringify(limitedQueue));
+                  sessionStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
                 } catch (sessionError) {
                   // Fallback failed
                 }
@@ -119,12 +143,13 @@ export const useTelemetry = () => {
 
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
       if (queue.length === 0) return;
+      const prunedQueue = prunePayloadArray(queue);
 
       let attempt = 0;
       let success = false;
 
       // Register the payloads we're about to send as "in-flight" in case of unload
-      inFlightPayloads.current = [...queue];
+      inFlightPayloads.current = [...prunedQueue];
 
       while (attempt < MAX_RETRIES && !success) {
         const controller = new AbortController();
@@ -139,7 +164,7 @@ export const useTelemetry = () => {
               'Accept': 'application/json',
               'X-Project-Scope': 'ELLARS_FRONTEND'
             },
-            body: JSON.stringify(queue), // Single array payload block
+            body: JSON.stringify(prunedQueue), // Single array payload block
             signal: controller.signal,
           });
 
@@ -192,7 +217,8 @@ export const useTelemetry = () => {
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     // Track as an individual in-flight payload
-    inFlightPayloads.current.push(payload);
+    const prunedPayload = prunePayloadArray([payload])[0];
+    inFlightPayloads.current.push(prunedPayload);
 
     try {
       const response = await fetch(apiUrl, {
@@ -203,7 +229,7 @@ export const useTelemetry = () => {
           'Accept': 'application/json',
           'X-Project-Scope': 'ELLARS_FRONTEND'
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(prunedPayload),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
