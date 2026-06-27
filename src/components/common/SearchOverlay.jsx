@@ -61,6 +61,23 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
           onClose();
+        } else if (e.key === 'Tab') {
+          if (!modalRef.current) return;
+          const focusableElements = modalRef.current.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+              lastElement.focus();
+              e.preventDefault();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              firstElement.focus();
+              e.preventDefault();
+            }
+          }
         }
       };
       document.addEventListener('keydown', handleKeyDown);
