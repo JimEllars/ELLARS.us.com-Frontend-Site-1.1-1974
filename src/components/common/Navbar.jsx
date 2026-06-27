@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
@@ -13,6 +13,8 @@ const Navbar = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const { setDonateModalOpen } = useAppStore();
+  const modalRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -37,13 +39,60 @@ const Navbar = () => {
 
   useEffect(() => {
     if (isOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          setIsOpen(false);
+          menuButtonRef.current?.focus();
+        } else if (e.key === 'Tab') {
+          if (!modalRef.current) return;
+          // Combine mobile menu focusable elements and the menu toggle button
+          // Actually, when modal is open, we trap within modalRef
+          const focusableElements = modalRef.current.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+          if (focusableElements.length === 0) return;
+
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+              lastElement.focus();
+              e.preventDefault();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              firstElement.focus();
+              e.preventDefault();
+            }
+          }
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+
+      // Focus first element after a short delay
+      setTimeout(() => {
+        if (modalRef.current) {
+          const focusableElements = modalRef.current.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+          if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+          }
+        }
+      }, 100);
+
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.body.style.paddingRight = '';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     } else {
       document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = '';
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
     const navLinks = [
@@ -109,6 +158,7 @@ const Navbar = () => {
         <div className="flex items-center space-x-4">
           <button className="btn-gold hidden sm:flex lg:hidden" aria-label="Join the Newsletter">Join the Newsletter</button>
           <button 
+            ref={menuButtonRef}
             className="lg:hidden text-white hover:text-yellow-electric transition-colors"
             onClick={() => setIsOpen(!isOpen)}
             aria-expanded={isOpen}
@@ -122,12 +172,24 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
             initial={{ y: "-10%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-10%", opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="lg:hidden absolute top-full left-0 w-full h-[100dvh] bg-void/95 backdrop-blur-md border-b border-white/10 p-6 flex flex-col space-y-6"
           >
+            {/* Close button inside modal to keep tab focus inside if needed, or we rely on the Escape key. Let's add a hidden close button at the start, or just let them tab to the first link. We'll add a close button for accessibility within the trap. */}
+            <button
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 text-white"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close menu"
+            >
+              Close Menu
+            </button>
             {navLinks.map((link, index) => (
               <motion.div
                 key={link.path}

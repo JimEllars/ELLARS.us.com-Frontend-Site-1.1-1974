@@ -54,7 +54,11 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   // Trap focus and handle Escape
   useEffect(() => {
     if (isOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
       // Focus after small delay for animation
       setTimeout(() => inputRef.current?.focus(), 100);
 
@@ -85,7 +89,8 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       };
       document.addEventListener('keydown', handleKeyDown);
       return () => {
-        document.body.style.overflow = '';
+        document.body.style.overflow = 'unset';
+        document.body.style.paddingRight = '';
         document.removeEventListener('keydown', handleKeyDown);
       };
     }

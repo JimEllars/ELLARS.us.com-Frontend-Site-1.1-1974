@@ -6,6 +6,25 @@ import SafeIcon from "../common/SafeIcon";
 import { useAppStore } from '@/store/useAppStore';
 import { submitBookingInquiry } from '@/lib/email';
 
+
+const ImageWithSkeleton = ({ src, alt, className }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  return (
+    <div className="relative w-full h-full">
+      {!isLoaded && (
+        <div className={`absolute inset-0 z-0 animate-pulse bg-gray-200 ${className}`}></div>
+      )}
+      <img
+        loading="lazy"
+        src={src}
+        alt={alt}
+        className={`relative z-10 ${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+        onLoad={() => setIsLoaded(true)}
+      />
+    </div>
+  );
+};
+
 const About = () => {
   const { showToast } = useAppStore();
 
@@ -58,7 +77,7 @@ const About = () => {
   };
 
   useEffect(() => {
-    document.title = "Ellars for Congress | About";
+    document.title = "About James Ellars | Bridging Main Street";
     window.scrollTo(0, 0);
 
     let metaDescription = document.querySelector('meta[name="description"]');
@@ -67,7 +86,7 @@ const About = () => {
       metaDescription.name = "description";
       document.head.appendChild(metaDescription);
     }
-    metaDescription.content = "Discover James Ellars: An 18-year career in business development bringing private-sector rigor and algorithmic economic equity to American politics.";
+    metaDescription.content = "Discover James Ellars: From a working class foundation to an 18-year career in business development. Bridging Main Street through healthcare reform and overturning Citizens United for a People-First Economy.";
   }, []);
 
   const containerVariants = {
@@ -87,10 +106,10 @@ const About = () => {
     <div className="overflow-x-hidden pt-32 pb-20 min-h-screen bg-transparent space-y-32 py-24 bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
-        <title>The Profile | James Ellars | Official</title>
+        <title>About James Ellars | Bridging Main Street</title>
         <meta
           name="description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
+          content="Discover James Ellars: From a working class foundation to an 18-year career in business development. Bridging Main Street through healthcare reform and overturning Citizens United for a People-First Economy."
         />
         <meta
           property="og:description"
@@ -218,7 +237,7 @@ const About = () => {
           </motion.div>
 
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-              <img loading="lazy"
+              <ImageWithSkeleton
                 src="https://wp.axim.us.com/wp-content/uploads/2026/05/Ellars-Inc-Logo-Pic.webp?v=1.1"
                 alt="Ellars Inc Legacy Fleet"
                 className="w-full aspect-[598/598] object-cover transition-transform duration-500 hover:scale-102"
@@ -247,7 +266,7 @@ const About = () => {
           className="grid md:grid-cols-12 gap-12 items-center"
         >
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl">
-            <img loading="lazy"
+            <ImageWithSkeleton
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20251223-145124.webp?v=1.1"
               alt="Bridging Main Street and Corporate"
               className="w-full aspect-[1080/1659] object-cover object-top transition-transform duration-500 hover:scale-102"
@@ -314,7 +333,7 @@ const About = () => {
           className="grid lg:grid-cols-12 gap-12 items-start"
         >
           <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
-            <img loading="lazy"
+            <ImageWithSkeleton
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_7556.webp?v=1.1"
               alt="Taking on the establishment"
               className="w-full aspect-[2208/1242] object-cover transition-transform duration-500 group-hover/image:scale-102"
@@ -422,7 +441,7 @@ const About = () => {
             </p>
           </motion.div>
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
-            <img loading="lazy"
+            <ImageWithSkeleton
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/Screenshot_20260422-091225.webp?v=1.1"
               alt="Activism in an Age of Crisis"
               className="w-full aspect-[864/874] object-cover transition-transform duration-500 group-hover/image:scale-102"
@@ -568,7 +587,7 @@ const About = () => {
           className="grid md:grid-cols-12 gap-12 items-center"
         >
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-5 deco-frame w-full max-w-full overflow-hidden bg-void/50 rounded-sm border border-white/5 shadow-2xl relative group/image">
-            <img loading="lazy"
+            <ImageWithSkeleton
               src="https://wp.ellars.us.com/wp-content/uploads/2026/06/IMG_20260328_141917_696.webp?v=1.1"
               alt="The Road Ahead"
               className="w-full aspect-[2048/2048] object-cover transition-transform duration-500 group-hover/image:scale-102"
