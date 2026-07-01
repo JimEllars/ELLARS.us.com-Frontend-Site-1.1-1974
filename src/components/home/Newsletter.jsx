@@ -54,7 +54,9 @@ const Newsletter = () => {
 
     setIsSubmitting(true);
     setHasError(false);    try {
-      await subscribeToNewsletter(sanitizedEmail);
+      const payload = { email: sanitizedEmail };
+      // Exclude honeypot key entirely from JSON payload
+      await subscribeToNewsletter(payload);
       setEmail('');
       setBotValue('');
       setSuccess(true);
