@@ -12,10 +12,14 @@ export const sendEmail = async (payload) => {
   });
 };
 
-export const subscribeToNewsletter = async (cleanEmail) => {
+export const subscribeToNewsletter = async (payload) => {
+  const cleanEmail = typeof payload === "string" ? payload : payload.email;
   console.log(`[EmailIt] Routing subscription to Cloudflare backend for:`, cleanEmail);
 
-  const url = import.meta.env.VITE_CF_FORM_ENDPOINT || 'https://ellars-us-com-form-handler.your-account.workers.dev/submit';
+  const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    throw new Error("Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid.");
+  }
 
   const metadata = {
     form_version: "v5.40-core",
@@ -58,7 +62,10 @@ export const subscribeToNewsletter = async (cleanEmail) => {
 export const submitBookingInquiry = async (payload) => {
   console.log(`[EmailIt] Routing booking inquiry to Cloudflare backend:`, payload);
 
-  const url = import.meta.env.VITE_CF_FORM_ENDPOINT || 'https://ellars-us-com-form-handler.your-account.workers.dev/submit';
+  const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    throw new Error("Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid.");
+  }
 
   try {
     const response = await fetch(url, {

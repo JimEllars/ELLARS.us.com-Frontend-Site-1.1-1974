@@ -80,7 +80,7 @@ const Platform = () => {
       icon: "Home",
       status: "Directive 01",
       color: "text-yellow-electric",
-      description: "Rebuilding the American working class as the core foundation of the country, shifting power away from the ultra-wealthy and empowering the backbone of our nation.",
+      description: "Rebuilding the American working class as the core foundation. James brings a perspective as a worker first, contrasting with Washington D.C. oligarchs who were born into money and lack understanding of modern American struggles. We must close loopholes used by the wealthy to hoard money and dodge taxes, building a future economy by enabling those at the bottom.",
       progress: 95,
       sponsor: "Economic Equity Council",
       revisions: 14

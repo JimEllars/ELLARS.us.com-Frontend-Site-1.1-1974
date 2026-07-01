@@ -25,11 +25,11 @@ const modulesData = [
     icon: "Home",
     status: "Directive 01",
     color: "text-yellow-electric",
-    description: "Rebuilding the American working class as the core foundation of the country, shifting power away from the ultra-wealthy and empowering the backbone of our nation.",
+    description: "Rebuilding the American working class as the core foundation. James brings a perspective as a worker first, contrasting with Washington D.C. oligarchs who were born into money and lack understanding of modern American struggles. We must close loopholes used by the wealthy to hoard money and dodge taxes, building a future economy by enabling those at the bottom.",
     progress: 95,
     sponsor: "Economic Equity Council",
     revisions: 14,
-    content: "The Working Class Foundation directive seeks to restructure the fundamental power dynamics of the American economy. By ensuring fair wages, strengthening workers' rights to organize, and prioritizing domestic manufacturing over cheap foreign labor, we restore the dignity of work. A strong nation requires a strong middle class, built not on financial speculation, but on tangible productivity and equitable wealth distribution."
+    content: "The Working Class Foundation directive seeks to restructure the fundamental power dynamics of the American economy. James brings a perspective rooted in reality as a worker first, standing in stark contrast to Washington D.C. oligarchs who were born into money and entirely lack an understanding of modern American struggles. To restore the dignity of work, we must systematically close loopholes used by the wealthy to hoard money and dodge taxes. A strong nation requires a strong middle class, and we are committed to building a future economy by enabling those at the bottom, rather than relying on trickle-down policies that only benefit the elite."
   },
   {
     slug: "political-reform",
