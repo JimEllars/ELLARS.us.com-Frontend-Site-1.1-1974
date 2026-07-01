@@ -149,7 +149,9 @@ const Navbar = () => {
               repeatDelay: 10,
               ease: "easeInOut"
             }}
-            className="px-4 py-2 bg-yellow-electric text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.3)]"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-4 py-2 bg-yellow-electric text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:shadow-lg hover:shadow-blue-500/20"
           >
             CONTRIBUTE
           </motion.button>
@@ -231,7 +233,9 @@ const Navbar = () => {
                   repeatDelay: 10,
                   ease: "easeInOut"
                 }}
-                className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-blue-500/20"
               >
                 CONTRIBUTE
               </motion.button>

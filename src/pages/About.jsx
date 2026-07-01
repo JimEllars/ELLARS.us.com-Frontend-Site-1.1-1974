@@ -227,8 +227,8 @@ const About = () => {
             <p className="text-text-muted font-light text-sm leading-relaxed mb-4">
               His grandfather, Bill Ellars, founded Ellars Trucking in the 1980s, establishing a strong family legacy in business and blue-collar work. This local, grassroots operation—navigating as a family-first business—stood in stark contrast to the massive corporate monopolies of today. James grew up witnessing the rapid evolution of this industry from grounded, human-operated fleets into the automated, AI-driven logistics networks of today. He saw firsthand the shift from family-run local businesses fueling our economy to the current reality of stockholder-driven corporate monopolies attempting to control every aspect of the market. This experience served as a permanent catalyst for his future-of-work focus, directly informing his stance on{" "}
               <Link
-                to="/platform"
-                className="underline underline-offset-4 decoration-blue-500/30 hover:decoration-blue-500 transition-colors"
+                to="/platform/the-automation-dividend-and-taxation"
+                className="relative inline-block px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
               >
                 Directive 02: The Automation Dividend
               </Link>
@@ -302,8 +302,8 @@ const About = () => {
               working-class families due to this systemic imbalance solidified
               his focus on{" "}
               <Link
-                to="/platform"
-                className="underline underline-offset-4 decoration-blue-500/30 hover:decoration-blue-500 transition-colors"
+                to="/platform/future-infrastructure"
+                className="relative inline-block px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
               >
                 Directive 06: Housing Sovereignty
               </Link>
