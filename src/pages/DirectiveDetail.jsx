@@ -253,7 +253,7 @@ const DirectiveDetail = () => {
       />
 
       <Helmet>
-        <title>{`${directive.title} | The Platform | James Ellars`}</title>
+        <title>{`${directive.title} Policy | James Ellars`}</title>
         <meta name="description" content={directive.description} />
       </Helmet>
 

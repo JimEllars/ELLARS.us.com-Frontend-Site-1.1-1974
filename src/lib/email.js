@@ -15,7 +15,7 @@ export const sendEmail = async (payload) => {
 export const subscribeToNewsletter = async (cleanEmail) => {
   console.log(`[EmailIt] Routing subscription to Cloudflare backend for:`, cleanEmail);
 
-  const url = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/subscribe` : '/api/v1/subscribe';
+  const url = import.meta.env.VITE_CF_FORM_ENDPOINT || 'https://ellars-us-com-form-handler.your-account.workers.dev/submit';
 
   const metadata = {
     form_version: "v5.40-core",
@@ -58,7 +58,7 @@ export const subscribeToNewsletter = async (cleanEmail) => {
 export const submitBookingInquiry = async (payload) => {
   console.log(`[EmailIt] Routing booking inquiry to Cloudflare backend:`, payload);
 
-  const url = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/subscribe` : '/api/v1/subscribe';
+  const url = import.meta.env.VITE_CF_FORM_ENDPOINT || 'https://ellars-us-com-form-handler.your-account.workers.dev/submit';
 
   try {
     const response = await fetch(url, {

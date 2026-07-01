@@ -31,12 +31,17 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
-            <Link to="/news-media" className="bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl">
-              ACCESS NEWS
-            </Link>
-            <Link to="/platform" className="btn-gold flex items-center justify-center group">
-              ACCESS PLATFORM <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex">
+              <Link to="/news-media" className="w-full bg-white text-black px-10 py-5 font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric hover:text-black hover:border-transparent transition-all duration-300 text-center rounded-sm shadow-xl hover:shadow-lg hover:shadow-blue-500/20">
+                ACCESS NEWS
+              </Link>
+            </motion.div>
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex">
+              <Link to="/platform" className="w-full btn-gold flex items-center justify-center group hover:shadow-lg hover:shadow-blue-500/20">
+                ACCESS PLATFORM <SafeIcon name="ArrowRight" className="ml-3 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
           </div>
         </div>
         
