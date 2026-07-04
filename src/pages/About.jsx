@@ -18,7 +18,7 @@ const ImageWithSkeleton = ({ src, alt, className }) => {
         loading="lazy"
         src={src}
         alt={alt}
-        className={`relative z-10 ${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+        className={`relative z-10 rounded-lg shadow-md ${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
         onLoad={() => setIsLoaded(true)}
       />
     </div>

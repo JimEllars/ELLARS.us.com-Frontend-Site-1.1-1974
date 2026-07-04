@@ -64,11 +64,37 @@ const modulesData = [
     icon: "Zap",
     status: "Directive 04",
     color: "text-yellow-electric",
-    description: "Forward-thinking investments in renewable energy systems, futuristic high-speed train networks, and American-built, long-lasting housing programs for a modernized foundation.",
+    description: "Forward-thinking investments in renewable energy systems, futuristic high-speed train networks, and American-built, long-lasting housing programs for a modernized foundation. Building forward-thinking renewable energy grids and modern, high-speed train systems to connect communities and drive the economy.",
     progress: 60,
     sponsor: "Economic Equity Council",
     revisions: 8,
-    content: "A nation is only as strong as its infrastructure. We propose massive investments in modernizing the power grid, transitioning to fully sustainable energy, and constructing a high-speed rail network connecting major economic hubs. Furthermore, federal initiatives will incentivize the development of durable, affordable, and technologically integrated housing, revitalizing American communities and lowering the cost of living."
+    content: "A nation is only as strong as its infrastructure. We propose massive investments in modernizing the power grid, transitioning to fully sustainable energy, and constructing a high-speed rail network connecting major economic hubs. Furthermore, federal initiatives will incentivize the development of durable, affordable, and technologically integrated housing, revitalizing American communities and lowering the cost of living. We must build forward-thinking renewable energy grids and modern, high-speed train systems to connect communities and drive the economy forward."
+  },
+  {
+    slug: "defunding-war-corporations",
+    title: "DEFUNDING WAR CORPORATIONS",
+    updatedAt: "October 2023",
+    icon: "Shield",
+    status: "Directive 05",
+    color: "text-yellow-electric",
+    description: "Our campaign stands firmly against endless wars. We must contrast the needs of normal Americans with the power of defense contractors and war corporations, ultimately defunding those who profit from global conflict.",
+    progress: 75,
+    sponsor: "Peace & Prosperity Coalition",
+    revisions: 5,
+    content: "The military-industrial complex has drawn the United States into endless wars at the expense of the working class. Our campaign stands firmly against these endless wars. We must recognize and contrast the needs of normal Americans with the unchecked power of defense contractors and war corporations. The billions of dollars funneled into these corporations must be redirected towards infrastructure, healthcare, and education at home. It is time to defund the war corporations that profit from perpetual conflict and reinvest those resources into our own citizens."
+  },
+  {
+    slug: "american-home-building",
+    title: "AMERICAN HOME BUILDING",
+    updatedAt: "October 2023",
+    icon: "Home",
+    status: "Directive 06",
+    color: "text-yellow-electric",
+    description: "Creating extensive programs for American workers to build quality, long-lasting homes. We must address the current housing crisis through direct, working-class labor.",
+    progress: 65,
+    sponsor: "Working Families Council",
+    revisions: 3,
+    content: "The American Dream of homeownership has been slipping away for too many working families. This directive focuses on the necessity of creating extensive programs for American workers to build quality, long-lasting homes. We must address the current housing crisis through direct, working-class labor. By treating housing as an essential public good rather than a speculative asset, we will provide fair wages to our builders and affordable, enduring homes for our communities."
   }
 ];
 
@@ -113,6 +139,12 @@ const DirectiveDetail = () => {
 
   const [directive, setDirective] = useState(null);
   const [isValidating, setIsValidating] = useState(true);
+  const headerRef = React.useRef(null);
+  React.useEffect(() => {
+    if (directive && !loadingArticles && !isValidating && headerRef.current) {
+      headerRef.current.focus();
+    }
+  }, [directive, loadingArticles, isValidating]);
 
   useEffect(() => {
     const handleSWRUpdate = (e) => {
@@ -273,7 +305,7 @@ const DirectiveDetail = () => {
                 {directive.status}
               </span>
             </div>
-            <h1 className="font-editorial font-black text-4xl md:text-6xl text-white leading-tight mb-2">
+            <h1 ref={headerRef} tabIndex="-1" className="font-editorial font-black text-4xl md:text-6xl text-white leading-tight mb-2 outline-none">
               {directive.title}
             </h1>
             {directive.updatedAt && (
