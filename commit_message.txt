@@ -1,0 +1,1 @@
+feat(v5.66): Hydrate platform content, add env validation, and external link indicators

@@ -63,15 +63,15 @@ const Footer = () => {
               Leading American Innovation through Sustainable Systems, Forward-Thinking Ideas and a Blue-Collar Work Ethic.
             </span>
             <div className="flex space-x-6">
-              <a href="https://x.com/JamesEllars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="X (Twitter)">
+              <a href="https://x.com/JamesEllars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300 external-link" aria-label="X (Twitter)">
                 <SafeIcon name="Twitter" className="w-5 h-5" />
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 absolute -top-1 -right-2 text-yellow-electric/70 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
               </a>
-              <a href="https://linkedin.com/in/jamesellars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="LinkedIn">
+              <a href="https://linkedin.com/in/jamesellars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300 external-link" aria-label="LinkedIn">
                 <SafeIcon name="Linkedin" className="w-5 h-5" />
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 absolute -top-1 -right-2 text-yellow-electric/70 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
               </a>
-              <a href="https://youtube.com/@JamesEllars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300" aria-label="YouTube">
+              <a href="https://youtube.com/@JamesEllars" target="_blank" rel="noopener noreferrer" className="group relative inline-block text-white hover:text-yellow-electric hover:-translate-y-1 transition-all duration-300 external-link" aria-label="YouTube">
                 <SafeIcon name="Youtube" className="w-5 h-5" />
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 absolute -top-1 -right-2 text-yellow-electric/70 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
               </a>

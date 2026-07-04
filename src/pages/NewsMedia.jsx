@@ -240,7 +240,7 @@ const NewsMedia = () => {
                 dailyNewsPosts.map((post, index) => {
                   const isFeatured = index === 0;
                   return (
-                    <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
+                    <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2 lg:col-span-2' : ''} ${post.isExternal ? 'external-link' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
                       <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 p-8 ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
                                                 <div className="block relative w-full h-48 md:h-64 overflow-hidden border-b border-phthalo-deep bg-zinc-900 rounded-t-sm mb-4">
                           {post.imageUrl ? (
@@ -335,7 +335,7 @@ const NewsMedia = () => {
                 }
 
                 return (
-                  <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
+                  <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${post.isExternal ? 'external-link' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
                     <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
                       {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
                         <div className="relative w-full aspect-square md:aspect-video mb-6">
