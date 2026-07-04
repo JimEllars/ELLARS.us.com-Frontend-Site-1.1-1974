@@ -12,9 +12,18 @@ const Footer = () => {
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [botValue, setBotValue] = useState('');
+  const [startTime, setStartTime] = useState(Date.now());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+        if (Date.now() - startTime < 1500) {
+      setEmail('');
+      setBotValue('');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      return;
+    }
 
     if (botValue) {
       setEmail('');

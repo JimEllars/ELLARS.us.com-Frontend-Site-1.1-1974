@@ -113,10 +113,32 @@ const Platform = () => {
       icon: "Zap",
       status: "Directive 04",
       color: "text-yellow-electric",
-      description: "Forward-thinking investments in renewable energy systems, futuristic high-speed train networks, and American-built, long-lasting housing programs for a modernized foundation.",
+      description: "Forward-thinking investments in renewable energy systems, futuristic high-speed train networks, and American-built, long-lasting housing programs for a modernized foundation. Building forward-thinking renewable energy grids and modern, high-speed train systems to connect communities and drive the economy.",
       progress: 60,
       sponsor: "Economic Equity Council",
       revisions: 8
+    },
+    {
+      slug: "defunding-war-corporations",
+      title: "DEFUNDING WAR CORPORATIONS",
+      icon: "Shield",
+      status: "Directive 05",
+      color: "text-yellow-electric",
+      description: "Our campaign stands firmly against endless wars. We must contrast the needs of normal Americans with the power of defense contractors and war corporations, ultimately defunding those who profit from global conflict.",
+      progress: 75,
+      sponsor: "Peace & Prosperity Coalition",
+      revisions: 5
+    },
+    {
+      slug: "american-home-building",
+      title: "AMERICAN HOME BUILDING",
+      icon: "Home",
+      status: "Directive 06",
+      color: "text-yellow-electric",
+      description: "Creating extensive programs for American workers to build quality, long-lasting homes. We must address the current housing crisis through direct, working-class labor.",
+      progress: 65,
+      sponsor: "Working Families Council",
+      revisions: 3
     }
   ];
 

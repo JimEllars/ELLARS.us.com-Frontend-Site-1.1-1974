@@ -12,6 +12,7 @@ const Newsletter = () => {
   const [hasError, setHasError] = useState(false);
   const [botValue, setBotValue] = useState('');
   const successRef = useRef(null);
+  const [startTime, setStartTime] = useState(Date.now());
 
   useEffect(() => {
     if (success && successRef.current) {
@@ -33,6 +34,13 @@ const Newsletter = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+        if (Date.now() - startTime < 1500) {
+      setEmail('');
+      setBotValue('');
+      setSuccess(true);
+      return;
+    }
 
     if (botValue) {
       // Fake success for bots
