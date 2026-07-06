@@ -94,7 +94,8 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
 
     const defaultHeaders = {
       'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-Project-Domain': 'ellars.us.com'
     };
 
     const fetchOptions = {
@@ -142,7 +143,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
 }
 
 export async function getLatestPosts(limit = 10, categoryId = null) {
-  const cacheKey = `posts-${limit}-${categoryId}`;
+  const cacheKey = `ellars_us_com_cache_posts-${limit}-${categoryId}`;
 
   try {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
@@ -168,7 +169,8 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     const networkFetch = fetchWithRetry(url, {
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+      'X-Project-Domain': 'ellars.us.com'
       }
     }).then(async res => {
       const data = await res.json();
@@ -203,7 +205,7 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 }
 
 export async function getPostBySlug(slug) {
-  const cacheKey = `post-${slug}`;
+  const cacheKey = `ellars_us_com_cache_post-${slug}`;
 
   try {
     // Check sessionStorage for cache
@@ -226,7 +228,8 @@ export async function getPostBySlug(slug) {
     const networkFetch = fetchWithRetry(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+      'X-Project-Domain': 'ellars.us.com'
       }
     }).then(async res => {
       const data = await res.json();
@@ -278,7 +281,7 @@ const SOCIAL_FALLBACK = [
 ];
 
 export async function getSocialFeed(limit = 10) {
-  const cacheKey = `social-${limit}`;
+  const cacheKey = `ellars_us_com_cache_social-${limit}`;
 
   try {
     // Check sessionStorage for cache
@@ -303,7 +306,8 @@ export async function getSocialFeed(limit = 10) {
     const networkFetch = fetchWithRetry(url, {
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+      'X-Project-Domain': 'ellars.us.com'
       }
     }).then(async res => {
       const data = await res.json();

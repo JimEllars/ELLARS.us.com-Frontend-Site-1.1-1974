@@ -112,7 +112,7 @@ const NewsMedia = () => {
 
     async function fetchArticles() {
       try {
-        const cacheKey = 'posts-20-null';
+        const cacheKey = 'ellars_us_com_cache_posts-20-null';
         const cachedItem = sessionStorage.getItem(cacheKey);
         if (cachedItem) {
           try {
@@ -136,7 +136,7 @@ const NewsMedia = () => {
 
     async function fetchSocial() {
       try {
-        const cacheKey = 'social-20';
+        const cacheKey = 'ellars_us_com_cache_social-20';
         const cachedItem = sessionStorage.getItem(cacheKey);
         if (cachedItem) {
           try {
