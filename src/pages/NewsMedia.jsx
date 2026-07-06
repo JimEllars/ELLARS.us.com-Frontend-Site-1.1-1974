@@ -118,7 +118,7 @@ const NewsMedia = () => {
           try {
             const parsed = JSON.parse(cachedItem);
             if (isMounted) {
-              setPosts(parsed.data);
+              setPosts(Array.isArray(parsed.data) ? parsed.data : []);
               setLoadingPosts(false);
             }
           } catch (e) { /* ignore */ }
@@ -126,7 +126,7 @@ const NewsMedia = () => {
 
         const articleData = await fetchLatestNews(20);
         if (isMounted) {
-          setPosts(articleData);
+          setPosts(Array.isArray(articleData) ? articleData : []);
           setLoadingPosts(false);
         }
       } catch (e) {
@@ -142,7 +142,7 @@ const NewsMedia = () => {
           try {
             const parsed = JSON.parse(cachedItem);
             if (isMounted) {
-              setSocialPosts(parsed.data);
+              setSocialPosts(Array.isArray(parsed.data) ? parsed.data : []);
               setLoadingSocial(false);
             }
           } catch (e) { /* ignore */ }
@@ -150,7 +150,7 @@ const NewsMedia = () => {
 
         const socialData = await getSocialFeed(20);
         if (isMounted) {
-          setSocialPosts(socialData);
+          setSocialPosts(Array.isArray(socialData) ? socialData : []);
           setLoadingSocial(false);
         }
       } catch (e) {
@@ -167,7 +167,7 @@ const NewsMedia = () => {
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
-  const allCombinedPosts = [...posts, ...socialPosts].sort((a, b) => {
+  const allCombinedPosts = [...(Array.isArray(posts) ? posts : []), ...(Array.isArray(socialPosts) ? socialPosts : [])].sort((a, b) => {
     const isADaily = (a.title?.rendered || '').toLowerCase().includes('daily news') || (a.acf?.category_label || '').toLowerCase() === 'daily news';
     const isBDaily = (b.title?.rendered || '').toLowerCase().includes('daily news') || (b.acf?.category_label || '').toLowerCase() === 'daily news';
     if (isADaily && !isBDaily) return -1;
@@ -243,9 +243,9 @@ const NewsMedia = () => {
                     <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${isFeatured ? 'md:col-span-2 lg:col-span-2' : ''} ${post.isExternal ? 'external-link' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
                       <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 p-8 ${isFeatured ? 'deco-frame border border-yellow-electric shadow-[0_0_20px_rgba(253,224,71,0.5)]' : ''}`}>
                                                 <div className="block relative w-full h-48 md:h-64 overflow-hidden border-b border-phthalo-deep bg-zinc-900 rounded-t-sm mb-4">
-                          {post.imageUrl ? (
+                          {(post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? (
                             <img
-                              src={post.imageUrl}
+                              src={(post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url)}
                               alt={post.title.rendered}
                               className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 opacity-80 group-hover:opacity-100"
                             />
@@ -336,10 +336,10 @@ const NewsMedia = () => {
 
                 return (
                   <Link to={post.isExternal ? post.externalUrl : `/articles/${post.slug}`} key={post.id} className={`block h-full group ${post.isExternal ? 'external-link' : ''}`} target={post.isExternal ? '_blank' : '_self'} rel={post.isExternal ? 'noopener noreferrer' : ''}>
-                    <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? '' : 'p-8'}`}>
-                      {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? (
+                    <article className={`interactive-card flex flex-col h-full rounded-sm border-b-yellow-electric/20 hover:-translate-y-1 hover:shadow-2xl hover:border-yellow-electric transition-all duration-300 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && (post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? '' : 'p-8'}`}>
+                      {post.acf?.category_label?.toUpperCase() === 'SOCIAL' && (post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? (
                         <div className="relative w-full aspect-square md:aspect-video mb-6">
-                          <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize(post.imageUrl)} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>
+                          <div className="w-full h-full overflow-hidden rounded-t-sm"><img src={DOMPurify.sanitize((post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url))} alt="Social Post" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-102" /></div>
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                           <div className="absolute top-4 left-4 z-10 font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold flex items-center space-x-2 bg-black/50 p-2 rounded-sm backdrop-blur-sm border border-white/10">
                             <SafeIcon name="Globe" className="w-4 h-4" />
@@ -347,8 +347,8 @@ const NewsMedia = () => {
                           </div>
                         </div>
                       ) : null}
-                      <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'px-8 pb-8' : ''}`}>
-                        {(!post.imageUrl || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
+                      <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && (post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? 'px-8 pb-8' : ''}`}>
+                        {(!(post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
                           <>
                             <div className="font-editorial text-[10px] text-yellow-electric uppercase tracking-widest font-bold mb-2 flex items-center space-x-2">
                               <SafeIcon name={post.acf?.category_label?.toUpperCase() === 'VIDEO' ? 'Video' : post.acf?.category_label?.toUpperCase() === 'AUDIO' ? 'Mic' : post.acf?.category_label?.toUpperCase() === 'SOCIAL' ? 'Globe' : 'Activity'} className="w-4 h-4" />
@@ -370,7 +370,7 @@ const NewsMedia = () => {
                            </p>
                         )}
                       </div>
-                      <div className={`mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && post.imageUrl ? 'mx-8 mb-8' : ''}`}>
+                      <div className={`mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-gray-500 ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && (post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? 'mx-8 mb-8' : ''}`}>
                         <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{post.acf?.read_time || '10 Min'}</span>
                         <SafeIcon name={post.isExternal ? "ExternalLink" : "ArrowRight"} className="w-5 h-5 group-hover:text-yellow-electric transition-colors" />
                       </div>
