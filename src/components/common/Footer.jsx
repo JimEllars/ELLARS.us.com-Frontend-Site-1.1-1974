@@ -44,15 +44,20 @@ const Footer = () => {
     setIsSubmitting(true);
     setHasError(false);    try {
       const payload = { email: sanitizedEmail };
-      // Exclude honeypot key entirely from JSON payload
-      await subscribeToNewsletter(payload);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Submission timed out')), 8000)
+      );
+      await Promise.race([
+        subscribeToNewsletter(payload),
+        timeoutPromise
+      ]);
       setEmail('');
       setBotValue('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error("Newsletter subscription error:", error);
-      setHasError(true);
+      setHasError('TIMEOUT'); // Custom error state instead of true for timeout
     } finally {
       setIsSubmitting(false);
     }

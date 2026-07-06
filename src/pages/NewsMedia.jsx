@@ -4,7 +4,7 @@ import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { getLatestPosts, getSocialFeed, stripHtml, formatDate } from '@/lib/api';
+import { getLatestPosts, getSocialFeed, stripHtml, formatDate, fetchLatestNews } from '@/lib/api';
 import DOMPurify from 'dompurify';
 import { motion } from 'framer-motion';
 
@@ -124,7 +124,7 @@ const NewsMedia = () => {
           } catch (e) { /* ignore */ }
         }
 
-        const articleData = await getLatestPosts(20);
+        const articleData = await fetchLatestNews(20);
         if (isMounted) {
           setPosts(articleData);
           setLoadingPosts(false);
