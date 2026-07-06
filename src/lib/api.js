@@ -1,8 +1,8 @@
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-// Fallback data for development and reliability
 const FALLBACK_POSTS = [
   {
     id: 101,
@@ -36,7 +36,19 @@ const FALLBACK_POSTS = [
   }
 ];
 
-
+export async function fetchLatestNews(limit = 10) {
+  try {
+    if (!SUPABASE_URL) {
+      return FALLBACK_POSTS.slice(0, limit);
+    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    clearTimeout(timeoutId);
+    return FALLBACK_POSTS.slice(0, limit);
+  } catch (error) {
+    return FALLBACK_POSTS.slice(0, limit);
+  }
+}
 
 
 function logApiErrorToTelemetry(url, error) {

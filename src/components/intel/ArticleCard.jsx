@@ -53,7 +53,7 @@ const ArticleCard = ({ post, date }) => {
 
           <div className="mt-auto pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
             <span className="text-[10px] font-editorial font-bold uppercase tracking-widest">
-              {post.acf?.read_time || '8 Min Read'}
+              {post.content?.rendered ? Math.ceil(stripHtml(post.content.rendered).split(/\s+/).length / 200) + ' Min Read' : (post.acf?.read_time || '8 Min Read')}
             </span>
             <div className="text-white group-hover:text-yellow-electric transition-colors">
               <SafeIcon name="ArrowRight" className="w-5 h-5" />

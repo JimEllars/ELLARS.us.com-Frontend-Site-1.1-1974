@@ -72,6 +72,34 @@ const ArticleDetail = () => {
   }, []);
 
 
+
+  useEffect(() => {
+    if (!post) return;
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      "headline": stripHtml(post.title?.rendered || ''),
+      "datePublished": post.date,
+      "author": [{
+        "@type": "Person",
+        "name": "James Ellars"
+      }],
+      "image": [
+        post._embedded?.['wp:featuredmedia']?.[0]?.source_url || "https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1"
+      ]
+    };
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(schema);
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, [post]);
+
   const recentArticles = useMemo(() => {
     if (!articles || articles.length === 0) return [];
     return articles
