@@ -45,7 +45,7 @@ const Platform = () => {
     const fetchArticles = async () => {
       setLoadingArticles(true);
       try {
-        const cacheKey = 'posts-20-null';
+        const cacheKey = 'ellars_us_com_cache_posts-20-null';
         const cachedItem = sessionStorage.getItem(cacheKey);
         if (cachedItem) {
           try {

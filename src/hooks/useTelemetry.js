@@ -42,6 +42,8 @@ const prunePayloadArray = (queue) => {
 export const enqueuePayload = (payload) => {
   try {
     const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+    // Add local timestamp when enqueueing
+    payload.timestamp = payload.timestamp || Date.now();
     queue.push(payload);
     const limitedQueue = queue.slice(-50);
     const prunedQueue = prunePayloadArray(limitedQueue);
@@ -143,7 +145,19 @@ export const useTelemetry = () => {
 
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
       if (queue.length === 0) return;
-      const prunedQueue = prunePayloadArray(queue);
+
+      const now = Date.now();
+      const freshQueue = queue.filter(payload => {
+          return (now - (payload.timestamp || 0)) <= 86400000;
+      });
+
+      if (freshQueue.length !== queue.length) {
+          localStorage.setItem(QUEUE_KEY, JSON.stringify(freshQueue));
+      }
+
+      if (freshQueue.length === 0) return;
+
+      const prunedQueue = prunePayloadArray(freshQueue);
 
       let attempt = 0;
       let success = false;

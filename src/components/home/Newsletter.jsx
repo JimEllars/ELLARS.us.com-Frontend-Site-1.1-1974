@@ -122,8 +122,17 @@ const Newsletter = () => {
                       setEmail(e.target.value);
                       if (hasError) setHasError(false);
                     }}
+                    onFocus={(e) => {
+                      setTimeout(() => {
+                        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                        e.target.scrollIntoView({
+                          behavior: prefersReducedMotion ? "auto" : "smooth",
+                          block: "center"
+                        });
+                      }, 300);
+                    }}
                     placeholder="YOUR EMAIL ADDRESS"
-                    className={`w-full bg-white/5 border text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none focus:border-yellow-electric transition-colors rounded-sm ${hasError ? 'border-red-500' : 'border-white/10'}`}
+                    className={`w-full bg-white/5 border text-white px-6 py-5 font-editorial text-xs tracking-widest outline-none transition-colors rounded-sm ${hasError ? 'border-red-500 focus:border-red-500' : (email.length > 5 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500' : 'border-white/10 focus:border-yellow-electric'}`}
                     required
                     disabled={isSubmitting}
                   />
