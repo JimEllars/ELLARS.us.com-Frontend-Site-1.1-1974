@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import SafeIcon from '@/common/SafeIcon';
 import { stripHtml, formatDate } from '@/lib/api';
 
+
+const truncateText = (str, max) => {
+  if (!str) return '';
+  const stripped = stripHtml(str);
+  if (stripped.length <= max) return stripped;
+  return stripped.substring(0, max) + '...';
+};
+
 const ArticleCard = ({ post, date }) => {
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
@@ -48,7 +56,7 @@ const ArticleCard = ({ post, date }) => {
           </h3>
 
           <p className="text-text-muted text-sm leading-relaxed line-clamp-3 mb-6">
-            {stripHtml(post.excerpt.rendered)}
+            {truncateText(post.excerpt.rendered, 120)}
           </p>
 
           <div className="mt-auto pt-6 border-t border-white/10 flex items-center justify-between text-gray-500">
