@@ -89,6 +89,10 @@ const NewsMedia = () => {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingSocial, setLoadingSocial] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isReachingEnd, setIsReachingEnd] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const handleSWRUpdate = (e) => {
@@ -112,21 +116,27 @@ const NewsMedia = () => {
 
     async function fetchArticles() {
       try {
-        const cacheKey = 'ellars_us_com_cache_posts-20-null';
+        const cacheKey = 'ellars_us_com_news_page_1';
         const cachedItem = sessionStorage.getItem(cacheKey);
         if (cachedItem) {
           try {
             const parsed = JSON.parse(cachedItem);
             if (isMounted) {
               setPosts(Array.isArray(parsed.data) ? parsed.data : []);
+              setTotalPages(parsed.totalPages || 1);
+              if (parsed.totalPages <= 1) setIsReachingEnd(true);
               setLoadingPosts(false);
             }
           } catch (e) { /* ignore */ }
         }
 
-        const articleData = await fetchLatestNews(20);
+        const response = await fetchLatestNews(1, 9);
         if (isMounted) {
-          setPosts(Array.isArray(articleData) ? articleData : []);
+          const fetchedPosts = Array.isArray(response.data) ? response.data : [];
+          setPosts(fetchedPosts);
+          setTotalPages(response.totalPages || 1);
+          if ((response.totalPages || 1) <= 1) setIsReachingEnd(true);
+          sessionStorage.setItem(cacheKey, JSON.stringify({ data: fetchedPosts, totalPages: response.totalPages || 1 }));
           setLoadingPosts(false);
         }
       } catch (e) {
@@ -164,6 +174,31 @@ const NewsMedia = () => {
     return () => { isMounted = false; };
 
   }, []);
+
+  const loadMoreArticles = async () => {
+    if (isLoadingMore || isReachingEnd) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const response = await fetchLatestNews(nextPage, 9);
+      const newPosts = Array.isArray(response.data) ? response.data : [];
+
+      setPosts(prevPosts => {
+        const existingIds = new Set(prevPosts.map(p => p.id));
+        const deduplicatedNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+        return [...prevPosts, ...deduplicatedNewPosts];
+      });
+
+      setPage(nextPage);
+      if (nextPage >= (response.totalPages || totalPages) || newPosts.length === 0) {
+        setIsReachingEnd(true);
+      }
+    } catch (e) {
+      console.error("Failed to load more articles", e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
@@ -384,6 +419,19 @@ const NewsMedia = () => {
               </div>
             ) : null}
           </div>
+
+          {/* Load More Button */}
+          {!isReachingEnd && (activeFilter === 'ALL' || activeFilter === 'ARTICLES') && (
+            <div className="mt-12 flex justify-center">
+              <button
+                onClick={loadMoreArticles}
+                disabled={isLoadingMore}
+                className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-8 py-3 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingMore ? 'Loading...' : 'Load More Articles'}
+              </button>
+            </div>
+          )}
         </section>
 
       </div>

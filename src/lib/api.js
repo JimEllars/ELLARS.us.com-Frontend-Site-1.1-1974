@@ -54,17 +54,35 @@ const FALLBACK_POSTS = [
   }
 ];
 
-export async function fetchLatestNews(limit = 10) {
+export async function fetchLatestNews(page = 1, perPage = 9) {
   try {
-    if (!SUPABASE_URL) {
-      return FALLBACK_POSTS.slice(0, limit);
+    let url = `${WP_API_URL}/posts?page=${page}&per_page=${perPage}&_embed`;
+
+    const response = await fetchWithRetry(url, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Project-Domain": "ellars.us.com",
+        "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400"
+      }
+    });
+
+    if (response.isError) {
+      return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
     }
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    clearTimeout(timeoutId);
-    return FALLBACK_POSTS.slice(0, limit);
+
+    const totalPages = parseInt(response.headers.get("X-WP-TotalPages") || "1", 10);
+    const total = parseInt(response.headers.get("X-WP-Total") || "0", 10);
+
+    const data = await response.json();
+    if (data.isError) {
+      return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
+    }
+
+    return { data, totalPages, total };
   } catch (error) {
-    return FALLBACK_POSTS.slice(0, limit);
+    console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
+    return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
   }
 }
 
