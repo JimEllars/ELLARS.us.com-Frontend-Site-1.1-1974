@@ -123,7 +123,7 @@ function logApiErrorToTelemetry(url, error) {
   }
 }
 
-async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
+async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
@@ -147,6 +147,12 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      if (response.status === 429 && retries > 0) {
+        console.warn(`[429 Too Many Requests] Retrying fetch to ${url} (attempt ${attempt}, ${retries} retries left)...`);
+        const backoffMs = (2 ** attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        return fetchWithRetry(url, options, retries - 1, attempt + 1);
+      }
       console.error(`[API Error] HTTP ${response.status} from ${url}`);
       const error = new Error("Our systems are currently experiencing high traffic. We are utilizing fallback protocols to serve you.");
       error.status = response.status;
@@ -155,26 +161,20 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
 
     return response;
   } catch (error) {
-    if (retries > 0) {
-      console.warn(`Retrying fetch to ${url} (${retries} retries left) after ${backoff}ms...`);
-      await new Promise(resolve => setTimeout(resolve, backoff));
-      return fetchWithRetry(url, options, retries - 1, backoff * 2);
-    } else {
-      let finalError = error;
-      if (error.name === 'AbortError') {
-        finalError = new Error('API request timed out');
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        finalError = new Error('Network offline');
-      }
-      logApiErrorToTelemetry(url, finalError);
-      return {
-        ok: false,
-        status: finalError.status || 500,
-        isError: true,
-        message: finalError.message || 'API request failed',
-        json: async () => ({ isError: true, message: finalError.message || 'API request failed' })
-      };
+    let finalError = error;
+    if (error.name === 'AbortError') {
+      finalError = new Error('API request timed out');
+    } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      finalError = new Error('Network offline');
     }
+    logApiErrorToTelemetry(url, finalError);
+    return {
+      ok: false,
+      status: finalError.status || 500,
+      isError: true,
+      message: finalError.message || 'API request failed',
+      json: async () => ({ isError: true, message: finalError.message || 'API request failed' })
+    };
   }
 }
 
