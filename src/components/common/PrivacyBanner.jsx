@@ -1,24 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppStore } from '@/store/useAppStore';
 
 const PrivacyBanner = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const hasConsented = localStorage.getItem('ellars_privacy_consent');
-    if (!hasConsented) {
-      setIsVisible(true);
-    }
-  }, []);
+  const { privacyConsent, setPrivacyConsent } = useAppStore();
 
   const handleAcknowledge = () => {
-    localStorage.setItem('ellars_privacy_consent', 'true');
-    setIsVisible(false);
+    setPrivacyConsent(true);
   };
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {!privacyConsent && (
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}

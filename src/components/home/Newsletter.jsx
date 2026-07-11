@@ -52,7 +52,7 @@ const Newsletter = () => {
     }
 
     // Clean strings and check email pattern
-    const sanitizedEmail = DOMPurify.sanitize(email).trim().toLowerCase();
+    const sanitizedEmail = DOMPurify.sanitize(email, { ALLOWED_TAGS: [] }).replace(/<\/?script.*?>/gi, "").replace(/[<>&"']/g, function(m) { return "&#" + m.charCodeAt(0) + ";"; }).trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {

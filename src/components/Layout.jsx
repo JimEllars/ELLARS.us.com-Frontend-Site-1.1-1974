@@ -4,7 +4,7 @@ import Navbar from './common/Navbar';
 import Footer from './common/Footer';
 import Toast from './common/Toast';
 import { Helmet } from 'react-helmet-async';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
 export const LoaderContext = createContext({
@@ -55,6 +55,22 @@ const TopLoader = () => {
   );
 };
 
+const ScrollProgress = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 right-0 h-[2px] bg-yellow-electric z-[100]"
+      style={{ scaleX, transformOrigin: "0%" }}
+    />
+  );
+};
+
 const Layout = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -63,6 +79,7 @@ const Layout = ({ children }) => {
       <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">
         <a href="#main-content" className="-translate-y-full absolute focus:translate-y-0 focus:relative focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">Skip to main content</a>
         <TopLoader />
+        <ScrollProgress />
         <Helmet>
           <title>James Ellars | Business Development & Community Leader</title>
           </Helmet>

@@ -13,7 +13,8 @@ export const sendEmail = async (payload) => {
 };
 
 export const subscribeToNewsletter = async (payload) => {
-  const cleanEmail = typeof payload === "string" ? payload : payload.email;
+  let rawEmail = typeof payload === "string" ? payload : payload.email;
+  const cleanEmail = String(rawEmail).replace(/<\/?script.*?>/gi, "").replace(/[<>&"']/g, function(m) { return "&#" + m.charCodeAt(0) + ";"; }).trim().toLowerCase();
   console.log(`[EmailIt] Routing subscription to Cloudflare backend for:`, cleanEmail);
 
   const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
