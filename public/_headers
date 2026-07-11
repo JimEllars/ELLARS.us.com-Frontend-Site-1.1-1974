@@ -1,0 +1,2 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.axim.us.com https://wp.ellars.us.com wss://api.axim.us.com https://play.pod.co; img-src 'self' data: https://wp.axim.us.com https://wp.ellars.us.com https://images.unsplash.com; media-src 'self' https://www.w3schools.com; frame-src 'self'; object-src 'none';
