@@ -12,9 +12,33 @@ const Navbar = () => {
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const { setDonateModalOpen } = useAppStore();
   const modalRef = useRef(null);
   const menuButtonRef = useRef(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -158,6 +182,23 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+
+          <AnimatePresence>
+            {showInstallPrompt && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={handleInstallClick}
+                className="hidden sm:flex items-center space-x-2 px-3 py-1.5 border border-yellow-electric/30 text-yellow-electric text-[10px] uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors mr-4"
+                aria-label="Install App"
+              >
+                <SafeIcon name="Download" className="w-3 h-3" />
+                <span>Install</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+
           <button className="btn-gold hidden sm:flex lg:hidden" aria-label="Join the Newsletter">Join the Newsletter</button>
           <button 
             ref={menuButtonRef}
