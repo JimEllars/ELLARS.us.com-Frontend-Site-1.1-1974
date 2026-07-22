@@ -313,3 +313,29 @@ export async function saveToAximCore(payload) {
     return false;
   }
 }
+
+
+export async function loginUser(email, password) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error_description || errorData.msg || 'Invalid login credentials');
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error("[AXiM Core: Auth Error]", error);
+    return { success: false, message: error.message };
+  }
+}
