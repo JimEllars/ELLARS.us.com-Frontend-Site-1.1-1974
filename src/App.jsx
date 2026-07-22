@@ -9,13 +9,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 const About = React.lazy(() => import('./pages/About'));
-const ArticleDetail = React.lazy(() => import('./pages/ArticleDetail'));
+const ArticleDetail = React.lazy(() => import('./components/intel/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
 const DirectiveDetail = React.lazy(() => import('./pages/DirectiveDetail'));
 import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
+import UpdatePrompt from './components/common/UpdatePrompt';
 
 
 function ScrollToTop() {

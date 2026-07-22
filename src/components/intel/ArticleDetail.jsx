@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getPostBySlug, formatDate, stripHtml } from '@/lib/api';
+import { getPostBySlug, formatDate, stripHtml, saveToAximCore } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 import { useAppStore } from '@/store/useAppStore';
@@ -40,6 +40,53 @@ const ArticleDetail = () => {
         }
 
         document.body.removeChild(textArea);
+    }
+  };
+
+    const handleExportCSV = () => {
+    if (!post) return;
+
+    const cleanTitle = stripHtml(post.title?.rendered || '').replace(/"/g, '""');
+    const cleanExcerpt = stripHtml(post.excerpt?.rendered || '').replace(/"/g, '""');
+    const articleId = post.id || '';
+    const articleDate = post.date || '';
+
+    // CSV format: ID, Title, Date, Excerpt
+    const csvContent = "ID,Title,Date,Excerpt\n" +
+      `"${articleId}","${cleanTitle}","${articleDate}","${cleanExcerpt}"`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `intel_export_${articleId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("// DATA EXPORTED TO SECURE LOCAL STORAGE");
+  };
+
+    const handleSaveToAximVault = async () => {
+    if (!post) return;
+    try {
+      const payload = {
+        id: post.id,
+        title: stripHtml(post.title?.rendered || ''),
+        excerpt: stripHtml(post.excerpt?.rendered || ''),
+        date: post.date,
+        url: window.location.href
+      };
+
+      const success = await saveToAximCore(payload);
+      if (success) {
+         showToast("// TRANSMISSION SAVED TO AXIM VAULT");
+      } else {
+         showToast("// [ERROR] FAILED TO SYNC WITH AXIM CORE");
+      }
+    } catch (error) {
+       console.error("Save error:", error);
+       showToast("// [ERROR] NETWORK FAILURE");
     }
   };
 
@@ -269,8 +316,14 @@ const ArticleDetail = () => {
                       <button onClick={handleCopyLink} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Copy Link" title="Copy Link">
                         <SafeIcon name="Link" className="w-4 h-4" />
                       </button>
-                      <button onClick={handleShareTwitter} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Share to X" title="Share to X">
+                                        <button onClick={handleShareTwitter} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Share to X" title="Share to X">
                         <SafeIcon name="Twitter" className="w-4 h-4" />
+                      </button>
+                      <button onClick={handleExportCSV} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Export Data" title="Export Data">
+                        <SafeIcon name="Download" className="w-4 h-4" />
+                      </button>
+                      <button onClick={handleSaveToAximVault} className="text-zinc-400 hover:text-yellow-electric transition-colors" aria-label="Save to AXiM Vault" title="Save to AXiM Vault">
+                        <SafeIcon name="Archive" className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -307,6 +360,14 @@ const ArticleDetail = () => {
                   <button onClick={handleShareTwitter} className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric hover:text-yellow-electric transition-colors rounded-sm text-zinc-400 flex items-center gap-2">
                     <SafeIcon name="Twitter" className="w-4 h-4" />
                     <span className="text-[10px] uppercase tracking-widest font-bold">Share to X</span>
+                  </button>
+                  <button onClick={handleExportCSV} className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric hover:text-yellow-electric transition-colors rounded-sm text-zinc-400 flex items-center gap-2">
+                    <SafeIcon name="Download" className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Export Data</span>
+                  </button>
+                  <button onClick={handleSaveToAximVault} className="p-3 bg-white/5 border border-white/10 hover:border-yellow-electric hover:text-yellow-electric transition-colors rounded-sm text-zinc-400 flex items-center gap-2">
+                    <SafeIcon name="Archive" className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Save to AXiM Vault</span>
                   </button>
                 </div>
               </div>

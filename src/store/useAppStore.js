@@ -9,6 +9,7 @@ export const useAppStore = create(
       articles: [],
       isDonateModalOpen: false,
       toastMessage: null,
+      updateAvailable: false,
       privacyConsent: false, // Added privacy banner consent flag
       setArticles: (articles) => set({ articles }),
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
@@ -20,7 +21,8 @@ export const useAppStore = create(
           set({ toastMessage: null });
         }, 3000);
       },
-      setPrivacyConsent: (status) => set({ privacyConsent: status })
+      setPrivacyConsent: (status) => set({ privacyConsent: status }),
+      setUpdateAvailable: (status) => set({ updateAvailable: status })
     }),
     {
       name: 'ellars_us_com_preferences',

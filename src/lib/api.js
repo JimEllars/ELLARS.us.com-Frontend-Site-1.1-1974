@@ -287,3 +287,29 @@ export async function getSocialFeed(limit = 10) {
     return SOCIAL_FALLBACK;
   }
 }
+
+export async function saveToAximCore(payload) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      console.error("[AXiM Core] Failed to save to vault", response.status);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[AXiM Core: Save Error]", error);
+    return false;
+  }
+}
