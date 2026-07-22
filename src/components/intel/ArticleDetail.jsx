@@ -17,7 +17,7 @@ const ArticleDetail = () => {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(window.location.href)
         .then(() => {
-          showToast("// TRANSMISSION LINK COPIED TO CLIPBOARD");
+          showToast("Link copied to clipboard.");
         })
         .catch(err => {
           console.error("Clipboard write failed", err);
@@ -34,7 +34,7 @@ const ArticleDetail = () => {
 
         try {
             document.execCommand('copy');
-            showToast("// TRANSMISSION LINK COPIED TO CLIPBOARD");
+            showToast("Link copied to clipboard.");
         } catch (err) {
             console.error('Fallback: Oops, unable to copy', err);
         }

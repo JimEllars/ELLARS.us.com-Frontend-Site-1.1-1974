@@ -11,6 +11,8 @@ export const useAppStore = create(
       toastMessage: null,
       updateAvailable: false,
       privacyConsent: false, // Added privacy banner consent flag
+      userToken: null,
+      isAuthenticated: false,
       setArticles: (articles) => set({ articles }),
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
       setRole: (role) => set({ userRole: role }),
@@ -22,7 +24,9 @@ export const useAppStore = create(
         }, 3000);
       },
       setPrivacyConsent: (status) => set({ privacyConsent: status }),
-      setUpdateAvailable: (status) => set({ updateAvailable: status })
+      setUpdateAvailable: (status) => set({ updateAvailable: status }),
+      setUserToken: (token) => set({ userToken: token, isAuthenticated: !!token }),
+      logout: () => set({ userToken: null, isAuthenticated: false })
     }),
     {
       name: 'ellars_us_com_preferences',
