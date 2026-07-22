@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { getLatestPosts, getSocialFeed, stripHtml, formatDate, fetchLatestNews } from '@/lib/api';
 import DOMPurify from 'dompurify';
 import { motion } from 'framer-motion';
+import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
+import EmptyState from '@/components/common/EmptyState';
 
 const FrequencyVisualizer = ({ isPlaying }) => {
   const canvasRef = useRef(null);
@@ -269,7 +271,7 @@ const NewsMedia = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) ? (
                 <>
-                  {[1, 2, 3, 4, 5, 6].map(i => <ArticleSkeleton key={i} />)}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <ArticleSkeleton key={i} />)}
                 </>
               ) : (
                 dailyNewsPosts.map((post, index) => {
@@ -356,7 +358,7 @@ const NewsMedia = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
               <>
-                  {[1, 2, 3, 4, 5, 6].map(i => <ArticleSkeleton key={i} />)}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <ArticleSkeleton key={i} />)}
                 </>
             )}
             {archivePosts.length > 0 ? (
@@ -413,10 +415,8 @@ const NewsMedia = () => {
                   </Link>
                 );
               })
-            ) : (!loadingPosts && !loadingSocial && dailyNewsPosts.length === 0) ? (
-              <div className="col-span-full py-20 text-center text-text-muted font-light text-lg">
-                No entries found for {activeFilter}.
-              </div>
+            ) : (!loadingPosts && !loadingSocial && archivePosts.length === 0) ? (
+              <EmptyState message="No intelligence briefs currently available." />
             ) : null}
           </div>
 
