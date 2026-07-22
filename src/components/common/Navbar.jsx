@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 import SearchOverlay from '@/components/common/SearchOverlay';
@@ -9,6 +9,14 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const isAuthenticated = useAppStore(state => state.isAuthenticated);
+  const clearAuth = useAppStore(state => state.clearAuth);
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/');
+  };
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -179,6 +187,15 @@ const Navbar = () => {
           >
             CONTRIBUTE
           </motion.button>
+
+          {isAuthenticated && (
+            <button
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-yellow-electric transition-colors uppercase tracking-widest"
+            >
+              Logout
+            </button>
+          )}
         </div>
 
         <div className="flex items-center space-x-4">
@@ -281,6 +298,24 @@ const Navbar = () => {
                 CONTRIBUTE
               </motion.button>
             </motion.div>
+
+            {isAuthenticated && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (navLinks.length + 2) * 0.1 + 0.1 }}
+              >
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full py-4 border border-yellow-electric/30 text-yellow-electric font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors"
+                >
+                  LOGOUT
+                </button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
