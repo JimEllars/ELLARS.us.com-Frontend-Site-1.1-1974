@@ -6,6 +6,7 @@ import { fetchSavedVaultItems } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import { useAppStore } from '@/store/useAppStore';
+import MicroProgramLoader from '@/components/dashboard/MicroProgramLoader';
 import { useSearchParams } from 'react-router-dom';
 
 const EmptyState = () => (
@@ -53,7 +54,8 @@ const Dashboard = () => {
 
   const tabs = [
     { id: 'vault', label: 'Saved Intel' },
-    { id: 'settings', label: 'Account Settings' }
+    { id: 'settings', label: 'Account Settings' },
+    { id: 'tools', label: 'Decentralized Tools' }
   ];
 
   const handleTabChange = (tabId) => {
@@ -136,6 +138,22 @@ const Dashboard = () => {
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {currentTab === 'tools' && (
+              <motion.div
+                key="tools"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-[600px]"
+              >
+                <MicroProgramLoader
+                  programId="demo-tool"
+                  entryUrl="https://example.com"
+                  requiredPermissions={['read', 'write']}
+                />
               </motion.div>
             )}
 
