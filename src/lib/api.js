@@ -2,7 +2,10 @@ import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+if (!SUPABASE_URL) {
+  console.warn('VITE_SUPABASE_URL is missing in environment variables.');
+}
 
 const FALLBACK_POSTS = [
   {
