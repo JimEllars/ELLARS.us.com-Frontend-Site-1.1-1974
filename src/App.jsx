@@ -20,6 +20,14 @@ import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
 
+import { createClient } from '@supabase/supabase-js';
+import { useAppStore } from './store/useAppStore';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -32,7 +40,33 @@ function ScrollToTop() {
 }
 
 function App() {
+
   const isOnline = useNetworkStatus();
+  const setToken = useAppStore(state => state.setUserToken);
+  const clearAuth = useAppStore(state => state.clearAuth);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setToken(session.access_token);
+      } else {
+        clearAuth();
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setToken(session.access_token);
+      } else {
+        clearAuth();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setToken, clearAuth]);
+
 
   return (
     <HelmetProvider>
