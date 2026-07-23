@@ -378,3 +378,40 @@ export async function fetchSavedVaultItems() {
     return { data: [], isError: true, message: error.message };
   }
 }
+
+
+export async function subscribeToNewsletter(email, turnstileToken) {
+  const url = import.meta.env.VITE_CF_FORM_ENDPOINT || '/api/v1/subscribe';
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        turnstileToken,
+        source: "Ellars_Web_App",
+        footprint: "v5.40-core",
+        form_version: "v5.40-core",
+        source_url: typeof window !== "undefined" ? window.location.href : "",
+        signup_timestamp: new Date().toISOString()
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        throw new Error("Transmission rejected: Invalid format");
+      } else if (response.status === 500) {
+        throw new Error("Core server offline");
+      } else {
+        throw new Error(`Subscription failed with status: ${response.status}`);
+      }
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("[EmailIt] Network or parsing error during subscription:", error);
+    throw error;
+  }
+}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
-import { subscribeToNewsletter } from '@/lib/email';
+import { subscribeToNewsletter } from '@/lib/api';
 import Honeypot from '@/components/common/Honeypot';
 
 const Newsletter = () => {
@@ -57,17 +57,19 @@ const Newsletter = () => {
 
     if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
         setHasError(true);
+        toast.error('Please enter a valid email address.');
         return;
     }
 
     setIsSubmitting(true);
     setHasError(false);    try {
-      const payload = { email: sanitizedEmail };
+      const turnstileToken = window.turnstile ? window.turnstile.getResponse() : null;
+      const payload = { email: sanitizedEmail, turnstileToken };
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Submission timed out')), 8000)
       );
       await Promise.race([
-        subscribeToNewsletter(payload),
+        subscribeToNewsletter(sanitizedEmail, turnstileToken),
         timeoutPromise
       ]);
       setEmail('');
