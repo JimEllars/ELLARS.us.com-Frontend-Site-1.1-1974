@@ -13,6 +13,7 @@ export const useAppStore = create(
       privacyConsent: false, // Added privacy banner consent flag
       userToken: null,
       isAuthenticated: false,
+      isAuthChecking: true,
       setArticles: (articles) => set({ articles }),
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
       setRole: (role) => set({ userRole: role }),
@@ -27,6 +28,7 @@ export const useAppStore = create(
       setUpdateAvailable: (status) => set({ updateAvailable: status }),
       setUserToken: (token) => set({ userToken: token, isAuthenticated: !!token }),
       logout: () => set({ userToken: null, isAuthenticated: false }),
+      setIsAuthChecking: (status) => set({ isAuthChecking: status }),
       clearAuth: () => set({ userToken: null, isAuthenticated: false })
     }),
     {

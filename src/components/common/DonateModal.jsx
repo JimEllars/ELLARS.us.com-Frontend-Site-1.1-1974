@@ -184,13 +184,14 @@ const DonateModal = () => {
             <button
               onClick={handleConfirm}
               disabled={!selectedTier && !customAmount}
-              className={`w-full py-4 font-editorial font-black text-lg tracking-widest uppercase transition-all duration-300 ${
+              className={`w-full py-4 font-editorial font-black text-lg tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 ${
                 selectedTier || customAmount
                   ? 'bg-yellow-electric text-black hover:bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
                   : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
               }`}
             >
-              Confirm Contribution
+              <span>Confirm Contribution</span>
+              <SafeIcon name="ExternalLink" className="w-5 h-5 ml-2" />
             </button>
           </motion.div>
         </motion.div>
