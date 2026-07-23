@@ -5,8 +5,25 @@ import DOMPurify from 'dompurify';
 import { subscribeToNewsletter } from '@/lib/api';
 import Honeypot from '@/components/common/Honeypot';
 
+
 const Newsletter = () => {
   const [email, setEmail] = useState('');
+  const turnstileRef = useRef(null);
+  const widgetIdRef = useRef(null);
+
+  useEffect(() => {
+    // Check if turnstile is loaded and explicitly render
+    if (window.turnstile && turnstileRef.current && !widgetIdRef.current) {
+      widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+        'expired-callback': () => {
+          if (widgetIdRef.current) {
+            window.turnstile.reset(widgetIdRef.current);
+          }
+        }
+      });
+    }
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -98,8 +115,7 @@ const Newsletter = () => {
         <div className="min-h-[80px]">
 
           <AnimatePresence mode="wait">
-            {!success ? (
-              <motion.form
+            <motion.form
                 key="form"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -111,6 +127,7 @@ const Newsletter = () => {
                 action="/api/leads/submit"
               >
                 <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
+                <div ref={turnstileRef} className="hidden" />
                 <div className="flex-grow relative">
                   <input
                     type="email"
@@ -173,30 +190,12 @@ const Newsletter = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                       >
-                        Join the Newsletter
+                        {success ? "Subscribed! ✓" : "Join the Newsletter"}
                       </motion.span>
                     )}
                   </AnimatePresence>
                 </button>
               </motion.form>
-            ) : (
-              <motion.div
-                key="success"
-                ref={successRef}
-                tabIndex="-1"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="deco-frame border border-yellow-electric/30 bg-surface px-8 py-6 max-w-2xl mx-auto rounded-sm animate-pulse shadow-[0_0_15px_rgba(253,224,71,0.4)] will-change-transform"
-              >
-                <div className="font-mono text-lg tracking-widest text-[#4ade80] uppercase">
-                  [SIGNAL_RECEIVED_THANK_YOU]
-                </div>
-                <div className="text-[10px] text-text-muted font-editorial uppercase tracking-widest mt-2">
-                  SECURE TRANSMISSION CONFIRMED
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
 
         </div>

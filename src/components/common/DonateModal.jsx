@@ -99,7 +99,7 @@ const DonateModal = () => {
     if (!amount) return;
 
     console.log(`[DonateModal] Processing contribution: $${amount}`);
-    trackEvent('Initiate_Contribution', { amount });
+    trackEvent('thirdweb_checkout_initiated', { amount });
 
     const donationLink = import.meta.env.VITE_DONATION_LINK || 'https://example.com/donate';
 
