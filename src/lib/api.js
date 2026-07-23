@@ -1,3 +1,4 @@
+import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
@@ -147,6 +148,12 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          useAppStore.getState().clearAuth();
+          window.location.href = '/login';
+        }
+      }
       if (response.status === 429 && retries > 0) {
         console.warn(`[429 Too Many Requests] Retrying fetch to ${url} (attempt ${attempt}, ${retries} retries left)...`);
         const backoffMs = (2 ** attempt) * 1000;
@@ -336,5 +343,38 @@ export async function loginUser(email, password) {
   } catch (error) {
     console.error("[AXiM Core: Auth Error]", error);
     return { success: false, message: error.message };
+  }
+}
+
+export async function fetchSavedVaultItems() {
+  const token = useAppStore.getState().userToken;
+  if (!token) {
+    return { data: [], isError: true, message: 'No active session' };
+  }
+
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*`;
+    const response = await fetchWithRetry(url, {
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.isError) {
+      return { data: [], isError: true, message: response.message };
+    }
+
+    const data = await response.json();
+    if (data.isError) {
+      return { data: [], isError: true, message: data.message };
+    }
+
+    return { data, isError: false };
+  } catch (error) {
+    console.error("[AXiM Core: Vault Error] Failed to fetch saved items:", error);
+    return { data: [], isError: true, message: error.message };
   }
 }
