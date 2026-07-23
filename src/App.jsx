@@ -23,9 +23,14 @@ import OfflineScreen from './components/common/OfflineScreen';
 import { createClient } from '@supabase/supabase-js';
 import { useAppStore } from './store/useAppStore';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn("Supabase environment variables (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY) are missing. Supabase client will not be initialized correctly.");
+}
+
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 
 
@@ -47,27 +52,32 @@ function App() {
   const setIsAuthChecking = useAppStore(state => state.setIsAuthChecking);
   const clearAuth = useAppStore(state => state.clearAuth);
 
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setToken(session.access_token);
-      } else {
-        clearAuth();
-      }
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setToken(session.access_token);
+        } else {
+          clearAuth();
+        }
+        setIsAuthChecking(false);
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          setToken(session.access_token);
+        } else {
+          clearAuth();
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    } else {
       setIsAuthChecking(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setToken(session.access_token);
-      } else {
-        clearAuth();
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, [setToken, clearAuth, setIsAuthChecking]);
 
 
