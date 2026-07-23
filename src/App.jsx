@@ -8,6 +8,9 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+const Login = React.lazy(() => import('./pages/Login'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+import ProtectedRoute from './components/common/ProtectedRoute';
 const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./components/intel/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
@@ -16,7 +19,6 @@ const DirectiveDetail = React.lazy(() => import('./pages/DirectiveDetail'));
 import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
-import UpdatePrompt from './components/common/UpdatePrompt';
 
 
 function ScrollToTop() {
@@ -58,6 +60,10 @@ function App() {
         <Suspense fallback={<div className="fixed top-0 left-0 w-full h-[2px] bg-yellow-electric z-[9999]" style={{ background: "linear-gradient(90deg, transparent 0%, #fbbf24 50%, transparent 100%)", transformOrigin: "left", animation: "pulse 1.5s linear infinite" }}></div>}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
           <Route path="/about" element={<About />} />
           <Route path="/articles/:slug" element={<ArticleDetail />} />
           <Route path="/platform" element={<Platform />} />

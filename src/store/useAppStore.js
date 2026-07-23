@@ -26,7 +26,8 @@ export const useAppStore = create(
       setPrivacyConsent: (status) => set({ privacyConsent: status }),
       setUpdateAvailable: (status) => set({ updateAvailable: status }),
       setUserToken: (token) => set({ userToken: token, isAuthenticated: !!token }),
-      logout: () => set({ userToken: null, isAuthenticated: false })
+      logout: () => set({ userToken: null, isAuthenticated: false }),
+      clearAuth: () => set({ userToken: null, isAuthenticated: false })
     }),
     {
       name: 'ellars_us_com_preferences',
@@ -34,7 +35,9 @@ export const useAppStore = create(
       partialize: (state) => ({
         userRole: state.userRole,
         walletConnected: state.walletConnected,
-        privacyConsent: state.privacyConsent
+        privacyConsent: state.privacyConsent,
+        userToken: state.userToken,
+        isAuthenticated: state.isAuthenticated
       })
     }
   )
