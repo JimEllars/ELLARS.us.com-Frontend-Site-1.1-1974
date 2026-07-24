@@ -58,20 +58,6 @@ const MicroProgramIframe = ({ entryUrl, programId }) => {
       if (!isMounted) return;
       setIsLoading(false);
       clearTimeout(timeoutId);
-
-      // Securely pass token to the iframe using postMessage
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        try {
-          const targetOrigin = new URL(entryUrl).origin;
-          iframeRef.current.contentWindow.postMessage(
-            { type: 'AXIM_AUTH_CONTEXT', token, programId },
-            targetOrigin
-          );
-        } catch (err) {
-          console.error("Failed to parse entryUrl or postMessage:", err);
-          if (isMounted) setHasError(true);
-        }
-      }
     };
 
     const handleError = () => {
@@ -80,6 +66,39 @@ const MicroProgramIframe = ({ entryUrl, programId }) => {
       setHasError(true);
       clearTimeout(timeoutId);
     };
+
+    const handleMessage = (event) => {
+      if (!isMounted) return;
+
+      const allowedOrigins = ['https://axim.us.com', 'https://core.axim.us.com'];
+      let targetOrigin;
+      try {
+        targetOrigin = new URL(entryUrl).origin;
+      } catch (e) {
+        return;
+      }
+
+      // We check if the origin is in allowed origins or matches the entryUrl origin and ends with .axim.us.com or is a CF worker
+      const isAllowedOrigin = event.origin === targetOrigin ||
+                              event.origin.endsWith('.axim.us.com') ||
+                              event.origin.includes('workers.dev');
+
+      if (!isAllowedOrigin) {
+        console.warn('MicroProgramLoader: Rejected message from unauthorized origin:', event.origin);
+        return;
+      }
+
+      if (event.data && event.data.type === 'AXIM_READY') {
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: 'AXIM_AUTH_CONTEXT', token, programId },
+            event.origin
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
 
     // Timeout mechanism (10s)
     timeoutId = setTimeout(() => {
@@ -91,8 +110,6 @@ const MicroProgramIframe = ({ entryUrl, programId }) => {
 
     const iframeEl = iframeRef.current;
     if (iframeEl) {
-      // For cross-origin iframes, 'load' event fires when it completes loading.
-      // We can't always catch inner 404s depending on CORS, but we can rely on load or timeout.
       iframeEl.addEventListener('load', handleLoad);
       iframeEl.addEventListener('error', handleError);
     }
@@ -100,6 +117,7 @@ const MicroProgramIframe = ({ entryUrl, programId }) => {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
+      window.removeEventListener('message', handleMessage);
       if (iframeEl) {
         iframeEl.removeEventListener('load', handleLoad);
         iframeEl.removeEventListener('error', handleError);

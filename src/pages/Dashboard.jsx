@@ -55,7 +55,7 @@ const Dashboard = () => {
   const tabs = [
     { id: 'vault', label: 'Saved Intel' },
     { id: 'settings', label: 'Account Settings' },
-    { id: 'tools', label: 'Decentralized Tools' }
+    { id: 'tools', label: 'Tools & Automations' }
   ];
 
   const handleTabChange = (tabId) => {
@@ -147,13 +147,39 @@ const Dashboard = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-[600px]"
               >
-                <MicroProgramLoader
-                  programId="demo-tool"
-                  entryUrl="https://example.com"
-                  requiredPermissions={['read', 'write']}
-                />
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white font-editorial font-bold text-2xl">Available Micro-Programs</h3>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span className="text-green-500 text-[10px] uppercase tracking-widest font-mono font-bold">Active AXiM Node</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                  {/* Tool selection list */}
+                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
+                       onClick={() => {
+                         // We could set an active tool state here, but for now we just show one tool loaded below
+                       }}>
+                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">NDA Generator</h4>
+                    <p className="text-gray-400 text-sm font-mono">Automated non-disclosure agreement compilation using your secure vault parameters.</p>
+                  </div>
+
+                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors">
+                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Demand Letter Generator</h4>
+                    <p className="text-gray-400 text-sm font-mono">Draft and finalize legal demand letters powered by AXiM Core logic.</p>
+                  </div>
+                </div>
+
+                <div className="h-[600px] mt-8">
+                  <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: NDA Generator</h3>
+                  <MicroProgramLoader
+                    programId="nda-generator"
+                    entryUrl="https://core.axim.us.com/micro/nda"
+                    requiredPermissions={['read', 'write']}
+                  />
+                </div>
               </motion.div>
             )}
 

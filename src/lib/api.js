@@ -2,7 +2,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://pvbcdndqjguzqeafhwhw.supabase.co';
 if (!SUPABASE_URL) {
   console.warn('VITE_SUPABASE_URL is missing in environment variables.');
 }
@@ -300,7 +300,7 @@ export async function getSocialFeed(limit = 10) {
 
 export async function saveToAximCore(payload) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ export async function fetchSavedVaultItems() {
   }
 
   try {
-    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com`;
     const response = await fetchWithRetry(url, {
       headers: {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
