@@ -135,7 +135,8 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
     const defaultHeaders = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'X-Project-Domain': 'ellars.us.com'
+      'X-Project-Domain': 'ellars.us.com',
+      'X-Client-Telemetry': 'AXiM-Frontend-v1'
     };
 
     const fetchOptions = {
@@ -307,7 +308,8 @@ export async function saveToAximCore(payload) {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Prefer': 'return=minimal'
+        'Prefer': 'return=minimal',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
       body: JSON.stringify(payload)
     });
@@ -331,7 +333,8 @@ export async function loginUser(email, password) {
       headers: {
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL'
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
       body: JSON.stringify({ email, password })
     });
@@ -390,7 +393,8 @@ export async function subscribeToNewsletter(email, turnstileToken) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
       body: JSON.stringify({
         email,
@@ -416,5 +420,33 @@ export async function subscribeToNewsletter(email, turnstileToken) {
   } catch (error) {
     console.error("[EmailIt] Network or parsing error during subscription:", error);
     throw error;
+  }
+}
+
+export async function verifySession() {
+  try {
+    const supabaseClient = await import('@supabase/supabase-js').then(module => {
+      const url = import.meta.env.VITE_SUPABASE_URL || 'https://pvbcdndqjguzqeafhwhw.supabase.co';
+      const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      if (!url || !key) return null;
+      return module.createClient(url, key);
+    });
+
+    if (!supabaseClient) {
+      console.warn("Supabase client not initialized for verifySession.");
+      return null;
+    }
+
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+       console.error("Session verification error:", error.message);
+       return null;
+    }
+
+    return session;
+  } catch (error) {
+    console.error("Session verification failed:", error);
+    return null;
   }
 }
