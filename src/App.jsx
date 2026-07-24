@@ -22,6 +22,7 @@ import OfflineScreen from './components/common/OfflineScreen';
 
 import { createClient } from '@supabase/supabase-js';
 import { useAppStore } from './store/useAppStore';
+import { verifySession } from './lib/api';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -54,30 +55,36 @@ function App() {
 
 
   useEffect(() => {
-    if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setToken(session.access_token);
-        } else {
-          clearAuth();
-        }
-        setIsAuthChecking(false);
-      });
-
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) {
-          setToken(session.access_token);
-        } else {
-          clearAuth();
-        }
-      });
-
-      return () => subscription.unsubscribe();
-    } else {
+    const initializeSession = async () => {
+      setIsAuthChecking(true);
+      const session = await verifySession();
+      if (session) {
+        setToken(session.access_token);
+      } else {
+        clearAuth();
+      }
       setIsAuthChecking(false);
+    };
+
+    initializeSession();
+
+    let subscription = null;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          setToken(session.access_token);
+        } else {
+          clearAuth();
+        }
+      });
+      subscription = data.subscription;
     }
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [setToken, clearAuth, setIsAuthChecking]);
 
 
