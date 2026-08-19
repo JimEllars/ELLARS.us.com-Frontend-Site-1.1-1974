@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import Safe, { SafeFactory } from '@safe-global/protocol-kit';
+import { SafeFactory } from '@safe-global/protocol-kit';
+import Safe from '@safe-global/protocol-kit';
 import { useAppStore } from '@/store/useAppStore';
 import { saveToAximCore } from '@/lib/api';
 
