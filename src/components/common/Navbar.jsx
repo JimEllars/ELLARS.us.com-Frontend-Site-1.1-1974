@@ -5,6 +5,15 @@ import SafeIcon from '@/common/SafeIcon';
 import SearchOverlay from '@/components/common/SearchOverlay';
 import { useAppStore } from '@/store/useAppStore';
 
+
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
+};
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -20,6 +29,9 @@ const Navbar = () => {
 
   const navigate = useNavigate();
   const isAuthenticated = useAppStore(state => state.isAuthenticated);
+  const userToken = useAppStore(state => state.userToken);
+  const userPayload = userToken ? parseJwt(userToken) : null;
+  const userEmail = userPayload?.email || userPayload?.user_metadata?.email || null;
   const clearAuth = useAppStore(state => state.clearAuth);
 
   const handleLogout = () => {
@@ -190,12 +202,19 @@ const Navbar = () => {
           </motion.button>
 
           {isAuthenticated && (
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-yellow-electric transition-colors uppercase tracking-widest"
-            >
-              Logout
-            </button>
+            <div className="flex items-center space-x-4 border-l border-white/20 pl-4">
+              {userEmail && (
+                <span className="text-gray-400 text-[10px] tracking-widest uppercase truncate max-w-[150px]">
+                  {userEmail}
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-yellow-electric hover:text-yellow-400 transition-colors uppercase tracking-widest text-[11px] font-bold"
+              >
+                Logout
+              </button>
+            </div>
           )}
         </div>
 
@@ -305,7 +324,13 @@ const Navbar = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: (navLinks.length + 2) * 0.1 + 0.1 }}
+                className="flex flex-col space-y-4"
               >
+                {userEmail && (
+                  <div className="text-center text-gray-400 text-[10px] tracking-widest uppercase">
+                    Session: {userEmail}
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     setIsOpen(false);

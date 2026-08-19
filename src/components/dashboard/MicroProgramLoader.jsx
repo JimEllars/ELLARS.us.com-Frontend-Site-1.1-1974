@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ErrorBoundary from '../common/ErrorBoundary';
+import IntelManager from './IntelManager';
+import MediaUploads from './MediaUploads';
+import PartnershipPayments from './PartnershipPayments';
 
 const LoaderSkeleton = () => (
   <div className="w-full h-full min-h-[400px] flex flex-col gap-4 p-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-sm">
@@ -44,6 +47,12 @@ export const MicroProgramLoader = ({ programId }) => {
       <div className="w-full h-full">
         {isLoading ? (
           <LoaderSkeleton />
+        ) : programId === 'intel-manager' ? (
+          <IntelManager />
+        ) : programId === 'media-uploads' ? (
+          <MediaUploads />
+        ) : programId === 'partnership-payments' ? (
+          <PartnershipPayments />
         ) : (
           <PlaceholderUI programId={programId} />
         )}

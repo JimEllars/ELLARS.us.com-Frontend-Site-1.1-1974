@@ -4,6 +4,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export const useAppStore = create(
   persist(
     (set) => ({
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+      treasuryAddress: null,
+      setTreasuryAddress: (address) => set({ treasuryAddress: address }),
       userRole: 'Observer',
       walletConnected: false,
       articles: [],
@@ -34,13 +38,17 @@ export const useAppStore = create(
     {
       name: 'ellars_us_com_preferences',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
+            partialize: (state) => ({
         userRole: state.userRole,
         walletConnected: state.walletConnected,
         privacyConsent: state.privacyConsent,
         userToken: state.userToken,
+        treasuryAddress: state.treasuryAddress,
         isAuthenticated: state.isAuthenticated
-      })
+      }),
+      onRehydrateStorage: () => (state) => {
+        state.setHasHydrated(true);
+      }
     }
   )
 );

@@ -450,3 +450,87 @@ export async function verifySession() {
     return null;
   }
 }
+
+export async function logClientError(errorPayload) {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/axim_telemetry_errors?app_id=eq.ellars.us.com`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(errorPayload)
+    });
+
+    if (!response.ok) {
+      console.warn("[Telemetry] Failed to log client error", response.status);
+    }
+  } catch (error) {
+    console.error("[Telemetry] Failed to transmit client error", error);
+  }
+}
+
+export async function createIntelBrief(payload, token) {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      console.error("[AXiM Core] Failed to create intel brief", response.status);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[AXiM Core: Save Error]", error);
+    return false;
+  }
+}
+
+export async function uploadMediaAsset(file, token) {
+  try {
+    // Generate a unique filename using timestamp
+    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    const url = `${SUPABASE_URL}/storage/v1/object/ellars-media/${fileName}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1',
+        'Content-Type': file.type || 'application/octet-stream'
+      },
+      body: file
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("[AXiM Core: Storage Error]", response.status, errBody);
+      return { success: false, error: 'Transmission rejected by central matrix.' };
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error("[AXiM Core: Storage Network Error]", error);
+    return { success: false, error: 'Network failure during payload transmission.' };
+  }
+}

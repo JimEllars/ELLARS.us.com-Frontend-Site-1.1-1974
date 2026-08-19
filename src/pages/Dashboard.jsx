@@ -7,6 +7,7 @@ import ArticleCard from '@/components/intel/ArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import { useAppStore } from '@/store/useAppStore';
 import MicroProgramLoader from '@/components/dashboard/MicroProgramLoader';
+import Sidebar from '@/components/dashboard/Sidebar';
 import { useSearchParams } from 'react-router-dom';
 
 const EmptyState = () => (
@@ -52,15 +53,18 @@ const Dashboard = () => {
   const items = response && !response.isError ? response.data : [];
   const loading = isLoading;
 
-  const tabs = [
-    { id: 'vault', label: 'Saved Intel' },
-    { id: 'settings', label: 'Account Settings' },
-    { id: 'tools', label: 'Tools & Automations' }
-  ];
+
 
   const handleTabChange = (tabId) => {
     setSearchParams({ tab: tabId });
   };
+
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   return (
     <>
@@ -69,35 +73,10 @@ const Dashboard = () => {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="min-h-screen pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
+      <div className="min-h-screen pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8 overflow-x-hidden md:overflow-visible">
 
         {/* Sidebar / Top Nav */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="deco-frame p-6 sticky top-32"
-          >
-            <h2 className="font-editorial font-black text-xl tracking-tighter text-white uppercase mb-6">
-              Dashboard <span className="text-yellow-electric">Menu</span>
-            </h2>
-            <nav className="flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`whitespace-nowrap text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${
-                    currentTab === tab.id
-                      ? 'bg-yellow-electric/10 text-yellow-electric border-l-2 border-yellow-electric'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white border-l-2 border-transparent'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </motion.div>
-        </div>
+        <Sidebar currentTab={currentTab} onTabChange={handleTabChange} />
 
         {/* Main Content Area */}
         <div className="flex-grow">
@@ -141,56 +120,42 @@ const Dashboard = () => {
               </motion.div>
             )}
 
-            {currentTab === 'tools' && (
+            {currentTab === 'intel-manager' && (
               <motion.div
-                key="tools"
+                key="intel-manager"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-white font-editorial font-bold text-2xl">Available Micro-Programs</h3>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-green-500 text-[10px] uppercase tracking-widest font-mono font-bold">Active AXiM Node</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 mb-8">
-                  {/* Tool selection list */}
-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
-                       onClick={() => {
-                         // We could set an active tool state here, but for now we just show one tool loaded below
-                       }}>
-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">NDA Generator</h4>
-                    <p className="text-gray-400 text-sm font-mono">Automated non-disclosure agreement compilation using your secure vault parameters.</p>
-                  </div>
-
-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors">
-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Demand Letter Generator</h4>
-                    <p className="text-gray-400 text-sm font-mono">Draft and finalize legal demand letters powered by AXiM Core logic.</p>
-                  </div>
-                </div>
-
-                <div className="h-[600px] mt-8">
-                  <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: NDA Generator</h3>
-                  <MicroProgramLoader
-                    programId="nda-generator"
-                    entryUrl="https://core.axim.us.com/micro/nda"
-                    requiredPermissions={['read', 'write']}
-                  />
+                <div className="h-[600px]">
+                  <MicroProgramLoader programId="intel-manager" />
                 </div>
               </motion.div>
             )}
 
-            {currentTab === 'settings' && (
+            {currentTab === 'media-uploads' && (
               <motion.div
-                key="settings"
+                key="media-uploads"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <SettingsPlaceholder />
+                <div className="h-[600px]">
+                  <MicroProgramLoader programId="media-uploads" />
+                </div>
+              </motion.div>
+            )}
+
+            {currentTab === 'partnership-payments' && (
+              <motion.div
+                key="partnership-payments"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="h-[600px]">
+                  <MicroProgramLoader programId="partnership-payments" />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

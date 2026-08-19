@@ -1,5 +1,7 @@
 import MediaPlaylist from '../components/intel/MediaPlaylist';
 import React, { useEffect, useState, useRef } from 'react';
+import useSWRInfinite from 'swr/infinite';
+import { useInView } from 'react-intersection-observer';
 import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
 import { Helmet } from 'react-helmet-async';
@@ -84,30 +86,46 @@ const NewsMedia = () => {
     document.title = "Ellars for Congress | News & Media";
     window.scrollTo(0, 0);
   }, []);
+
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
-  const [posts, setPosts] = useState([]);
   const [socialPosts, setSocialPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
   const [loadingSocial, setLoadingSocial] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [page, setPage] = useState(1);
-  const [isReachingEnd, setIsReachingEnd] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [totalPages, setTotalPages] = useState(1);
+
+  // SWR Infinite configuration
+  const getKey = (pageIndex, previousPageData) => {
+    if (previousPageData && !previousPageData.data.length) return null; // reached the end
+    return `news-media-posts-${pageIndex + 1}`;
+  };
+
+  const { data: postsData, error: postsError, size, setSize, isValidating } = useSWRInfinite(
+    getKey,
+    async (key) => {
+      const pageIndex = parseInt(key.split('-').pop(), 10);
+      const res = await fetchLatestNews(pageIndex, 9);
+      return res;
+    },
+    { revalidateFirstPage: false, persistSize: true }
+  );
+
+  const posts = postsData ? postsData.flatMap(page => page.data || []) : [];
+  const isLoadingInitialData = !postsData && !postsError;
+  const isLoadingMore = isLoadingInitialData || (size > 0 && postsData && typeof postsData[size - 1] === "undefined");
+  const isEmpty = postsData?.[0]?.data?.length === 0;
+  const isReachingEnd = isEmpty || (postsData && postsData[postsData.length - 1]?.data?.length < 9);
+  const isRefreshing = isValidating && postsData && postsData.length === size;
+
+  const { ref: observerRef, inView } = useInView({
+    threshold: 0.1,
+    rootMargin: '400px'
+  });
 
   useEffect(() => {
-    const handleSWRUpdate = (e) => {
-      if (e.detail?.endpoint === 'posts' && e.detail.newData) {
-        setPosts(e.detail.newData);
-      } else if (e.detail?.endpoint === 'social' && e.detail.newData) {
-        setSocialPosts(e.detail.newData);
-      }
-    };
-    window.addEventListener('swr-update', handleSWRUpdate);
-    return () => window.removeEventListener('swr-update', handleSWRUpdate);
-  }, []);
-
+    if (inView && !isReachingEnd && !isLoadingMore) {
+      setSize(size + 1);
+    }
+  }, [inView, isReachingEnd, isLoadingMore, setSize, size]);
 
   useEffect(() => {
     setIsLoading(false);
@@ -116,53 +134,11 @@ const NewsMedia = () => {
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchArticles() {
-      try {
-        const cacheKey = 'ellars_us_com_news_page_1';
-        const cachedItem = sessionStorage.getItem(cacheKey);
-        if (cachedItem) {
-          try {
-            const parsed = JSON.parse(cachedItem);
-            if (isMounted) {
-              setPosts(Array.isArray(parsed.data) ? parsed.data : []);
-              setTotalPages(parsed.totalPages || 1);
-              if (parsed.totalPages <= 1) setIsReachingEnd(true);
-              setLoadingPosts(false);
-            }
-          } catch (e) { /* ignore */ }
-        }
-
-        const response = await fetchLatestNews(1, 9);
-        if (isMounted) {
-          const fetchedPosts = Array.isArray(response.data) ? response.data : [];
-          setPosts(fetchedPosts);
-          setTotalPages(response.totalPages || 1);
-          if ((response.totalPages || 1) <= 1) setIsReachingEnd(true);
-          sessionStorage.setItem(cacheKey, JSON.stringify({ data: fetchedPosts, totalPages: response.totalPages || 1 }));
-          setLoadingPosts(false);
-        }
-      } catch (e) {
-        if (isMounted) setLoadingPosts(false);
-      }
-    }
-
     async function fetchSocial() {
       try {
-        const cacheKey = 'ellars_us_com_cache_social-20';
-        const cachedItem = sessionStorage.getItem(cacheKey);
-        if (cachedItem) {
-          try {
-            const parsed = JSON.parse(cachedItem);
-            if (isMounted) {
-              setSocialPosts(Array.isArray(parsed.data) ? parsed.data : []);
-              setLoadingSocial(false);
-            }
-          } catch (e) { /* ignore */ }
-        }
-
-        const socialData = await getSocialFeed(20);
+        const response = await getSocialFeed(20);
         if (isMounted) {
-          setSocialPosts(Array.isArray(socialData) ? socialData : []);
+          setSocialPosts(response);
           setLoadingSocial(false);
         }
       } catch (e) {
@@ -170,37 +146,10 @@ const NewsMedia = () => {
       }
     }
 
-    fetchArticles();
     fetchSocial();
-
     return () => { isMounted = false; };
-
   }, []);
 
-  const loadMoreArticles = async () => {
-    if (isLoadingMore || isReachingEnd) return;
-    setIsLoadingMore(true);
-    try {
-      const nextPage = page + 1;
-      const response = await fetchLatestNews(nextPage, 9);
-      const newPosts = Array.isArray(response.data) ? response.data : [];
-
-      setPosts(prevPosts => {
-        const existingIds = new Set(prevPosts.map(p => p.id));
-        const deduplicatedNewPosts = newPosts.filter(p => !existingIds.has(p.id));
-        return [...prevPosts, ...deduplicatedNewPosts];
-      });
-
-      setPage(nextPage);
-      if (nextPage >= (response.totalPages || totalPages) || newPosts.length === 0) {
-        setIsReachingEnd(true);
-      }
-    } catch (e) {
-      console.error("Failed to load more articles", e);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
 
   const filters = ['ALL', 'VIDEO', 'AUDIO', 'ARTICLES', 'SOCIAL'];
 
@@ -260,7 +209,7 @@ const NewsMedia = () => {
         </header>
 
         {/* Tier 1: Featured Daily News */}
-        {(dailyNewsPosts.length > 0 || ((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL')))) && (
+        {(dailyNewsPosts.length > 0 || ((isLoadingInitialData && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL')))) && (
           <section className="mb-16">
             <header className="mb-8 pb-4 border-b border-white/5">
               <h2 className="font-editorial text-2xl text-white uppercase font-bold flex items-center">
@@ -269,7 +218,7 @@ const NewsMedia = () => {
               </h2>
             </header>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) ? (
+              {((isLoadingInitialData && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) ? (
                 <>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <ArticleSkeleton key={i} />)}
                 </>
@@ -314,7 +263,7 @@ const NewsMedia = () => {
                             <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
                           </h3>
                           {post.isExternal ? (
-                             <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
+                             <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered, { ADD_TAGS: ['a'], ADD_ATTR: ['target', 'rel', 'href'] }) }} />
                           ) : (
                              <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
@@ -356,7 +305,7 @@ const NewsMedia = () => {
             </h2>
           </header>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {((loadingPosts && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
+            {((isLoadingInitialData && activeFilter !== 'SOCIAL') || (loadingSocial && (activeFilter === 'SOCIAL' || activeFilter === 'ALL'))) && (
               <>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <ArticleSkeleton key={i} />)}
                 </>
@@ -384,6 +333,13 @@ const NewsMedia = () => {
                           </div>
                         </div>
                       ) : null}
+                      {!(post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) && (
+  <div className="relative w-full aspect-video mb-6 rounded-t-sm overflow-hidden bg-void/50 border-b border-yellow-electric/10 flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-tr from-yellow-electric/10 via-transparent to-transparent opacity-50"></div>
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-yellow-electric/5 rounded-full blur-2xl"></div>
+    <FrequencyVisualizer isPlaying={true} />
+  </div>
+)}
                       <div className={`mb-auto ${post.acf?.category_label?.toUpperCase() === 'SOCIAL' && (post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) ? 'px-8 pb-8' : ''}`}>
                         {(!(post.imageUrl || post._embedded?.['wp:featuredmedia']?.[0]?.source_url) || post.acf?.category_label?.toUpperCase() !== 'SOCIAL') && (
                           <>
@@ -400,7 +356,7 @@ const NewsMedia = () => {
                           <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.title.rendered)) }} />
                         </h3>
                         {post.isExternal ? (
-                           <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered) }} />
+                           <div className="text-text-muted text-sm leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.excerpt.rendered, { ADD_TAGS: ['a'], ADD_ATTR: ['target', 'rel', 'href'] }) }} />
                         ) : (
                            <p className="text-text-muted text-sm leading-relaxed line-clamp-4">
                              <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stripHtml(post.excerpt.rendered)) }} />
@@ -415,23 +371,26 @@ const NewsMedia = () => {
                   </Link>
                 );
               })
-            ) : (!loadingPosts && !loadingSocial && archivePosts.length === 0) ? (
+            ) : (!isLoadingInitialData && !loadingSocial && archivePosts.length === 0) ? (
               <EmptyState message="No intelligence briefs currently available." />
             ) : null}
           </div>
 
           {/* Load More Button */}
+
+          {/* Infinite Scroll Sentinel */}
           {!isReachingEnd && (activeFilter === 'ALL' || activeFilter === 'ARTICLES') && (
-            <div className="mt-12 flex justify-center">
-              <button
-                onClick={loadMoreArticles}
-                disabled={isLoadingMore}
-                className="border border-yellow-electric/30 text-yellow-electric text-xs tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors px-8 py-3 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoadingMore ? 'Loading...' : 'Load More Articles'}
-              </button>
+            <div ref={observerRef} className="mt-12 flex justify-center w-full h-20">
+              {isLoadingMore && (
+                <div className="flex space-x-2">
+                  <span className="w-2 h-2 bg-yellow-electric rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-2 h-2 bg-yellow-electric rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-2 h-2 bg-yellow-electric rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              )}
             </div>
           )}
+
         </section>
 
       </div>

@@ -52,6 +52,7 @@ function App() {
   const isAuthChecking = useAppStore(state => state.isAuthChecking);
   const setIsAuthChecking = useAppStore(state => state.setIsAuthChecking);
   const clearAuth = useAppStore(state => state.clearAuth);
+  const hasHydrated = useAppStore(state => state._hasHydrated);
 
 
   useEffect(() => {
@@ -87,6 +88,8 @@ function App() {
     };
   }, [setToken, clearAuth, setIsAuthChecking]);
 
+
+  if (!hasHydrated) return null;
 
   if (isAuthChecking) {
     return (

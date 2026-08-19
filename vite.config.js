@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   plugins: [
+    nodePolyfills(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -36,7 +38,39 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+        maximumFileSizeToCacheInBytes: 5000000,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|woff2?)$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-assets-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/wp\.ellars\.us\.com\/wp-json\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-payload-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 24 * 60 * 60 // 24 hours
+              },
+              networkTimeoutSeconds: 5,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       }
     })
   ],
