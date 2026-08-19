@@ -115,7 +115,8 @@ const ArticleDetail = () => {
       }
     };
     window.addEventListener('swr-update', handleSWRUpdate);
-    return () => window.removeEventListener('swr-update', handleSWRUpdate);
+
+  return () => window.removeEventListener('swr-update', handleSWRUpdate);
   }, []);
 
 
@@ -275,10 +276,13 @@ const ArticleDetail = () => {
     }
   };
 
+  const keywords = post?.acf?.tags ? (Array.isArray(post.acf.tags) ? post.acf.tags.join(', ') : post.acf.tags.split(' ').join(', ')) : "James Ellars, Ellars for Congress, Economic Equity, Policy";
+
   return (
     <div className="pt-24 min-h-screen bg-grid">
       <Helmet>
         <meta name="robots" content="index, follow" />
+        <meta name="keywords" content={keywords} />
         <title>{title} | James Ellars Official</title>
         <meta name="description" content={cleanExcerpt} />
         <meta property="og:title" content={title} />
@@ -344,7 +348,7 @@ const ArticleDetail = () => {
             <div className="p-8 md:p-12">
               <div
                 className="prose prose-invert prose-zinc max-w-none prose-headings:font-black prose-headings:tracking-tight prose-h2:text-white prose-a:text-yellow-electric prose-a:no-underline prose-a:border-b prose-a:border-yellow-electric/30 hover:prose-a:text-white hover:prose-a:border-white transition-colors prose-blockquote:border-l-4 prose-blockquote:border-yellow-electric prose-blockquote:bg-white/5 prose-blockquote:italic prose-blockquote:py-2 prose-blockquote:px-4 prose-pre:bg-gray-800 prose-pre:text-gray-100 prose-pre:font-mono prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto prose-code:text-gray-100 prose-code:font-mono prose-code:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-sm"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered) }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered, { ADD_TAGS: ['a', 'iframe', 'img'], ADD_ATTR: ['target', 'rel', 'href', 'src', 'alt', 'class'] }, { ADD_TAGS: ['a', 'iframe', 'img'], ADD_ATTR: ['target', 'rel', 'href', 'src', 'alt', 'class'] }) }}
               />
 
 

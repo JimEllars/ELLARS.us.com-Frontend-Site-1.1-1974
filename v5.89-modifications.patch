@@ -1,0 +1,252 @@
+From 11edafe81518d289100e720c6129e5d73b5ebf1b Mon Sep 17 00:00:00 2001
+From: "google-labs-jules[bot]"
+ <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date: Sat, 25 Jul 2026 04:56:48 +0000
+Subject: [PATCH] feat: V5.89 IntelManager Backend Activation & Cloudflare PWA
+ Optimization
+
+---
+ src/components/dashboard/IntelManager.jsx | 101 ++++++++++++++++++++--
+ src/lib/api.js                            |  28 ++++++
+ vite.config.js                            |  33 ++++++-
+ 3 files changed, 153 insertions(+), 9 deletions(-)
+
+diff --git a/src/components/dashboard/IntelManager.jsx b/src/components/dashboard/IntelManager.jsx
+index 352818d..c9fa030 100644
+--- a/src/components/dashboard/IntelManager.jsx
++++ b/src/components/dashboard/IntelManager.jsx
+@@ -1,6 +1,69 @@
+-import React from 'react';
++import React, { useState } from 'react';
++import { useAppStore } from '@/store/useAppStore';
++import { createIntelBrief } from '@/lib/api';
+
+ const IntelManager = () => {
++  const userToken = useAppStore((state) => state.userToken);
++  const showToast = useAppStore((state) => state.showToast);
++
++  const [title, setTitle] = useState('');
++  const [excerpt, setExcerpt] = useState('');
++  const [tags, setTags] = useState('');
++  const [body, setBody] = useState('');
++
++  const [errors, setErrors] = useState({});
++  const [isSubmitting, setIsSubmitting] = useState(false);
++
++  const validateForm = () => {
++    const newErrors = {};
++    if (!title.trim()) newErrors.title = 'Brief Title is required.';
++    if (!body.trim()) newErrors.body = 'Intelligence Body Payload is required.';
++
++    // Explicitly enforce comma-separated format for tags
++    if (tags.trim() && !/^[a-zA-Z0-9s-]+(,[a-zA-Z0-9s-]+)*$/.test(tags)) {
++      newErrors.tags = 'Tags must be strictly comma-separated.';
++    }
++
++    setErrors(newErrors);
++    return Object.keys(newErrors).length === 0;
++  };
++
++  const handleSubmit = async (e) => {
++    e.preventDefault();
++    if (!validateForm()) return;
++
++    setIsSubmitting(true);
++
++    try {
++      const payload = {
++        app_id: 'ellars.us.com',
++        type: 'intel_brief',
++        title: title.trim(),
++        excerpt: excerpt.trim(),
++        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
++        content: body.trim(),
++        created_at: new Date().toISOString()
++      };
++
++      const success = await createIntelBrief(payload, userToken);
++
++      if (success) {
++        showToast('Intelligence brief securely compiled and vaulted.');
++        setTitle('');
++        setExcerpt('');
++        setTags('');
++        setBody('');
++        setErrors({});
++      } else {
++        setErrors({ submit: 'Transmission rejected. Core server may be offline.' });
++      }
++    } catch (err) {
++      setErrors({ submit: 'Transmission rejected. Core server may be offline.' });
++    } finally {
++      setIsSubmitting(false);
++    }
++  };
++
+   return (
+     <div className="deco-frame p-8 bg-black/40 backdrop-blur-md w-full min-h-[600px] border border-white/10 rounded-sm">
+       <div className="mb-8">
+@@ -13,7 +76,13 @@ const IntelManager = () => {
+         </p>
+       </div>
+
+-      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
++      <form className="space-y-6" onSubmit={handleSubmit}>
++        {errors.submit && (
++          <div className="bg-red-900/20 border border-red-500/50 p-4 rounded-sm mb-6">
++             <p className="text-red-400 font-mono text-xs uppercase tracking-widest">{errors.submit}</p>
++          </div>
++        )}
++
+         <div>
+           <label htmlFor="intel-title" className="block font-mono text-xs text-yellow-electric uppercase tracking-widest mb-2">
+             Brief Title
+@@ -21,9 +90,13 @@ const IntelManager = () => {
+           <input
+             type="text"
+             id="intel-title"
+-            className="w-full bg-white/5 border border-white/10 text-white font-mono text-sm p-4 focus:outline-none focus:border-yellow-electric/50 transition-colors placeholder-gray-600 rounded-sm"
++            value={title}
++            onChange={(e) => setTitle(e.target.value)}
++            disabled={isSubmitting}
++            className={`w-full bg-white/5 border text-white font-mono text-sm p-4 focus:outline-none transition-colors placeholder-gray-600 rounded-sm ${errors.title ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-yellow-electric/50'}`}
+             placeholder="ENTER PRIMARY DIRECTIVE OR TOPIC"
+           />
++          {errors.title && <p className="text-red-400 font-mono text-[10px] mt-2 uppercase tracking-widest">{errors.title}</p>}
+         </div>
+
+         <div>
+@@ -33,6 +106,9 @@ const IntelManager = () => {
+           <textarea
+             id="intel-excerpt"
+             rows={3}
++            value={excerpt}
++            onChange={(e) => setExcerpt(e.target.value)}
++            disabled={isSubmitting}
+             className="w-full bg-white/5 border border-white/10 text-white font-mono text-sm p-4 focus:outline-none focus:border-yellow-electric/50 transition-colors placeholder-gray-600 rounded-sm resize-none"
+             placeholder="SUMMARIZE THE OPERATIONAL IMPACT"
+           ></textarea>
+@@ -45,9 +121,13 @@ const IntelManager = () => {
+           <input
+             type="text"
+             id="intel-tags"
+-            className="w-full bg-white/5 border border-white/10 text-white font-mono text-sm p-4 focus:outline-none focus:border-yellow-electric/50 transition-colors placeholder-gray-600 rounded-sm"
++            value={tags}
++            onChange={(e) => setTags(e.target.value)}
++            disabled={isSubmitting}
++            className={`w-full bg-white/5 border text-white font-mono text-sm p-4 focus:outline-none transition-colors placeholder-gray-600 rounded-sm ${errors.tags ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-yellow-electric/50'}`}
+             placeholder="COMMA-SEPARATED (E.G. LOGISTICS, POLICY, SYSTEMS)"
+           />
++          {errors.tags && <p className="text-red-400 font-mono text-[10px] mt-2 uppercase tracking-widest">{errors.tags}</p>}
+         </div>
+
+         <div>
+@@ -57,17 +137,22 @@ const IntelManager = () => {
+           <textarea
+             id="intel-body"
+             rows={8}
+-            className="w-full bg-white/5 border border-white/10 text-white font-mono text-sm p-4 focus:outline-none focus:border-yellow-electric/50 transition-colors placeholder-gray-600 rounded-sm resize-y"
++            value={body}
++            onChange={(e) => setBody(e.target.value)}
++            disabled={isSubmitting}
++            className={`w-full bg-white/5 border text-white font-mono text-sm p-4 focus:outline-none transition-colors placeholder-gray-600 rounded-sm resize-y ${errors.body ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-yellow-electric/50'}`}
+             placeholder="INPUT SECURE INTELLIGENCE DATA HERE..."
+           ></textarea>
++          {errors.body && <p className="text-red-400 font-mono text-[10px] mt-2 uppercase tracking-widest">{errors.body}</p>}
+         </div>
+
+         <div className="pt-4 flex justify-end">
+           <button
+-            type="button"
+-            className="px-8 py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-blue-500/20"
++            type="submit"
++            disabled={isSubmitting}
++            className="px-8 py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+           >
+-            Commit Payload
++            {isSubmitting ? 'Transmitting...' : 'Commit Payload'}
+           </button>
+         </div>
+       </form>
+diff --git a/src/lib/api.js b/src/lib/api.js
+index 91249bc..a6f5dce 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -474,3 +474,31 @@ export async function logClientError(errorPayload) {
+     console.error("[Telemetry] Failed to transmit client error", error);
+   }
+ }
++
++export async function createIntelBrief(payload, token) {
++  try {
++    const url = `${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`;
++    const response = await fetch(url, {
++      method: 'POST',
++      headers: {
++        'Content-Type': 'application/json',
++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++        'Authorization': `Bearer ${token}`,
++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++        'X-Client-Telemetry': 'AXiM-Frontend-v1',
++        'Prefer': 'return=minimal'
++      },
++      body: JSON.stringify(payload)
++    });
++
++    if (!response.ok) {
++      console.error("[AXiM Core] Failed to create intel brief", response.status);
++      return false;
++    }
++
++    return true;
++  } catch (error) {
++    console.error("[AXiM Core: Save Error]", error);
++    return false;
++  }
++}
+diff --git a/vite.config.js b/vite.config.js
+index 86e51dc..e09582c 100644
+--- a/vite.config.js
++++ b/vite.config.js
+@@ -36,7 +36,38 @@ export default defineConfig({
+         ]
+       },
+       workbox: {
+-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
++        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
++        runtimeCaching: [
++          {
++            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|woff2?)$/i,
++            handler: 'StaleWhileRevalidate',
++            options: {
++              cacheName: 'static-assets-cache',
++              expiration: {
++                maxEntries: 100,
++                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
++              },
++              cacheableResponse: {
++                statuses: [0, 200]
++              }
++            }
++          },
++          {
++            urlPattern: /^https:\/\/wp\.ellars\.us\.com\/wp-json\/.*/i,
++            handler: 'NetworkFirst',
++            options: {
++              cacheName: 'api-payload-cache',
++              expiration: {
++                maxEntries: 200,
++                maxAgeSeconds: 24 * 60 * 60 // 24 hours
++              },
++              networkTimeoutSeconds: 5,
++              cacheableResponse: {
++                statuses: [0, 200]
++              }
++            }
++          }
++        ]
+       }
+     })
+   ],
+--
+2.53.0

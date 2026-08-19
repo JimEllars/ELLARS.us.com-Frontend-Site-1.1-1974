@@ -1,4 +1,5 @@
 import React from 'react';
+import { logClientError } from '../../lib/api';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -15,6 +16,14 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // You can also log the error to an error reporting service
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+
+    // Transmit error telemetry
+    logClientError({
+      event_type: 'REACT_COMPONENT_ERROR',
+      error_message: error?.message || 'Unknown Error Boundary Exception',
+      component_stack: errorInfo?.componentStack || '',
+      timestamp: new Date().toISOString()
+    });
   }
 
   handleReset() {

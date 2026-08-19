@@ -1,3 +1,6 @@
-name = "ellars-us-com-frontend"
-compatibility_date = "2024-01-01"
+name = "ellars-frontend-worker"
+main = "public/worker.js"
+compatibility_date = "2024-05-01"
+
+# Automatically map to the Cloudflare Pages environment
 pages_build_output_dir = "dist"
