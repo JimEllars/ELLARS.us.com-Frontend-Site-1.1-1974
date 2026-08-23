@@ -310,5 +310,5 @@ export const useTelemetry = () => {
     dispatchTelemetry(payload);
   }, [createTelemetryPayload, dispatchTelemetry]);
 
-  return { trackEvent, dispatchTelemetry };
+  return { trackEvent, dispatchTelemetry, flushQueue };
 };

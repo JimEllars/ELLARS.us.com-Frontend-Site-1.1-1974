@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchUploadedMedia, deleteUploadedMedia, uploadMediaAsset } from '@/lib/api';
 import { useAppStore } from '@/store/useAppStore';
+import { useSearchParams } from 'react-router-dom';
 
 const MediaUploads = () => {
   const [mediaList, setMediaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [itemToDelete, setItemToDelete] = useState(null);
   const showToast = useAppStore(state => state.showToast);
+  const [, setSearchParams] = useSearchParams();
 
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -85,6 +87,13 @@ const MediaUploads = () => {
     } catch (err) {
       showToast('// SYSTEM ERROR: FAILED TO COPY');
     }
+  };
+
+
+  const handleUseInDraft = (url) => {
+    sessionStorage.setItem('ellars_draft_cover_image', url);
+    showToast('Cover image assigned to draft');
+    setSearchParams({ tab: 'vault' });
   };
 
   const confirmDelete = async () => {
@@ -177,6 +186,12 @@ const MediaUploads = () => {
               <div className="p-3 flex-grow flex flex-col justify-between">
                 <p className="text-xs text-white/80 font-mono truncate">{asset.name}</p>
                 <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleUseInDraft(asset.url)}
+                    className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center"
+                  >
+                    Use in Draft
+                  </button>
                   <button
                     onClick={() => copyToClipboard(asset.url)}
                     className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center"
