@@ -7,9 +7,10 @@ import ArticleCard from '@/components/intel/ArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import { useAppStore } from '@/store/useAppStore';
 import MicroProgramLoader from '@/components/dashboard/MicroProgramLoader';
+import MediaUploads from '@/components/dashboard/MediaUploads';
 import { useSearchParams } from 'react-router-dom';
 
-const EmptyState = () => (
+const EmptyState = ({ isFilterEmpty }) => (
   <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
     <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
       <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -18,7 +19,7 @@ const EmptyState = () => (
     </div>
     <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
     <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
-      You have not saved any operational intel to your secure vault yet.
+      {isFilterEmpty ? 'No saved items match your filter criteria.' : 'You have not saved any operational intel to your secure vault yet.'}
     </p>
   </div>
 );
@@ -42,6 +43,8 @@ const SettingsPlaceholder = () => (
 const Dashboard = () => {
   const token = useAppStore(state => state.userToken);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
   const currentTab = searchParams.get('tab') || 'vault';
 
   const { data: response, error, isLoading } = useSWR(
@@ -49,13 +52,19 @@ const Dashboard = () => {
     fetchSavedVaultItems
   );
 
-  const items = response && !response.isError ? response.data : [];
+  const allItems = response && !response.isError ? response.data : [];
+  const items = allItems.filter(item => {
+    const matchesSearch = !searchQuery || (item.title?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = activeCategory === 'All' || item.acf?.category_label === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
   const loading = isLoading;
 
   const tabs = [
     { id: 'vault', label: 'Saved Intel' },
     { id: 'settings', label: 'Account Settings' },
-    { id: 'tools', label: 'Tools & Automations' }
+    { id: 'tools', label: 'Tools & Automations' },
+    { id: 'media', label: 'Media Library' }
   ];
 
   const handleTabChange = (tabId) => {
@@ -123,6 +132,33 @@ const Dashboard = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
+
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="Search vault intel..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-sm py-2 px-4 pl-10 text-white font-mono text-sm focus:outline-none focus:border-yellow-electric/50 transition-colors deco-brackets"
+                    />
+                    <svg className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                    {['All', 'Dispatch', 'Business Briefing', 'Directive'].map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`whitespace-nowrap px-3 py-1.5 border ${activeCategory === cat ? 'border-yellow-electric text-yellow-electric bg-yellow-electric/10' : 'border-white/10 text-gray-400 hover:border-white/30'} rounded-sm font-mono text-xs uppercase tracking-widest transition-colors`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                     {[1, 2, 3].map(i => (
@@ -130,7 +166,7 @@ const Dashboard = () => {
                     ))}
                   </div>
                 ) : items.length === 0 ? (
-                  <EmptyState />
+                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                     {items.map(item => (
@@ -180,6 +216,18 @@ const Dashboard = () => {
                     requiredPermissions={['read', 'write']}
                   />
                 </div>
+              </motion.div>
+            )}
+
+
+            {currentTab === 'media' && (
+              <motion.div
+                key="media"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <MediaUploads />
               </motion.div>
             )}
 

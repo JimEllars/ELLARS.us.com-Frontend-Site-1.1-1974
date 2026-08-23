@@ -450,3 +450,105 @@ export async function verifySession() {
     return null;
   }
 }
+
+
+export async function fetchUploadedMedia() {
+  const token = useAppStore.getState().userToken;
+  if (!token) {
+    return { data: [], isError: true, message: 'No active session' };
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/ellars-media`, {
+      method: 'POST',
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prefix: '',
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch media: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Map data to include public URLs
+    const mappedData = data.map(item => ({
+      ...item,
+      url: `${SUPABASE_URL}/storage/v1/object/public/ellars-media/${item.name}`
+    }));
+
+    return { data: mappedData, isError: false };
+  } catch (error) {
+    console.error("[AXiM Core: Storage Error] Failed to fetch media:", error);
+    return { data: [], isError: true, message: error.message };
+  }
+}
+
+export async function deleteUploadedMedia(filename) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return false;
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL'
+      }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("[AXiM Core: Storage Error] Failed to delete media:", error);
+    return false;
+  }
+}
+
+export async function createIntelBrief(payload) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return false;
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Prefer': 'return=minimal',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      // Fire-and-forget edge cache invalidation
+      fetch('/api/v1/cache/purge-tag', {
+        method: 'POST',
+        headers: {
+          'X-Purge-Tag': 'ellars-intel-feed',
+          'X-Client-Telemetry': 'AXiM-Frontend-v1'
+        }
+      }).catch(err => console.warn('Cache purge signal failed:', err));
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("[AXiM Core: Create Intel Error]", error);
+    return false;
+  }
+}
