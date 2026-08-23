@@ -1,0 +1,268 @@
+diff --git a/src/components/dashboard/MediaUploads.jsx b/src/components/dashboard/MediaUploads.jsx
+index 39387f2..c96bf45 100644
+--- a/src/components/dashboard/MediaUploads.jsx
++++ b/src/components/dashboard/MediaUploads.jsx
+@@ -1,6 +1,6 @@
+-import React, { useState, useEffect } from 'react';
++import React, { useState, useEffect, useRef } from 'react';
+ import { motion, AnimatePresence } from 'framer-motion';
+-import { fetchUploadedMedia, deleteUploadedMedia } from '@/lib/api';
++import { fetchUploadedMedia, deleteUploadedMedia, uploadMediaAsset } from '@/lib/api';
+ import { useAppStore } from '@/store/useAppStore';
+
+ const MediaUploads = () => {
+@@ -9,6 +9,60 @@ const MediaUploads = () => {
+   const [itemToDelete, setItemToDelete] = useState(null);
+   const showToast = useAppStore(state => state.showToast);
+
++  const [isDragging, setIsDragging] = useState(false);
++  const [isUploading, setIsUploading] = useState(false);
++  const fileInputRef = useRef(null);
++
++  const handleDragOver = (e) => {
++    e.preventDefault();
++    setIsDragging(true);
++  };
++
++  const handleDragLeave = (e) => {
++    e.preventDefault();
++    setIsDragging(false);
++  };
++
++  const handleDrop = async (e) => {
++    e.preventDefault();
++    setIsDragging(false);
++
++    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
++      await processFile(e.dataTransfer.files[0]);
++    }
++  };
++
++  const handleFileSelect = async (e) => {
++    if (e.target.files && e.target.files.length > 0) {
++      await processFile(e.target.files[0]);
++    }
++  };
++
++  const processFile = async (file) => {
++    // 5MB limit
++    if (file.size > 5 * 1024 * 1024) {
++      showToast('// SYSTEM ERROR: FILE EXCEEDS 5MB LIMIT');
++      return;
++    }
++
++    setIsUploading(true);
++    const result = await uploadMediaAsset(file);
++    setIsUploading(false);
++
++    if (result.isError) {
++      showToast('// SYSTEM ERROR: UPLOAD FAILED');
++    } else {
++      showToast('// ASSET UPLOADED SUCCESSFULLY');
++      loadMedia();
++    }
++
++    // reset input
++    if (fileInputRef.current) {
++        fileInputRef.current.value = '';
++    }
++  };
++
++
+   const loadMedia = async () => {
+     setLoading(true);
+     const result = await fetchUploadedMedia();
+@@ -53,13 +107,38 @@ const MediaUploads = () => {
+       </h3>
+       <div className="h-px w-16 bg-yellow-electric/50 mb-6"></div>
+
+-      <div className="mb-6 p-8 border border-dashed border-white/20 bg-black/20 flex flex-col items-center justify-center rounded-sm">
+-        <svg className="w-8 h-8 text-yellow-electric mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+-        </svg>
+-        <p className="font-mono text-xs uppercase tracking-widest text-gray-400">
+-          Drag & Drop Protocol Offline. Standby for core integration.
+-        </p>
++      <div
++        className={`mb-6 p-8 border border-dashed flex flex-col items-center justify-center rounded-sm transition-colors cursor-pointer ${isDragging ? 'border-yellow-electric bg-yellow-electric/10' : 'border-white/20 bg-black/20 hover:border-yellow-electric/50'}`}
++        onDragOver={handleDragOver}
++        onDragLeave={handleDragLeave}
++        onDrop={handleDrop}
++        onClick={() => fileInputRef.current?.click()}
++      >
++        <input
++          type="file"
++          ref={fileInputRef}
++          className="hidden"
++          accept="image/*"
++          onChange={handleFileSelect}
++        />
++        {isUploading ? (
++            <div className="w-full flex flex-col items-center">
++              <div className="w-6 h-6 border-2 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin mb-3"></div>
++              <p className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Uploading Asset...</p>
++              <div className="w-full h-1 bg-white/10 mt-2 rounded-full overflow-hidden">
++                 <div className="h-full bg-yellow-electric w-1/2 animate-pulse"></div>
++              </div>
++            </div>
++        ) : (
++            <>
++                <svg className={`w-8 h-8 mb-3 ${isDragging ? 'text-yellow-electric' : 'text-yellow-electric opacity-50'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
++                </svg>
++                <p className="font-mono text-xs uppercase tracking-widest text-gray-400">
++                  {isDragging ? 'Release to upload' : 'Drag & Drop Asset Here (Max 5MB)'}
++                </p>
++            </>
++        )}
+       </div>
+
+       {loading ? (
+@@ -130,6 +209,9 @@ const MediaUploads = () => {
+             className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+           >
+             <motion.div
++              role="dialog"
++              aria-modal="true"
++              aria-labelledby="delete-dialog-title"
+               initial={{ scale: 0.9, y: 20 }}
+               animate={{ scale: 1, y: 0 }}
+               exit={{ scale: 0.9, y: 20 }}
+@@ -141,7 +223,7 @@ const MediaUploads = () => {
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                   </svg>
+                 </div>
+-                <h4 className="font-editorial font-bold text-xl text-white">Confirm Purge</h4>
++                <h4 id="delete-dialog-title" className="font-editorial font-bold text-xl text-white">Confirm Purge</h4>
+               </div>
+               <p className="font-mono text-sm text-gray-400 mb-6">
+                 Are you certain you wish to execute the deletion of <span className="text-white">{itemToDelete.name}</span>? This action will permanently remove the asset from the core CDN.
+diff --git a/src/lib/api.js b/src/lib/api.js
+index 89b1ae6..b72eabc 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -452,6 +452,37 @@ export async function verifySession() {
+ }
+
+
++export async function uploadMediaAsset(file) {
++  const token = useAppStore.getState().userToken;
++  if (!token) return { data: null, isError: true, message: 'No active session' };
++
++  try {
++    const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
++    const url = `${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`;
++
++    const response = await fetch(url, {
++      method: 'POST',
++      headers: {
++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++        'Authorization': `Bearer ${token}`,
++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++        'Content-Type': file.type || 'application/octet-stream'
++      },
++      body: file
++    });
++
++    if (!response.ok) {
++      throw new Error(`Upload failed: ${response.status}`);
++    }
++
++    const data = await response.json();
++    return { data, isError: false };
++  } catch (error) {
++    console.error("[AXiM Core: Storage Error] Failed to upload media:", error);
++    return { data: null, isError: true, message: error.message };
++  }
++}
++
+ export async function fetchUploadedMedia() {
+   const token = useAppStore.getState().userToken;
+   if (!token) {
+diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+index 582560e..60953d0 100644
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -5,8 +5,8 @@ import useSWR from 'swr';
+ import { fetchSavedVaultItems } from '@/lib/api';
+ import ArticleCard from '@/components/intel/ArticleCard';
+ import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
++import AutomationCalculator from '@/components/intel/AutomationCalculator';
+ import { useAppStore } from '@/store/useAppStore';
+-import MicroProgramLoader from '@/components/dashboard/MicroProgramLoader';
+ import MediaUploads from '@/components/dashboard/MediaUploads';
+ import { useSearchParams } from 'react-router-dom';
+
+@@ -45,6 +45,7 @@ const Dashboard = () => {
+   const [searchParams, setSearchParams] = useSearchParams();
+   const [searchQuery, setSearchQuery] = useState('');
+   const [activeCategory, setActiveCategory] = useState('All');
++  const [activeTool, setActiveTool] = useState('calculator');
+   const currentTab = searchParams.get('tab') || 'vault';
+
+   const { data: response, error, isLoading } = useSWR(
+@@ -138,6 +139,7 @@ const Dashboard = () => {
+                     <input
+                       type="text"
+                       placeholder="Search vault intel..."
++                      aria-label="Search vault intel"
+                       value={searchQuery}
+                       onChange={(e) => setSearchQuery(e.target.value)}
+                       className="w-full bg-black/40 border border-white/10 rounded-sm py-2 px-4 pl-10 text-white font-mono text-sm focus:outline-none focus:border-yellow-electric/50 transition-colors deco-brackets"
+@@ -150,6 +152,7 @@ const Dashboard = () => {
+                     {['All', 'Dispatch', 'Business Briefing', 'Directive'].map(cat => (
+                       <button
+                         key={cat}
++                        aria-label={`Filter by ${cat}`}
+                         onClick={() => setActiveCategory(cat)}
+                         className={`whitespace-nowrap px-3 py-1.5 border ${activeCategory === cat ? 'border-yellow-electric text-yellow-electric bg-yellow-electric/10' : 'border-white/10 text-gray-400 hover:border-white/30'} rounded-sm font-mono text-xs uppercase tracking-widest transition-colors`}
+                       >
+@@ -193,29 +196,31 @@ const Dashboard = () => {
+                 </div>
+
+                 <div className="grid grid-cols-1 gap-6 mb-8">
+-                  {/* Tool selection list */}
+-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
+-                       onClick={() => {
+-                         // We could set an active tool state here, but for now we just show one tool loaded below
+-                       }}>
+-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">NDA Generator</h4>
+-                    <p className="text-gray-400 text-sm font-mono">Automated non-disclosure agreement compilation using your secure vault parameters.</p>
++                  <div
++                    className={`deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer transition-colors ${activeTool === 'calculator' ? 'border-yellow-electric/50' : 'hover:border-yellow-electric/50'}`}
++                    onClick={() => setActiveTool('calculator')}
++                  >
++                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Directive Impact Calculator</h4>
++                    <p className="text-gray-400 text-sm font-mono">Evaluate automated economic offsets and negative income tax distributions.</p>
+                   </div>
+
+-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors">
+-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Demand Letter Generator</h4>
+-                    <p className="text-gray-400 text-sm font-mono">Draft and finalize legal demand letters powered by AXiM Core logic.</p>
++                  <div
++                    className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
++                    onClick={() => handleTabChange('vault')}
++                  >
++                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
++                    <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
+                   </div>
+                 </div>
+
+-                <div className="h-[600px] mt-8">
+-                  <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: NDA Generator</h3>
+-                  <MicroProgramLoader
+-                    programId="nda-generator"
+-                    entryUrl="https://core.axim.us.com/micro/nda"
+-                    requiredPermissions={['read', 'write']}
+-                  />
+-                </div>
++                {activeTool === 'calculator' && (
++                  <div className="mt-8">
++                    <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: Impact Calculator</h3>
++                    <div className="p-4 md:p-8 border border-white/10 bg-black/60 rounded-sm">
++                      <AutomationCalculator />
++                    </div>
++                  </div>
++                )}
+               </motion.div>
+             )}

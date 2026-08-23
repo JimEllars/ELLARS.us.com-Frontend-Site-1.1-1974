@@ -452,6 +452,37 @@ export async function verifySession() {
 }
 
 
+export async function uploadMediaAsset(file) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return { data: null, isError: true, message: 'No active session' };
+
+  try {
+    const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const url = `${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Content-Type': file.type || 'application/octet-stream'
+      },
+      body: file
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { data, isError: false };
+  } catch (error) {
+    console.error("[AXiM Core: Storage Error] Failed to upload media:", error);
+    return { data: null, isError: true, message: error.message };
+  }
+}
+
 export async function fetchUploadedMedia() {
   const token = useAppStore.getState().userToken;
   if (!token) {
