@@ -14,6 +14,8 @@ export const useAppStore = create(
       userToken: null,
       isAuthenticated: false,
       isAuthChecking: true,
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       setArticles: (articles) => set({ articles }),
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
       setRole: (role) => set({ userRole: role }),
@@ -34,6 +36,11 @@ export const useAppStore = create(
     {
       name: 'ellars_us_com_preferences',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHasHydrated(true);
+        }
+      },
       partialize: (state) => ({
         userRole: state.userRole,
         walletConnected: state.walletConnected,

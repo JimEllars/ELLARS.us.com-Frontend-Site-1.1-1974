@@ -50,6 +50,7 @@ function App() {
   const isOnline = useNetworkStatus();
   const setToken = useAppStore(state => state.setUserToken);
   const isAuthChecking = useAppStore(state => state.isAuthChecking);
+  const hasHydrated = useAppStore(state => state._hasHydrated);
   const setIsAuthChecking = useAppStore(state => state.setIsAuthChecking);
   const clearAuth = useAppStore(state => state.clearAuth);
 
@@ -88,7 +89,7 @@ function App() {
   }, [setToken, clearAuth, setIsAuthChecking]);
 
 
-  if (isAuthChecking) {
+  if (!hasHydrated || isAuthChecking) {
     return (
       <div className="fixed inset-0 bg-void flex items-center justify-center z-[9999]">
         <div className="w-12 h-12 border-2 border-yellow-electric/20 border-t-yellow-electric rounded-full animate-spin"></div>
