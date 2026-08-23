@@ -5,8 +5,8 @@ import useSWR from 'swr';
 import { fetchSavedVaultItems } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
+import AutomationCalculator from '@/components/intel/AutomationCalculator';
 import { useAppStore } from '@/store/useAppStore';
-import MicroProgramLoader from '@/components/dashboard/MicroProgramLoader';
 import MediaUploads from '@/components/dashboard/MediaUploads';
 import { useSearchParams } from 'react-router-dom';
 
@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeTool, setActiveTool] = useState('calculator');
   const currentTab = searchParams.get('tab') || 'vault';
 
   const { data: response, error, isLoading } = useSWR(
@@ -138,6 +139,7 @@ const Dashboard = () => {
                     <input
                       type="text"
                       placeholder="Search vault intel..."
+                      aria-label="Search vault intel"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-black/40 border border-white/10 rounded-sm py-2 px-4 pl-10 text-white font-mono text-sm focus:outline-none focus:border-yellow-electric/50 transition-colors deco-brackets"
@@ -150,6 +152,7 @@ const Dashboard = () => {
                     {['All', 'Dispatch', 'Business Briefing', 'Directive'].map(cat => (
                       <button
                         key={cat}
+                        aria-label={`Filter by ${cat}`}
                         onClick={() => setActiveCategory(cat)}
                         className={`whitespace-nowrap px-3 py-1.5 border ${activeCategory === cat ? 'border-yellow-electric text-yellow-electric bg-yellow-electric/10' : 'border-white/10 text-gray-400 hover:border-white/30'} rounded-sm font-mono text-xs uppercase tracking-widest transition-colors`}
                       >
@@ -193,29 +196,31 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-8">
-                  {/* Tool selection list */}
-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
-                       onClick={() => {
-                         // We could set an active tool state here, but for now we just show one tool loaded below
-                       }}>
-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">NDA Generator</h4>
-                    <p className="text-gray-400 text-sm font-mono">Automated non-disclosure agreement compilation using your secure vault parameters.</p>
+                  <div
+                    className={`deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer transition-colors ${activeTool === 'calculator' ? 'border-yellow-electric/50' : 'hover:border-yellow-electric/50'}`}
+                    onClick={() => setActiveTool('calculator')}
+                  >
+                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Directive Impact Calculator</h4>
+                    <p className="text-gray-400 text-sm font-mono">Evaluate automated economic offsets and negative income tax distributions.</p>
                   </div>
 
-                  <div className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors">
-                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Demand Letter Generator</h4>
-                    <p className="text-gray-400 text-sm font-mono">Draft and finalize legal demand letters powered by AXiM Core logic.</p>
+                  <div
+                    className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
+                    onClick={() => handleTabChange('vault')}
+                  >
+                    <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
+                    <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
                   </div>
                 </div>
 
-                <div className="h-[600px] mt-8">
-                  <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: NDA Generator</h3>
-                  <MicroProgramLoader
-                    programId="nda-generator"
-                    entryUrl="https://core.axim.us.com/micro/nda"
-                    requiredPermissions={['read', 'write']}
-                  />
-                </div>
+                {activeTool === 'calculator' && (
+                  <div className="mt-8">
+                    <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: Impact Calculator</h3>
+                    <div className="p-4 md:p-8 border border-white/10 bg-black/60 rounded-sm">
+                      <AutomationCalculator />
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 

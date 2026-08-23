@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchUploadedMedia, deleteUploadedMedia } from '@/lib/api';
+import { fetchUploadedMedia, deleteUploadedMedia, uploadMediaAsset } from '@/lib/api';
 import { useAppStore } from '@/store/useAppStore';
 
 const MediaUploads = () => {
@@ -8,6 +8,60 @@ const MediaUploads = () => {
   const [loading, setLoading] = useState(true);
   const [itemToDelete, setItemToDelete] = useState(null);
   const showToast = useAppStore(state => state.showToast);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = async (file) => {
+    // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('// SYSTEM ERROR: FILE EXCEEDS 5MB LIMIT');
+      return;
+    }
+
+    setIsUploading(true);
+    const result = await uploadMediaAsset(file);
+    setIsUploading(false);
+
+    if (result.isError) {
+      showToast('// SYSTEM ERROR: UPLOAD FAILED');
+    } else {
+      showToast('// ASSET UPLOADED SUCCESSFULLY');
+      loadMedia();
+    }
+
+    // reset input
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  };
+
 
   const loadMedia = async () => {
     setLoading(true);
@@ -53,13 +107,38 @@ const MediaUploads = () => {
       </h3>
       <div className="h-px w-16 bg-yellow-electric/50 mb-6"></div>
 
-      <div className="mb-6 p-8 border border-dashed border-white/20 bg-black/20 flex flex-col items-center justify-center rounded-sm">
-        <svg className="w-8 h-8 text-yellow-electric mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-        </svg>
-        <p className="font-mono text-xs uppercase tracking-widest text-gray-400">
-          Drag & Drop Protocol Offline. Standby for core integration.
-        </p>
+      <div
+        className={`mb-6 p-8 border border-dashed flex flex-col items-center justify-center rounded-sm transition-colors cursor-pointer ${isDragging ? 'border-yellow-electric bg-yellow-electric/10' : 'border-white/20 bg-black/20 hover:border-yellow-electric/50'}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handleFileSelect}
+        />
+        {isUploading ? (
+            <div className="w-full flex flex-col items-center">
+              <div className="w-6 h-6 border-2 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin mb-3"></div>
+              <p className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Uploading Asset...</p>
+              <div className="w-full h-1 bg-white/10 mt-2 rounded-full overflow-hidden">
+                 <div className="h-full bg-yellow-electric w-1/2 animate-pulse"></div>
+              </div>
+            </div>
+        ) : (
+            <>
+                <svg className={`w-8 h-8 mb-3 ${isDragging ? 'text-yellow-electric' : 'text-yellow-electric opacity-50'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <p className="font-mono text-xs uppercase tracking-widest text-gray-400">
+                  {isDragging ? 'Release to upload' : 'Drag & Drop Asset Here (Max 5MB)'}
+                </p>
+            </>
+        )}
       </div>
 
       {loading ? (
@@ -130,6 +209,9 @@ const MediaUploads = () => {
             className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-dialog-title"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -141,7 +223,7 @@ const MediaUploads = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
-                <h4 className="font-editorial font-bold text-xl text-white">Confirm Purge</h4>
+                <h4 id="delete-dialog-title" className="font-editorial font-bold text-xl text-white">Confirm Purge</h4>
               </div>
               <p className="font-mono text-sm text-gray-400 mb-6">
                 Are you certain you wish to execute the deletion of <span className="text-white">{itemToDelete.name}</span>? This action will permanently remove the asset from the core CDN.
