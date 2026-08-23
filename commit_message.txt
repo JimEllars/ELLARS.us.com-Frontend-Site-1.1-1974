@@ -1,1 +1,1 @@
-feat(v5.66): Hydrate platform content, add env validation, and external link indicators
+fix(v5.97): Resolve worker escape sequence, update eslint ignores, harden telemetry

@@ -16,7 +16,7 @@ export default {
             try {
               // Note: Real implementation would use Cloudflare API to purge cache by tag here
               // e.g., await fetch('https://api.cloudflare.com/client/v4/zones/.../purge_cache', { ... })
-              console.log(\`[Edge] Successfully queued purge for tag: \${purgeTag}\`);
+              console.log(`[Edge] Successfully queued purge for tag: ${purgeTag}`);
             } catch (err) {
               console.error('[Edge] Purge execution failed:', err);
             }
