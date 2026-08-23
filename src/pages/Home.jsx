@@ -7,6 +7,7 @@ import RantsFeed from '@/components/home/RantsFeed';
 import Podcast from '@/components/home/Podcast';
 import Bio from '@/components/home/Bio';
 import Newsletter from '@/components/home/Newsletter';
+import LiveBroadcast from '@/components/home/LiveBroadcast';
 
 const Home = () => {
   useEffect(() => {
@@ -50,6 +51,7 @@ const Home = () => {
         </script>
       </Helmet>
       <Hero />
+      <LiveBroadcast />
       <Ventures />
       <RantsFeed />
       <Expertise />

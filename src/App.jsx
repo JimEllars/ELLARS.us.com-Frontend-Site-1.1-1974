@@ -1,4 +1,5 @@
 import DonateModal from './components/common/DonateModal';
+import NewsletterModal from './components/common/NewsletterModal';
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -137,6 +138,7 @@ function App() {
         </Suspense>
         <ToastContainer position="bottom-right" />
         <DonateModal />
+        <NewsletterModal />
       </Layout>
     </Router>
     </HelmetProvider>

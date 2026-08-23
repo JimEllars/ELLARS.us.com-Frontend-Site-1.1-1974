@@ -8,6 +8,9 @@ export const useAppStore = create(
       walletConnected: false,
       articles: [],
       isDonateModalOpen: false,
+      isNewsletterModalOpen: false,
+      isLiveStreamActive: false,
+      streamEmbedUrl: null,
       toastMessage: null,
       updateAvailable: false,
       privacyConsent: false, // Added privacy banner consent flag
@@ -20,6 +23,7 @@ export const useAppStore = create(
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
       setRole: (role) => set({ userRole: role }),
       setDonateModalOpen: (isOpen) => set({ isDonateModalOpen: isOpen }),
+      setNewsletterModalOpen: (isOpen) => set({ isNewsletterModalOpen: isOpen }),
       showToast: (message) => {
         set({ toastMessage: message });
         setTimeout(() => {
