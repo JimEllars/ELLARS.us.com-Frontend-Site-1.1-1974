@@ -3,9 +3,9 @@ import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 import { v4 as uuidv4 } from 'uuid';
-import { publishVaultItem } from '@/lib/api';
+import { publishVaultItem, updateVaultItem } from '@/lib/api';
 
-const DispatchPublisher = () => {
+const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
   const showToast = useAppStore(state => state.showToast);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +21,18 @@ const DispatchPublisher = () => {
   });
 
   useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title?.rendered || '',
+        category: editingItem.acf?.category_label || 'Dispatch',
+        readTime: editingItem.acf?.read_time?.replace(' Min Read', '') || '',
+        excerpt: editingItem.excerpt?.rendered || '',
+        content: editingItem.content?.rendered || '',
+        coverImage: editingItem._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
+      });
+      return;
+    }
+
     // 1. Populate cover image from sessionStorage
     const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
     if (savedCoverImage) {
@@ -37,7 +49,7 @@ const DispatchPublisher = () => {
         console.warn('Failed to parse saved draft dispatch:', e);
       }
     }
-  }, []);
+  }, [editingItem]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,23 +82,34 @@ const DispatchPublisher = () => {
             client_idempotency_key: idempotencyKey,
             status: 'draft'
         };
-        const success = await publishVaultItem(payload);
 
-        if (success) {
-            showToast('Dispatch Staged Successfully.');
-            setIdempotencyKey(uuidv4()); // reset key
-            setFormData({
-                title: '',
-                category: 'Dispatch',
-                readTime: '',
-                excerpt: '',
-                content: '',
-                coverImage: ''
-            });
-            sessionStorage.removeItem('ellars_draft_cover_image');
-            localStorage.removeItem('ellars_draft_dispatch');
+        let result;
+        if (editingItem) {
+           result = await updateVaultItem(editingItem.id, formData);
+           if (!result.isError) {
+              showToast('Dispatch Updated Successfully.');
+              if (onSuccess) onSuccess();
+           } else {
+              showToast('// ERROR: UNABLE TO UPDATE DISPATCH');
+           }
         } else {
-             showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
+           const success = await publishVaultItem(payload);
+           if (success) {
+               showToast('Dispatch Staged Successfully.');
+               setIdempotencyKey(uuidv4()); // reset key
+               setFormData({
+                   title: '',
+                   category: 'Dispatch',
+                   readTime: '',
+                   excerpt: '',
+                   content: '',
+                   coverImage: ''
+               });
+               sessionStorage.removeItem('ellars_draft_cover_image');
+               localStorage.removeItem('ellars_draft_dispatch');
+           } else {
+                showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
+           }
         }
     } finally {
         setIsSubmitting(false);
@@ -98,10 +121,15 @@ const DispatchPublisher = () => {
     <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
       <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
          <h2 className="text-yellow-electric font-editorial font-bold text-2xl tracking-tighter uppercase">
-            Intelligence Dispatch Publisher
+            {editingItem ? 'Edit Dispatch' : 'Intelligence Dispatch Publisher'}
          </h2>
-         <SafeIcon name="FileText" className="w-6 h-6 text-yellow-electric" />
+         <SafeIcon name={editingItem ? "Edit" : "FileText"} className="w-6 h-6 text-yellow-electric" />
       </div>
+      {editingItem && (
+        <div className="mb-6 p-4 bg-yellow-electric/10 border border-yellow-electric/30 rounded-sm flex items-center justify-between">
+          <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Currently Editing Existing Record</span>
+        </div>
+      )}
 
       <form onSubmit={handleStageDispatch} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,19 +221,30 @@ const DispatchPublisher = () => {
         </div>
 
         <div className="flex items-center space-x-4 pt-4 border-t border-white/10">
-           <button
-            type="button"
-            onClick={handleSaveDraft}
-            className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
-           >
-              Save Draft Locally
-           </button>
+           {!editingItem && (
+             <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+             >
+                Save Draft Locally
+             </button>
+           )}
+           {editingItem && onCancel && (
+             <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+             >
+                Cancel Edit
+             </button>
+           )}
            <button
             type="submit"
             disabled={isSubmitting}
             className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
            >
-              <span>Stage Dispatch</span>
+              <span>{editingItem ? 'Save Changes' : 'Stage Dispatch'}</span>
               <SafeIcon name="Send" className="w-4 h-4" />
            </button>
         </div>

@@ -368,20 +368,24 @@ export async function loginUser(email, password) {
   }
 }
 
-export async function fetchSavedVaultItems() {
+export async function fetchSavedVaultItems(page = 1, limit = 12) {
   const token = useAppStore.getState().userToken;
   if (!token) {
     return { data: [], isError: true, message: 'No active session' };
   }
 
   try {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
     const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com`;
+
     const response = await fetchWithRetry(url, {
       headers: {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Range': `${from}-${to}`
       }
     });
 
@@ -563,6 +567,38 @@ export async function deleteUploadedMedia(filename) {
 }
 
 
+
+
+export async function updateVaultItem(itemId, payload) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return { isError: true, message: 'No active session' };
+
+  try {
+    const finalPayload = { ...payload, app_id: 'ellars.us.com' };
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Prefer': 'return=representation',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+      },
+      body: JSON.stringify(finalPayload)
+    });
+
+    if (!response.ok) {
+      console.error("[AXiM Core: Vault Error] Failed to update item", response.status);
+      return { isError: true, message: `Failed to update item with status ${response.status}` };
+    }
+
+    return { isError: false, message: 'Item updated successfully' };
+  } catch (error) {
+    console.error("[AXiM Core: Vault Error] Exception updating item:", error);
+    return { isError: true, message: error.message };
+  }
+}
 
 export async function deleteVaultItem(itemId) {
   const token = useAppStore.getState().userToken;

@@ -215,7 +215,13 @@ export const useTelemetry = () => {
         flushQueue();
       }
     }
-    return () => {};
+
+    // Ensure robust auto-flush execution on browser network reconnection
+    window.addEventListener('online', flushQueue);
+
+    return () => {
+       window.removeEventListener('online', flushQueue);
+    };
   }, [isOnline, flushQueue]);
 
   const dispatchTelemetry = useCallback(async (payload) => {

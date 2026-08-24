@@ -1,0 +1,761 @@
+diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
+index fed73bd..07c4eef 100644
+--- a/PlanForContinuedDevelopment.md
++++ b/PlanForContinuedDevelopment.md
+@@ -1,6 +1,7 @@
+ # Plan for Continued Development
+
+ ## Completed Sprints
++- **V6.06 Vault Pagination & Editing:** Added in-place editing functionality for intelligence dispatches, implemented range-based pagination to maintain performance at scale for Vault views, and fortified the telemetry system to actively flush queues on network reconnection.
+ - **V5.98 Media Uploads:** Completed UI placeholders and base structure for file uploads.
+ - **V5.99 Account Settings:** Initial groundwork for modular settings components.
+ - **V6.00 Global Newsletter / Streamlabs Hub:** Implemented the global newsletter modal and `LiveBroadcast.jsx` component for optimal audience reach and conversion.
+@@ -11,10 +12,8 @@
+ - **V6.05 Vault Endpoint Standardization, Item Deletion/Archival, & Optimistic Mutations:** Standardized `publishVaultItem` to `axim_vault`. Implemented `deleteVaultItem` and `archiveVaultItem` utilities with strict tenant headers. Integrated optimistic SWR mutations and branded confirmation modals in the Dashboard. Protected authoring forms from double submissions using UUID-based idempotency keys.
+
+ ## Active Roadmap
+-1.  **Vault Pagination and Virtualization:**
+-    - The `saved_vault_items` query currently fetches all items. This will fail gracefully at scale. Implement cursor-based pagination via Supabase and virtualized lists in the UI for performance.
+-2.  **Dashboard Content Editing:**
+-    - Build out a full editing interface to modify existing Vault Dispatches/Directives rather than only staging new ones or archiving/deleting.
++1.  **Vault Virtualization:**
++    - Implement virtualized lists in the UI for vault performance when traversing many pages.
+ 3.  **Cloudflare Stream Automated Status Polling:**
+     - Continuously refine worker polling reliability and caching behavior for the live broadcast edge route (`/api/v1/stream/status`).
+ 4.  **Safe Treasury Multisig Governance on Arbitrum:**
+diff --git a/src/components/dashboard/DispatchPublisher.jsx b/src/components/dashboard/DispatchPublisher.jsx
+index 4d8572c..032f9a2 100644
+--- a/src/components/dashboard/DispatchPublisher.jsx
++++ b/src/components/dashboard/DispatchPublisher.jsx
+@@ -3,9 +3,9 @@ import { useAppStore } from '@/store/useAppStore';
+ import SafeIcon from '@/common/SafeIcon';
+ import DOMPurify from 'dompurify';
+ import { v4 as uuidv4 } from 'uuid';
+-import { publishVaultItem } from '@/lib/api';
++import { publishVaultItem, updateVaultItem } from '@/lib/api';
+
+-const DispatchPublisher = () => {
++const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
+   const showToast = useAppStore(state => state.showToast);
+
+   const [isSubmitting, setIsSubmitting] = useState(false);
+@@ -21,6 +21,18 @@ const DispatchPublisher = () => {
+   });
+
+   useEffect(() => {
++    if (editingItem) {
++      setFormData({
++        title: editingItem.title?.rendered || '',
++        category: editingItem.acf?.category_label || 'Dispatch',
++        readTime: editingItem.acf?.read_time?.replace(' Min Read', '') || '',
++        excerpt: editingItem.excerpt?.rendered || '',
++        content: editingItem.content?.rendered || '',
++        coverImage: editingItem._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
++      });
++      return;
++    }
++
+     // 1. Populate cover image from sessionStorage
+     const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
+     if (savedCoverImage) {
+@@ -37,7 +49,7 @@ const DispatchPublisher = () => {
+         console.warn('Failed to parse saved draft dispatch:', e);
+       }
+     }
+-  }, []);
++  }, [editingItem]);
+
+   const handleChange = (e) => {
+     const { name, value } = e.target;
+@@ -70,23 +82,34 @@ const DispatchPublisher = () => {
+             client_idempotency_key: idempotencyKey,
+             status: 'draft'
+         };
+-        const success = await publishVaultItem(payload);
+-
+-        if (success) {
+-            showToast('Dispatch Staged Successfully.');
+-            setIdempotencyKey(uuidv4()); // reset key
+-            setFormData({
+-                title: '',
+-                category: 'Dispatch',
+-                readTime: '',
+-                excerpt: '',
+-                content: '',
+-                coverImage: ''
+-            });
+-            sessionStorage.removeItem('ellars_draft_cover_image');
+-            localStorage.removeItem('ellars_draft_dispatch');
++
++        let result;
++        if (editingItem) {
++           result = await updateVaultItem(editingItem.id, formData);
++           if (!result.isError) {
++              showToast('Dispatch Updated Successfully.');
++              if (onSuccess) onSuccess();
++           } else {
++              showToast('// ERROR: UNABLE TO UPDATE DISPATCH');
++           }
+         } else {
+-             showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
++           const success = await publishVaultItem(payload);
++           if (success) {
++               showToast('Dispatch Staged Successfully.');
++               setIdempotencyKey(uuidv4()); // reset key
++               setFormData({
++                   title: '',
++                   category: 'Dispatch',
++                   readTime: '',
++                   excerpt: '',
++                   content: '',
++                   coverImage: ''
++               });
++               sessionStorage.removeItem('ellars_draft_cover_image');
++               localStorage.removeItem('ellars_draft_dispatch');
++           } else {
++                showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
++           }
+         }
+     } finally {
+         setIsSubmitting(false);
+@@ -98,10 +121,15 @@ const DispatchPublisher = () => {
+     <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
+       <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+          <h2 className="text-yellow-electric font-editorial font-bold text-2xl tracking-tighter uppercase">
+-            Intelligence Dispatch Publisher
++            {editingItem ? 'Edit Dispatch' : 'Intelligence Dispatch Publisher'}
+          </h2>
+-         <SafeIcon name="FileText" className="w-6 h-6 text-yellow-electric" />
++         <SafeIcon name={editingItem ? "Edit" : "FileText"} className="w-6 h-6 text-yellow-electric" />
+       </div>
++      {editingItem && (
++        <div className="mb-6 p-4 bg-yellow-electric/10 border border-yellow-electric/30 rounded-sm flex items-center justify-between">
++          <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Currently Editing Existing Record</span>
++        </div>
++      )}
+
+       <form onSubmit={handleStageDispatch} className="space-y-6">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+@@ -193,19 +221,30 @@ const DispatchPublisher = () => {
+         </div>
+
+         <div className="flex items-center space-x-4 pt-4 border-t border-white/10">
+-           <button
+-            type="button"
+-            onClick={handleSaveDraft}
+-            className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+-           >
+-              Save Draft Locally
+-           </button>
++           {!editingItem && (
++             <button
++              type="button"
++              onClick={handleSaveDraft}
++              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
++             >
++                Save Draft Locally
++             </button>
++           )}
++           {editingItem && onCancel && (
++             <button
++              type="button"
++              onClick={onCancel}
++              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
++             >
++                Cancel Edit
++             </button>
++           )}
+            <button
+             type="submit"
+             disabled={isSubmitting}
+             className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+-              <span>Stage Dispatch</span>
++              <span>{editingItem ? 'Save Changes' : 'Stage Dispatch'}</span>
+               <SafeIcon name="Send" className="w-4 h-4" />
+            </button>
+         </div>
+diff --git a/src/components/dashboard/VaultArticleCard.jsx b/src/components/dashboard/VaultArticleCard.jsx
+index 1e75ada..3638fb9 100644
+--- a/src/components/dashboard/VaultArticleCard.jsx
++++ b/src/components/dashboard/VaultArticleCard.jsx
+@@ -10,7 +10,7 @@ const truncateText = (str, max) => {
+   return stripped.substring(0, max) + '...';
+ };
+
+-const VaultArticleCard = ({ post, date, onDelete, onArchive }) => {
++const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
+   const [showMenu, setShowMenu] = useState(false);
+   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+
+@@ -93,6 +93,16 @@ const VaultArticleCard = ({ post, date, onDelete, onArchive }) => {
+
+         {showMenu && (
+           <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-white/20 shadow-2xl rounded-sm overflow-hidden deco-frame z-50">
++
++             {onEdit && (
++               <button
++                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onEdit(post); }}
++                  className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
++               >
++                  <SafeIcon name="Edit" className="w-4 h-4" />
++                  <span>Edit</span>
++               </button>
++             )}
+              {post.status !== 'archived' && (
+                <button
+                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onArchive(post); }}
+diff --git a/src/hooks/useTelemetry.js b/src/hooks/useTelemetry.js
+index 1707cd5..7474954 100644
+--- a/src/hooks/useTelemetry.js
++++ b/src/hooks/useTelemetry.js
+@@ -215,7 +215,13 @@ export const useTelemetry = () => {
+         flushQueue();
+       }
+     }
+-    return () => {};
++
++    // Ensure robust auto-flush execution on browser network reconnection
++    window.addEventListener('online', flushQueue);
++
++    return () => {
++       window.removeEventListener('online', flushQueue);
++    };
+   }, [isOnline, flushQueue]);
+
+   const dispatchTelemetry = useCallback(async (payload) => {
+diff --git a/src/lib/api.js b/src/lib/api.js
+index 6bd7d18..7aff398 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -368,20 +368,24 @@ export async function loginUser(email, password) {
+   }
+ }
+
+-export async function fetchSavedVaultItems() {
++export async function fetchSavedVaultItems(page = 1, limit = 12) {
+   const token = useAppStore.getState().userToken;
+   if (!token) {
+     return { data: [], isError: true, message: 'No active session' };
+   }
+
+   try {
++    const from = (page - 1) * limit;
++    const to = from + limit - 1;
+     const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com`;
++
+     const response = await fetchWithRetry(url, {
+       headers: {
+         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+         'Authorization': `Bearer ${token}`,
+         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+-        'Content-Type': 'application/json'
++        'Content-Type': 'application/json',
++        'Range': `${from}-${to}`
+       }
+     });
+
+@@ -564,6 +568,38 @@ export async function deleteUploadedMedia(filename) {
+
+
+
++
++export async function updateVaultItem(itemId, payload) {
++  const token = useAppStore.getState().userToken;
++  if (!token) return { isError: true, message: 'No active session' };
++
++  try {
++    const finalPayload = { ...payload, app_id: 'ellars.us.com' };
++    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
++      method: 'PATCH',
++      headers: {
++        'Content-Type': 'application/json',
++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++        'Authorization': `Bearer ${token}`,
++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++        'Prefer': 'return=representation',
++        'X-Client-Telemetry': 'AXiM-Frontend-v1'
++      },
++      body: JSON.stringify(finalPayload)
++    });
++
++    if (!response.ok) {
++      console.error("[AXiM Core: Vault Error] Failed to update item", response.status);
++      return { isError: true, message: `Failed to update item with status ${response.status}` };
++    }
++
++    return { isError: false, message: 'Item updated successfully' };
++  } catch (error) {
++    console.error("[AXiM Core: Vault Error] Exception updating item:", error);
++    return { isError: true, message: error.message };
++  }
++}
++
+ export async function deleteVaultItem(itemId) {
+   const token = useAppStore.getState().userToken;
+   if (!token) return { isError: true, message: 'No active session' };
+diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+index b60627e..6d1162a 100644
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -38,14 +38,38 @@ const Dashboard = () => {
+   const [searchQuery, setSearchQuery] = useState('');
+   const [activeCategory, setActiveCategory] = useState('All');
+   const [activeTool, setActiveTool] = useState('calculator');
++  const [editingItem, setEditingItem] = useState(null);
++  const [vaultPage, setVaultPage] = useState(1);
++  const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
+   const currentTab = searchParams.get('tab') || 'vault';
+
++  const fetcher = async ([key, page]) => {
++    return fetchSavedVaultItems(page, 12);
++  };
+   const { data: response, error, isLoading } = useSWR(
+-    token ? 'saved_vault_items' : null,
+-    fetchSavedVaultItems
++    token ? ['saved_vault_items', vaultPage] : null,
++    fetcher
+   );
+
+-  const allItems = response && !response.isError ? response.data : [];
++  const [allItems, setAllItems] = useState([]);
++
++  useEffect(() => {
++    if (response && !response.isError) {
++      if (vaultPage === 1) {
++         setAllItems(response.data);
++      } else {
++         setAllItems(prev => {
++            const newItems = response.data.filter(item => !prev.some(p => p.id === item.id));
++            return [...prev, ...newItems];
++         });
++      }
++      if (response.data.length < 12) {
++         setHasMoreVaultItems(false);
++      } else {
++         setHasMoreVaultItems(true);
++      }
++    }
++  }, [response, vaultPage]);
+   const items = allItems.filter(item => {
+     const matchesSearch = !searchQuery || (item.title?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()));
+     const matchesCategory = activeCategory === 'All' || item.acf?.category_label === activeCategory;
+@@ -61,6 +85,13 @@ const Dashboard = () => {
+   ];
+
+
++
++  const handleEdit = (item) => {
++    setEditingItem(item);
++    setActiveTool('publisher');
++    setSearchParams({ tab: 'tools' });
++  };
++
+   const handleArchive = async (item) => {
+     // Optimistic update
+     mutate(
+@@ -206,9 +237,19 @@ const Dashboard = () => {
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+                     {items.map(item => (
+-                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} />
++                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
+                     ))}
+                   </div>
++                )}
++                {hasMoreVaultItems && items.length > 0 && !loading && (
++                   <div className="mt-8 flex justify-center">
++                     <button
++                       onClick={() => setVaultPage(prev => prev + 1)}
++                       className="px-6 py-2 border border-yellow-electric/30 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors"
++                     >
++                       Load More
++                     </button>
++                   </div>
+                 )}
+               </motion.div>
+             )}
+@@ -257,7 +298,7 @@ const Dashboard = () => {
+
+                 {activeTool === 'publisher' && (
+                   <div className="mt-8">
+-                    <DispatchPublisher />
++                    <DispatchPublisher editingItem={editingItem} onCancel={() => { setEditingItem(null); setSearchParams({ tab: 'vault' }); mutate(['saved_vault_items', 1]); }} onSuccess={() => { setEditingItem(null); setSearchParams({ tab: 'vault' }); mutate(['saved_vault_items', 1]); setVaultPage(1); }} />
+                   </div>
+                 )}
+               </motion.div>
+diff --git a/v6.06-modifications.patch b/v6.06-modifications.patch
+new file mode 100644
+index 0000000..387a911
+--- /dev/null
++++ b/v6.06-modifications.patch
+@@ -0,0 +1,368 @@
++diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
++index fed73bd..07c4eef 100644
++--- a/PlanForContinuedDevelopment.md
+++++ b/PlanForContinuedDevelopment.md
++@@ -1,6 +1,7 @@
++ # Plan for Continued Development
++
++ ## Completed Sprints
+++- **V6.06 Vault Pagination & Editing:** Added in-place editing functionality for intelligence dispatches, implemented range-based pagination to maintain performance at scale for Vault views, and fortified the telemetry system to actively flush queues on network reconnection.
++ - **V5.98 Media Uploads:** Completed UI placeholders and base structure for file uploads.
++ - **V5.99 Account Settings:** Initial groundwork for modular settings components.
++ - **V6.00 Global Newsletter / Streamlabs Hub:** Implemented the global newsletter modal and `LiveBroadcast.jsx` component for optimal audience reach and conversion.
++@@ -11,10 +12,8 @@
++ - **V6.05 Vault Endpoint Standardization, Item Deletion/Archival, & Optimistic Mutations:** Standardized `publishVaultItem` to `axim_vault`. Implemented `deleteVaultItem` and `archiveVaultItem` utilities with strict tenant headers. Integrated optimistic SWR mutations and branded confirmation modals in the Dashboard. Protected authoring forms from double submissions using UUID-based idempotency keys.
++
++ ## Active Roadmap
++-1.  **Vault Pagination and Virtualization:**
++-    - The `saved_vault_items` query currently fetches all items. This will fail gracefully at scale. Implement cursor-based pagination via Supabase and virtualized lists in the UI for performance.
++-2.  **Dashboard Content Editing:**
++-    - Build out a full editing interface to modify existing Vault Dispatches/Directives rather than only staging new ones or archiving/deleting.
+++1.  **Vault Virtualization:**
+++    - Implement virtualized lists in the UI for vault performance when traversing many pages.
++ 3.  **Cloudflare Stream Automated Status Polling:**
++     - Continuously refine worker polling reliability and caching behavior for the live broadcast edge route (`/api/v1/stream/status`).
++ 4.  **Safe Treasury Multisig Governance on Arbitrum:**
++diff --git a/src/components/dashboard/DispatchPublisher.jsx b/src/components/dashboard/DispatchPublisher.jsx
++index 4d8572c..032f9a2 100644
++--- a/src/components/dashboard/DispatchPublisher.jsx
+++++ b/src/components/dashboard/DispatchPublisher.jsx
++@@ -3,9 +3,9 @@ import { useAppStore } from '@/store/useAppStore';
++ import SafeIcon from '@/common/SafeIcon';
++ import DOMPurify from 'dompurify';
++ import { v4 as uuidv4 } from 'uuid';
++-import { publishVaultItem } from '@/lib/api';
+++import { publishVaultItem, updateVaultItem } from '@/lib/api';
++
++-const DispatchPublisher = () => {
+++const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
++   const showToast = useAppStore(state => state.showToast);
++
++   const [isSubmitting, setIsSubmitting] = useState(false);
++@@ -21,6 +21,18 @@ const DispatchPublisher = () => {
++   });
++
++   useEffect(() => {
+++    if (editingItem) {
+++      setFormData({
+++        title: editingItem.title?.rendered || '',
+++        category: editingItem.acf?.category_label || 'Dispatch',
+++        readTime: editingItem.acf?.read_time?.replace(' Min Read', '') || '',
+++        excerpt: editingItem.excerpt?.rendered || '',
+++        content: editingItem.content?.rendered || '',
+++        coverImage: editingItem._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''
+++      });
+++      return;
+++    }
+++
++     // 1. Populate cover image from sessionStorage
++     const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
++     if (savedCoverImage) {
++@@ -37,7 +49,7 @@ const DispatchPublisher = () => {
++         console.warn('Failed to parse saved draft dispatch:', e);
++       }
++     }
++-  }, []);
+++  }, [editingItem]);
++
++   const handleChange = (e) => {
++     const { name, value } = e.target;
++@@ -70,23 +82,34 @@ const DispatchPublisher = () => {
++             client_idempotency_key: idempotencyKey,
++             status: 'draft'
++         };
++-        const success = await publishVaultItem(payload);
++-
++-        if (success) {
++-            showToast('Dispatch Staged Successfully.');
++-            setIdempotencyKey(uuidv4()); // reset key
++-            setFormData({
++-                title: '',
++-                category: 'Dispatch',
++-                readTime: '',
++-                excerpt: '',
++-                content: '',
++-                coverImage: ''
++-            });
++-            sessionStorage.removeItem('ellars_draft_cover_image');
++-            localStorage.removeItem('ellars_draft_dispatch');
+++
+++        let result;
+++        if (editingItem) {
+++           result = await updateVaultItem(editingItem.id, formData);
+++           if (!result.isError) {
+++              showToast('Dispatch Updated Successfully.');
+++              if (onSuccess) onSuccess();
+++           } else {
+++              showToast('// ERROR: UNABLE TO UPDATE DISPATCH');
+++           }
++         } else {
++-             showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
+++           const success = await publishVaultItem(payload);
+++           if (success) {
+++               showToast('Dispatch Staged Successfully.');
+++               setIdempotencyKey(uuidv4()); // reset key
+++               setFormData({
+++                   title: '',
+++                   category: 'Dispatch',
+++                   readTime: '',
+++                   excerpt: '',
+++                   content: '',
+++                   coverImage: ''
+++               });
+++               sessionStorage.removeItem('ellars_draft_cover_image');
+++               localStorage.removeItem('ellars_draft_dispatch');
+++           } else {
+++                showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
+++           }
++         }
++     } finally {
++         setIsSubmitting(false);
++@@ -98,10 +121,15 @@ const DispatchPublisher = () => {
++     <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
++       <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
++          <h2 className="text-yellow-electric font-editorial font-bold text-2xl tracking-tighter uppercase">
++-            Intelligence Dispatch Publisher
+++            {editingItem ? 'Edit Dispatch' : 'Intelligence Dispatch Publisher'}
++          </h2>
++-         <SafeIcon name="FileText" className="w-6 h-6 text-yellow-electric" />
+++         <SafeIcon name={editingItem ? "Edit" : "FileText"} className="w-6 h-6 text-yellow-electric" />
++       </div>
+++      {editingItem && (
+++        <div className="mb-6 p-4 bg-yellow-electric/10 border border-yellow-electric/30 rounded-sm flex items-center justify-between">
+++          <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Currently Editing Existing Record</span>
+++        </div>
+++      )}
++
++       <form onSubmit={handleStageDispatch} className="space-y-6">
++         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++@@ -193,19 +221,30 @@ const DispatchPublisher = () => {
++         </div>
++
++         <div className="flex items-center space-x-4 pt-4 border-t border-white/10">
++-           <button
++-            type="button"
++-            onClick={handleSaveDraft}
++-            className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
++-           >
++-              Save Draft Locally
++-           </button>
+++           {!editingItem && (
+++             <button
+++              type="button"
+++              onClick={handleSaveDraft}
+++              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+++             >
+++                Save Draft Locally
+++             </button>
+++           )}
+++           {editingItem && onCancel && (
+++             <button
+++              type="button"
+++              onClick={onCancel}
+++              className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+++             >
+++                Cancel Edit
+++             </button>
+++           )}
++            <button
++             type="submit"
++             disabled={isSubmitting}
++             className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
++            >
++-              <span>Stage Dispatch</span>
+++              <span>{editingItem ? 'Save Changes' : 'Stage Dispatch'}</span>
++               <SafeIcon name="Send" className="w-4 h-4" />
++            </button>
++         </div>
++diff --git a/src/components/dashboard/VaultArticleCard.jsx b/src/components/dashboard/VaultArticleCard.jsx
++index 1e75ada..3638fb9 100644
++--- a/src/components/dashboard/VaultArticleCard.jsx
+++++ b/src/components/dashboard/VaultArticleCard.jsx
++@@ -10,7 +10,7 @@ const truncateText = (str, max) => {
++   return stripped.substring(0, max) + '...';
++ };
++
++-const VaultArticleCard = ({ post, date, onDelete, onArchive }) => {
+++const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
++   const [showMenu, setShowMenu] = useState(false);
++   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
++
++@@ -93,6 +93,16 @@ const VaultArticleCard = ({ post, date, onDelete, onArchive }) => {
++
++         {showMenu && (
++           <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-white/20 shadow-2xl rounded-sm overflow-hidden deco-frame z-50">
+++
+++             {onEdit && (
+++               <button
+++                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onEdit(post); }}
+++                  className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
+++               >
+++                  <SafeIcon name="Edit" className="w-4 h-4" />
+++                  <span>Edit</span>
+++               </button>
+++             )}
++              {post.status !== 'archived' && (
++                <button
++                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onArchive(post); }}
++diff --git a/src/hooks/useTelemetry.js b/src/hooks/useTelemetry.js
++index 1707cd5..7474954 100644
++--- a/src/hooks/useTelemetry.js
+++++ b/src/hooks/useTelemetry.js
++@@ -215,7 +215,13 @@ export const useTelemetry = () => {
++         flushQueue();
++       }
++     }
++-    return () => {};
+++
+++    // Ensure robust auto-flush execution on browser network reconnection
+++    window.addEventListener('online', flushQueue);
+++
+++    return () => {
+++       window.removeEventListener('online', flushQueue);
+++    };
++   }, [isOnline, flushQueue]);
++
++   const dispatchTelemetry = useCallback(async (payload) => {
++diff --git a/src/lib/api.js b/src/lib/api.js
++index 6bd7d18..7aff398 100644
++--- a/src/lib/api.js
+++++ b/src/lib/api.js
++@@ -368,20 +368,24 @@ export async function loginUser(email, password) {
++   }
++ }
++
++-export async function fetchSavedVaultItems() {
+++export async function fetchSavedVaultItems(page = 1, limit = 12) {
++   const token = useAppStore.getState().userToken;
++   if (!token) {
++     return { data: [], isError: true, message: 'No active session' };
++   }
++
++   try {
+++    const from = (page - 1) * limit;
+++    const to = from + limit - 1;
++     const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com`;
+++
++     const response = await fetchWithRetry(url, {
++       headers: {
++         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++         'Authorization': `Bearer ${token}`,
++         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++-        'Content-Type': 'application/json'
+++        'Content-Type': 'application/json',
+++        'Range': `${from}-${to}`
++       }
++     });
++
++@@ -564,6 +568,38 @@ export async function deleteUploadedMedia(filename) {
++
++
++
+++
+++export async function updateVaultItem(itemId, payload) {
+++  const token = useAppStore.getState().userToken;
+++  if (!token) return { isError: true, message: 'No active session' };
+++
+++  try {
+++    const finalPayload = { ...payload, app_id: 'ellars.us.com' };
+++    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+++      method: 'PATCH',
+++      headers: {
+++        'Content-Type': 'application/json',
+++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+++        'Authorization': `Bearer ${token}`,
+++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+++        'Prefer': 'return=representation',
+++        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+++      },
+++      body: JSON.stringify(finalPayload)
+++    });
+++
+++    if (!response.ok) {
+++      console.error("[AXiM Core: Vault Error] Failed to update item", response.status);
+++      return { isError: true, message: `Failed to update item with status ${response.status}` };
+++    }
+++
+++    return { isError: false, message: 'Item updated successfully' };
+++  } catch (error) {
+++    console.error("[AXiM Core: Vault Error] Exception updating item:", error);
+++    return { isError: true, message: error.message };
+++  }
+++}
+++
++ export async function deleteVaultItem(itemId) {
++   const token = useAppStore.getState().userToken;
++   if (!token) return { isError: true, message: 'No active session' };
++diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
++index b60627e..6d1162a 100644
++--- a/src/pages/Dashboard.jsx
+++++ b/src/pages/Dashboard.jsx
++@@ -38,14 +38,38 @@ const Dashboard = () => {
++   const [searchQuery, setSearchQuery] = useState('');
++   const [activeCategory, setActiveCategory] = useState('All');
++   const [activeTool, setActiveTool] = useState('calculator');
+++  const [editingItem, setEditingItem] = useState(null);
+++  const [vaultPage, setVaultPage] = useState(1);
+++  const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
++   const currentTab = searchParams.get('tab') || 'vault';
++
+++  const fetcher = async ([key, page]) => {
+++    return fetchSavedVaultItems(page, 12);
+++  };
++   const { data: response, error, isLoading } = useSWR(
++-    token ? 'saved_vault_items' : null,
++-    fetchSavedVaultItems
+++    token ? ['saved_vault_items', vaultPage] : null,
+++    fetcher
++   );
++
++-  const allItems = response && !response.isError ? response.data : [];
+++  const [allItems, setAllItems] = useState([]);
+++
+++  useEffect(() => {
+++    if (response && !response.isError) {
+++      if (vaultPage === 1) {
+++         setAllItems(response.data);
+++      } else {
+++         setAllItems(prev => {
+++            const newItems = response.data.filter(item => !prev.some(p => p.id === item.id));
+++            return [...prev, ...newItems];
+++         });
+++      }
+++      if (response.data.length < 12) {
+++         setHasMoreVaultItems(false);
+++      } else {
+++         setHasMoreVaultItems(true);
+++      }
+++    }
+++  }, [response, vaultPage]);
++   const items = allItems.filter(item => {
++     const matchesSearch = !searchQuery || (item.title?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()));
++     const matchesCategory = activeCategory === 'All' || item.acf?.category_label === activeCategory;
++@@ -61,6 +85,13 @@ const Dashboard = () => {
++   ];
++
++
+++
+++  const handleEdit = (item) => {
+++    setEditingItem(item);
+++    setActiveTool('publisher');
+++    setSearchParams({ tab: 'tools' });
+++  };
+++
++   const handleArchive = async (item) => {
++     // Optimistic update
++     mutate(
++@@ -206,9 +237,19 @@ const Dashboard = () => {
++                 ) : (
++                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
++                     {items.map(item => (
++-                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} />
+++                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
++                     ))}
++                   </div>
+++                )}
+++                {hasMoreVaultItems && items.length > 0 && !loading && (
+++                   <div className="mt-8 flex justify-center">
+++
+\ No newline at end of file
