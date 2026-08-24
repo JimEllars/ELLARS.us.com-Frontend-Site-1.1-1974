@@ -6,6 +6,7 @@ import { fetchSavedVaultItems } from '@/lib/api';
 import ArticleCard from '@/components/intel/ArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import AutomationCalculator from '@/components/intel/AutomationCalculator';
+import DispatchPublisher from '@/components/dashboard/DispatchPublisher';
 import { useAppStore } from '@/store/useAppStore';
 import AccountSettings from '../components/dashboard/AccountSettings';
 import MediaUploads from '@/components/dashboard/MediaUploads';
@@ -193,7 +194,7 @@ const Dashboard = () => {
 
                   <div
                     className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
-                    onClick={() => handleTabChange('vault')}
+                    onClick={() => setActiveTool('publisher')}
                   >
                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
                     <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
@@ -206,6 +207,12 @@ const Dashboard = () => {
                     <div className="p-4 md:p-8 border border-white/10 bg-black/60 rounded-sm">
                       <AutomationCalculator />
                     </div>
+                  </div>
+                )}
+
+                {activeTool === 'publisher' && (
+                  <div className="mt-8">
+                    <DispatchPublisher />
                   </div>
                 )}
               </motion.div>
