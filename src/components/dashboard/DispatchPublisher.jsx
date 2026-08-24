@@ -107,6 +107,7 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
                });
                sessionStorage.removeItem('ellars_draft_cover_image');
                localStorage.removeItem('ellars_draft_dispatch');
+               if (onSuccess) onSuccess();
            } else {
                 showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
            }

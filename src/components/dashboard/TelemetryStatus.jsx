@@ -19,7 +19,11 @@ const TelemetryStatus = () => {
     };
     checkQueue();
     const interval = setInterval(checkQueue, 2000);
-    return () => clearInterval(interval);
+    window.addEventListener('ellars_telemetry_updated', checkQueue);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('ellars_telemetry_updated', checkQueue);
+    };
   }, []);
 
   const handleFlush = async () => {
