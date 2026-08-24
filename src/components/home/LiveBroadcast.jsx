@@ -1,12 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
+import DOMPurify from 'dompurify';
 
 const LiveBroadcast = () => {
   const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
   const [chatMessage, setChatMessage] = useState('');
   const [chatLogs, setChatLogs] = useState([]);
+  const chatContainerRef = useRef(null);
+
+  // Initialize chatLogs from localStorage
+  useEffect(() => {
+    const savedLogs = localStorage.getItem('ellars_live_chat_logs');
+    if (savedLogs) {
+      try {
+        setChatLogs(JSON.parse(savedLogs));
+      } catch (e) {
+        console.warn('Failed to parse saved chat logs:', e);
+      }
+    }
+  }, []);
 
   // Polling for live status
   useEffect(() => {
@@ -31,16 +45,39 @@ const LiveBroadcast = () => {
     return () => clearInterval(intervalId);
   }, [setIsLiveStreamActive]);
 
+  // Auto-scroll chat container to the bottom when chatLogs change
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatLogs]);
+
   const handleChatSubmit = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
 
-    setChatLogs(prev => [...prev, {
-      id: Date.now(),
-      user: 'Observer',
-      message: chatMessage.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }]);
+    // Sanitize user input with DOMPurify
+    const cleanMessage = DOMPurify.sanitize(chatMessage.trim());
+    if (!cleanMessage) return;
+
+    setChatLogs(prev => {
+      const newLog = {
+        id: Date.now(),
+        user: 'Observer',
+        message: cleanMessage,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      const newLogs = [...prev, newLog];
+
+      // Cap at the last 50 entries
+      const cappedLogs = newLogs.slice(-50);
+
+      // Persist to localStorage
+      localStorage.setItem('ellars_live_chat_logs', JSON.stringify(cappedLogs));
+
+      return cappedLogs;
+    });
     setChatMessage('');
   };
 
@@ -114,7 +151,10 @@ const LiveBroadcast = () => {
               <SafeIcon name="MessageSquare" className="w-4 h-4 text-yellow-electric" />
             </div>
 
-            <div className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3">
+            <div
+              ref={chatContainerRef}
+              className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3"
+            >
               {chatLogs.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase text-center">
@@ -128,7 +168,7 @@ const LiveBroadcast = () => {
                       <span className="text-yellow-electric text-[10px] font-bold uppercase tracking-widest">{log.user}</span>
                       <span className="text-zinc-500 text-[10px]">{log.timestamp}</span>
                     </div>
-                    <p className="text-sm text-gray-300 font-editorial">{log.message}</p>
+                    <p className="text-sm text-gray-300 font-editorial" dangerouslySetInnerHTML={{ __html: log.message }}></p>
                   </div>
                 ))
               )}
