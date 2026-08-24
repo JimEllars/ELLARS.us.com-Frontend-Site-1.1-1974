@@ -1,21 +1,20 @@
 # Plan for Continued Development
 
-1.  **Media Upload Enhancements**:
-    - Implement actual drag & drop file upload functionality. Currently, the UI shows a placeholder "Drag & Drop Protocol Offline".
-    - Connect `MediaUploads.jsx` to a file input via Supabase storage upload API (`storage/v1/object/ellars-media/`).
-    - Add real-time upload progress indicators and error handling for failed uploads.
+## Completed Sprints
+- **V5.98 Media Uploads:** Completed UI placeholders and base structure for file uploads.
+- **V5.99 Account Settings:** Initial groundwork for modular settings components.
+- **V6.00 Global Newsletter / Streamlabs Hub:** Implemented the global newsletter modal and `LiveBroadcast.jsx` component for optimal audience reach and conversion.
+- **V6.01 Cloudflare Stream Edge Player Wiring, Live Status Endpoint, & Chat Hub:** Connected live broadcast hub directly to Cloudflare Stream's global player, enabled automated live status detection at the edge with `/api/v1/stream/status`, and upgraded the live chat sidebar.
 
-2.  **Core Tools Integration**:
-    - Build out the actual "Settings module". The UI currently displays "Settings module is currently offline. Awaiting Core integration."
+## Active Roadmap
+1.  **Cloudflare Stream Automated Status Polling:**
+    - Continuously refine worker polling reliability and caching behavior for the live broadcast edge route (`/api/v1/stream/status`).
+2.  **Safe Treasury Multisig Governance on Arbitrum:**
+    - Develop smart contract integrations to support decentralized treasury management and governance mechanisms.
+3.  **AI Lead Scoring Models:**
+    - Implement analytical pipelines to evaluate and score engagement metrics to optimize conversion funnels and platform outreach.
+4.  **Core Tools Integration (Ongoing):**
     - Finalize the Micro-Program functionality in the dashboard. The "Tools & Automations" section shows a placeholder loader for an NDA generator that requires a full integration via `MicroProgramLoader`.
-
-3.  **Authentication & User Onboarding**:
+5.  **Authentication & User Onboarding (Ongoing):**
     - Improve error handling around expired sessions or invalid tokens throughout the application. Ensure the app transitions cleanly to the `/login` route when token validations fail.
     - Build user onboarding flows to guide new sign-ups through configuring their Secure Space/Vault.
-
-4.  **Performance & Edge Strategies**:
-    - Monitor Cloudflare Edge Worker execution to ensure `ctx.waitUntil` for cache invalidation correctly operates in production.
-    - Refactor any deeply nested conditional renders in Dashboard to split out components, improving code maintainability.
-
-5.  **A11y & Responsiveness**:
-    - Perform a full audit on mobile interactions, especially around the newly added tab navigation and horizontally scrolling filter categories in the Vault tab. Ensure focus traps and `aria` labels are appropriately defined for modals and dialogs (e.g., the delete confirmation in MediaUploads).

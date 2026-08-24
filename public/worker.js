@@ -35,6 +35,36 @@ export default {
       });
     }
 
+    // Stream status route
+    if (url.pathname === '/api/v1/stream/status' && request.method === 'GET') {
+      try {
+        // Here we would typically fetch the live input status from Cloudflare Stream API using env.CF_ACCOUNT_ID / API keys.
+        // For now, we mock the response or determine based on a KV or static edge flag.
+
+        // Simulating the check
+        const isLive = false; // By default offline. In production, this checks the actual CF input.
+
+        const responseData = {
+          isLiveStreamActive: isLive,
+          timestamp: new Date().toISOString()
+        };
+
+        return new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, s-maxage=30, max-age=15', // 30-second edge cache
+            'Access-Control-Allow-Origin': '*' // Adjust if needed
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'Failed to fetch stream status' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // Default fallback to fetch normally
     return fetch(request);
   }

@@ -19,6 +19,7 @@ export const useAppStore = create(
       isAuthChecking: true,
       _hasHydrated: false,
       setHasHydrated: (state) => set({ _hasHydrated: state }),
+      setIsLiveStreamActive: (status) => set({ isLiveStreamActive: status }),
       setArticles: (articles) => set({ articles }),
       setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
       setRole: (role) => set({ userRole: role }),
