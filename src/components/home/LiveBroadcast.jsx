@@ -1,13 +1,59 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 
 const LiveBroadcast = () => {
-  const { isLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
+  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatLogs, setChatLogs] = useState([]);
 
-  // Use a fallback generic Talk Studio embed URL or provided
-  const embedUrl = streamEmbedUrl || 'https://talkstudio.streamlabs.com/embed';
+  // Polling for live status
+  useEffect(() => {
+    let intervalId;
+
+    const checkLiveStatus = async () => {
+      try {
+        const response = await fetch('/api/v1/stream/status');
+        if (response.ok) {
+          const data = await response.json();
+          setIsLiveStreamActive(data.isLiveStreamActive);
+        }
+      } catch (err) {
+        console.warn('[LiveBroadcast] Edge status polling failed:', err);
+      }
+    };
+
+    // Check immediately, then poll every 30 seconds
+    checkLiveStatus();
+    intervalId = setInterval(checkLiveStatus, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [setIsLiveStreamActive]);
+
+  const handleChatSubmit = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+
+    setChatLogs(prev => [...prev, {
+      id: Date.now(),
+      user: 'Observer',
+      message: chatMessage.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }]);
+    setChatMessage('');
+  };
+
+  // Resolve embed URL
+  const cfUid = import.meta.env.VITE_CF_STREAM_LIVE_UID;
+  let embedUrl = streamEmbedUrl;
+  if (!embedUrl) {
+    if (cfUid) {
+      embedUrl = `https://iframe.videodelivery.net/${cfUid}?autoplay=true&muted=true&preload=auto`;
+    } else {
+      embedUrl = 'https://talkstudio.streamlabs.com/embed';
+    }
+  }
 
   if (!isLiveStreamActive) {
     return (
@@ -67,12 +113,45 @@ const LiveBroadcast = () => {
               <span className="font-editorial text-xs font-bold uppercase tracking-widest text-white">Live Transmission Feed</span>
               <SafeIcon name="MessageSquare" className="w-4 h-4 text-yellow-electric" />
             </div>
-            <div className="flex-grow p-4 flex items-center justify-center">
-              {/* Optional embedded chat or fallback */}
-              <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase text-center">
-                Chat module authenticating...
-              </p>
+
+            <div className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3">
+              {chatLogs.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase text-center">
+                    Feed open. Standing by for transmissions.
+                  </p>
+                </div>
+              ) : (
+                chatLogs.map(log => (
+                  <div key={log.id} className="flex flex-col">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-yellow-electric text-[10px] font-bold uppercase tracking-widest">{log.user}</span>
+                      <span className="text-zinc-500 text-[10px]">{log.timestamp}</span>
+                    </div>
+                    <p className="text-sm text-gray-300 font-editorial">{log.message}</p>
+                  </div>
+                ))
+              )}
             </div>
+
+            <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/10 bg-white/5">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Transmit message..."
+                  className="flex-grow bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatMessage.trim()}
+                  className="px-4 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <SafeIcon name="Send" className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
