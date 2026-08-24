@@ -38,14 +38,38 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeTool, setActiveTool] = useState('calculator');
+  const [editingItem, setEditingItem] = useState(null);
+  const [vaultPage, setVaultPage] = useState(1);
+  const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
   const currentTab = searchParams.get('tab') || 'vault';
 
+  const fetcher = async ([key, page]) => {
+    return fetchSavedVaultItems(page, 12);
+  };
   const { data: response, error, isLoading } = useSWR(
-    token ? 'saved_vault_items' : null,
-    fetchSavedVaultItems
+    token ? ['saved_vault_items', vaultPage] : null,
+    fetcher
   );
 
-  const allItems = response && !response.isError ? response.data : [];
+  const [allItems, setAllItems] = useState([]);
+
+  useEffect(() => {
+    if (response && !response.isError) {
+      if (vaultPage === 1) {
+         setAllItems(response.data);
+      } else {
+         setAllItems(prev => {
+            const newItems = response.data.filter(item => !prev.some(p => p.id === item.id));
+            return [...prev, ...newItems];
+         });
+      }
+      if (response.data.length < 12) {
+         setHasMoreVaultItems(false);
+      } else {
+         setHasMoreVaultItems(true);
+      }
+    }
+  }, [response, vaultPage]);
   const items = allItems.filter(item => {
     const matchesSearch = !searchQuery || (item.title?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = activeCategory === 'All' || item.acf?.category_label === activeCategory;
@@ -60,6 +84,13 @@ const Dashboard = () => {
     { id: 'media', label: 'Media Library' }
   ];
 
+
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setActiveTool('publisher');
+    setSearchParams({ tab: 'tools' });
+  };
 
   const handleArchive = async (item) => {
     // Optimistic update
@@ -206,9 +237,19 @@ const Dashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                     {items.map(item => (
-                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} />
+                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
                     ))}
                   </div>
+                )}
+                {hasMoreVaultItems && items.length > 0 && !loading && (
+                   <div className="mt-8 flex justify-center">
+                     <button
+                       onClick={() => setVaultPage(prev => prev + 1)}
+                       className="px-6 py-2 border border-yellow-electric/30 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors"
+                     >
+                       Load More
+                     </button>
+                   </div>
                 )}
               </motion.div>
             )}
@@ -257,7 +298,7 @@ const Dashboard = () => {
 
                 {activeTool === 'publisher' && (
                   <div className="mt-8">
-                    <DispatchPublisher />
+                    <DispatchPublisher editingItem={editingItem} onCancel={() => { setEditingItem(null); setSearchParams({ tab: 'vault' }); mutate(['saved_vault_items', 1]); }} onSuccess={() => { setEditingItem(null); setSearchParams({ tab: 'vault' }); mutate(['saved_vault_items', 1]); setVaultPage(1); }} />
                   </div>
                 )}
               </motion.div>

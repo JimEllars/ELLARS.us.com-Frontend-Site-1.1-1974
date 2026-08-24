@@ -1,6 +1,7 @@
 # Plan for Continued Development
 
 ## Completed Sprints
+- **V6.06 Vault Pagination & Editing:** Added in-place editing functionality for intelligence dispatches, implemented range-based pagination to maintain performance at scale for Vault views, and fortified the telemetry system to actively flush queues on network reconnection.
 - **V5.98 Media Uploads:** Completed UI placeholders and base structure for file uploads.
 - **V5.99 Account Settings:** Initial groundwork for modular settings components.
 - **V6.00 Global Newsletter / Streamlabs Hub:** Implemented the global newsletter modal and `LiveBroadcast.jsx` component for optimal audience reach and conversion.
@@ -11,10 +12,8 @@
 - **V6.05 Vault Endpoint Standardization, Item Deletion/Archival, & Optimistic Mutations:** Standardized `publishVaultItem` to `axim_vault`. Implemented `deleteVaultItem` and `archiveVaultItem` utilities with strict tenant headers. Integrated optimistic SWR mutations and branded confirmation modals in the Dashboard. Protected authoring forms from double submissions using UUID-based idempotency keys.
 
 ## Active Roadmap
-1.  **Vault Pagination and Virtualization:**
-    - The `saved_vault_items` query currently fetches all items. This will fail gracefully at scale. Implement cursor-based pagination via Supabase and virtualized lists in the UI for performance.
-2.  **Dashboard Content Editing:**
-    - Build out a full editing interface to modify existing Vault Dispatches/Directives rather than only staging new ones or archiving/deleting.
+1.  **Vault Virtualization:**
+    - Implement virtualized lists in the UI for vault performance when traversing many pages.
 3.  **Cloudflare Stream Automated Status Polling:**
     - Continuously refine worker polling reliability and caching behavior for the live broadcast edge route (`/api/v1/stream/status`).
 4.  **Safe Treasury Multisig Governance on Arbitrum:**
