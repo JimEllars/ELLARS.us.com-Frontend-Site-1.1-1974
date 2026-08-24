@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getPostBySlug, formatDate, stripHtml, saveToAximCore } from '@/lib/api';
+import { getPostBySlug, formatDate, stripHtml, publishVaultItem } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 import { useAppStore } from '@/store/useAppStore';
@@ -78,7 +78,7 @@ const ArticleDetail = () => {
         url: window.location.href
       };
 
-      const success = await saveToAximCore(payload);
+      const success = await publishVaultItem(payload);
       if (success) {
          showToast("// TRANSMISSION SAVED TO AXIM VAULT");
       } else {
