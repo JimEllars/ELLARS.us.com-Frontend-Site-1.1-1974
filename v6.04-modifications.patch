@@ -1,0 +1,173 @@
+diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
+index 1331146..8c0638e 100644
+--- a/PlanForContinuedDevelopment.md
++++ b/PlanForContinuedDevelopment.md
+@@ -6,6 +6,8 @@
+ - **V6.00 Global Newsletter / Streamlabs Hub:** Implemented the global newsletter modal and `LiveBroadcast.jsx` component for optimal audience reach and conversion.
+ - **V6.01 Cloudflare Stream Edge Player Wiring, Live Status Endpoint, & Chat Hub:** Connected live broadcast hub directly to Cloudflare Stream's global player, enabled automated live status detection at the edge with `/api/v1/stream/status`, and upgraded the live chat sidebar.
+ - **V6.02 Cloudflare Stream Edge Status Verification, Chat Persistence, & Media Hardening:** Enhanced `/api/v1/stream/status` with Cloudflare Stream Live Input API and QA overrides, added persistence and auto-scrolling to live broadcast chat feed, pruned obsolete components (`MicroProgramLoader.jsx`), and hardened media playlist playback with native fallbacks.
++- **V6.03 Dispatch Publisher UI & Stream Polish:** Implemented the Dispatch Publisher UI, authenticated live chat identity, media playlist fixes, and env sync.
++- **V6.04 Dispatch Vault Persistence & Global Auth Interceptor:** Connected the Dispatch Publisher directly into live vault persistence (`publishVaultItem`), added 401 session expiration handling (`handleAuthResponse`) to all authenticated API endpoints, and expanded telemetry coverage for authoring workflows.
+
+ ## Active Roadmap
+ 1.  **Cloudflare Stream Automated Status Polling:**
+diff --git a/src/components/dashboard/DispatchPublisher.jsx b/src/components/dashboard/DispatchPublisher.jsx
+index 0eda5f6..77656a8 100644
+--- a/src/components/dashboard/DispatchPublisher.jsx
++++ b/src/components/dashboard/DispatchPublisher.jsx
+@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
+ import { useAppStore } from '@/store/useAppStore';
+ import SafeIcon from '@/common/SafeIcon';
+ import DOMPurify from 'dompurify';
++import { publishVaultItem } from '@/lib/api';
++import { mutate } from 'swr';
++import { useTelemetry } from '@/hooks/useTelemetry';
+
+ const DispatchPublisher = () => {
+   const showToast = useAppStore(state => state.showToast);
++  const { trackEvent } = useTelemetry();
+
+   const [formData, setFormData] = useState({
+     title: '',
+@@ -46,19 +50,30 @@ const DispatchPublisher = () => {
+
+   const handleSaveDraft = () => {
+     localStorage.setItem('ellars_draft_dispatch', JSON.stringify(formData));
++    trackEvent('dispatch_draft_saved', { category: formData.category, hasCover: !!formData.coverImage });
+     showToast('Draft saved locally.');
+   };
+
+-  const handleStageDispatch = (e) => {
++  const handleStageDispatch = async (e) => {
+     e.preventDefault();
+     if (!formData.title || !formData.content) {
+       showToast('Title and Content are required to stage.');
+       return;
+     }
+
+-    // In a real app, send to API here
+-    // For now, simulate success
+-    showToast('Dispatch Staged Successfully.');
++    const { data, isError, message } = await publishVaultItem(formData);
++
++    if (isError) {
++      showToast(`// ERROR: ${message}`);
++      return; // Preserve form input so no author work is lost
++    }
++
++    localStorage.removeItem('ellars_draft_dispatch');
++    sessionStorage.removeItem('ellars_draft_cover_image');
++    mutate('saved_vault_items');
++    showToast('// DISPATCH STAGED TO SECURE VAULT');
++    trackEvent('dispatch_staged', { category: formData.category, readTime: formData.readTime });
++    window.location.assign('?tab=vault');
+   };
+
+   return (
+diff --git a/src/lib/api.js b/src/lib/api.js
+index b72eabc..2d6bf84 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -153,9 +153,10 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
+
+     if (!response.ok) {
+       if (response.status === 401) {
++        useAppStore.getState().clearAuth();
+         if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+-          useAppStore.getState().clearAuth();
+-          window.location.href = '/login';
++          useAppStore.getState().showToast('// SESSION EXPIRED: PLEASE RE-AUTHENTICATE');
++          window.location.assign('/login');
+         }
+       }
+       if (response.status === 429 && retries > 0) {
+@@ -326,6 +327,18 @@ export async function saveToAximCore(payload) {
+   }
+ }
+
++
++async function handleAuthResponse(response) {
++  if (response.status === 401) {
++    useAppStore.getState().clearAuth();
++    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
++      useAppStore.getState().showToast('// SESSION EXPIRED: PLEASE RE-AUTHENTICATE');
++      window.location.assign('/login');
++    }
++  }
++  return response;
++}
++
+ export async function loginUser(email, password) {
+   try {
+     const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+@@ -460,7 +473,7 @@ export async function uploadMediaAsset(file) {
+     const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+     const url = `${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`;
+
+-    const response = await fetch(url, {
++    const response = await handleAuthResponse(await fetch(url, {
+       method: 'POST',
+       headers: {
+         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+@@ -490,7 +503,7 @@ export async function fetchUploadedMedia() {
+   }
+
+   try {
+-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/ellars-media`, {
++    const response = await handleAuthResponse(await fetch(`${SUPABASE_URL}/storage/v1/object/list/ellars-media`, {
+       method: 'POST',
+       headers: {
+         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+@@ -530,7 +543,7 @@ export async function deleteUploadedMedia(filename) {
+   if (!token) return false;
+
+   try {
+-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`, {
++    const response = await handleAuthResponse(await fetch(`${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`, {
+       method: 'DELETE',
+       headers: {
+         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+@@ -551,7 +564,7 @@ export async function createIntelBrief(payload) {
+   if (!token) return false;
+
+   try {
+-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
++    const response = await handleAuthResponse(await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+@@ -583,3 +596,34 @@ export async function createIntelBrief(payload) {
+     return false;
+   }
+ }
++
++export async function publishVaultItem(payload) {
++  const token = useAppStore.getState().userToken;
++  if (!token) return { data: null, isError: true, message: 'No active session' };
++
++  try {
++    const url = `${SUPABASE_URL}/rest/v1/saved_vault_items`;
++    const response = await handleAuthResponse(await fetch(url, {
++      method: 'POST',
++      headers: {
++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++        'Authorization': `Bearer ${token}`,
++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++        'Content-Type': 'application/json'
++      },
++      body: JSON.stringify(payload)
++    }));
++
++    if (!response.ok) {
++       throw new Error(`Publish failed with status: ${response.status}`);
++    }
++
++    // We try to parse the response, if there is one
++    const text = await response.text();
++    const data = text ? JSON.parse(text) : null;
++    return { data, isError: false };
++  } catch (error) {
++    console.error("[AXiM Core: Vault Error] Failed to publish dispatch:", error);
++    return { data: null, isError: true, message: error.message };
++  }
++}
