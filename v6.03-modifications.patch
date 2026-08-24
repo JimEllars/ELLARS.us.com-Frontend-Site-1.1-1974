@@ -1,0 +1,770 @@
+diff --git a/.env.example b/.env.example
+index 973b865..467856a 100644
+--- a/.env.example
++++ b/.env.example
+@@ -2,3 +2,8 @@ VITE_WP_API_URL=https://wp.ellars.us.com/wp-json/wp/v2
+ VITE_EMAILIT_HOST=smtp.emailit.com
+
+ VITE_SUPABASE_URL=https://pvbcdndqjguzqeafhwhw.supabase.co
++
++VITE_CF_STREAM_LIVE_UID=
++VITE_CF_FORM_ENDPOINT=
++VITE_TURNSTILE_SITE_KEY=
++VITE_DONATION_LINK=
+diff --git a/patch_dashboard.py b/patch_dashboard.py
+new file mode 100644
+index 0000000..4451911
+--- /dev/null
++++ b/patch_dashboard.py
+@@ -0,0 +1,27 @@
++import sys
++
++with open('src/pages/Dashboard.jsx', 'r') as f:
++    content = f.read()
++
++target = """                {activeTool === 'calculator' && (
++                  <div className="mt-8">
++                    <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: Impact Calculator</h3>
++                    <div className="p-4 md:p-8 border border-white/10 bg-black/60 rounded-sm">
++                      <AutomationCalculator />
++                    </div>
++                  </div>
++                )}"""
++
++replacement = target + """
++
++                {activeTool === 'publisher' && (
++                  <div className="mt-8">
++                    <DispatchPublisher />
++                  </div>
++                )}"""
++
++content = content.replace(target, replacement)
++content = content.replace("onClick={() => handleTabChange('vault')}", "onClick={() => setActiveTool('publisher')}")
++
++with open('src/pages/Dashboard.jsx', 'w') as f:
++    f.write(content)
+diff --git a/patch_livebroadcast.py b/patch_livebroadcast.py
+new file mode 100644
+index 0000000..dae5522
+--- /dev/null
++++ b/patch_livebroadcast.py
+@@ -0,0 +1,44 @@
++import sys
++
++with open('src/components/home/LiveBroadcast.jsx', 'r') as f:
++    content = f.read()
++
++target1 = "const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();"
++replacement1 = """const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();"""
++
++target2 = """    setChatLogs(prev => {
++      const newLog = {
++        id: Date.now(),
++        user: 'Observer',
++        message: cleanMessage,
++        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
++      };"""
++replacement2 = """    let userHandle = 'Observer';
++    if (isAuthenticated) {
++       userHandle = userRole || 'Navigator';
++       if (userToken) {
++           try {
++               const payload = JSON.parse(atob(userToken.split('.')[1]));
++               if (payload.email) {
++                   userHandle = payload.email.split('@')[0];
++               }
++           } catch (e) {
++               console.warn('Failed to decode JWT:', e);
++           }
++       }
++    }
++
++    setChatLogs(prev => {
++      const newLog = {
++        id: Date.now(),
++        user: userHandle,
++        message: cleanMessage,
++        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
++      };"""
++
++
++content = content.replace(target1, replacement1)
++content = content.replace(target2, replacement2)
++
++with open('src/components/home/LiveBroadcast.jsx', 'w') as f:
++    f.write(content)
+diff --git a/src/components/dashboard/DispatchPublisher.jsx b/src/components/dashboard/DispatchPublisher.jsx
+new file mode 100644
+index 0000000..61d8211
+--- /dev/null
++++ b/src/components/dashboard/DispatchPublisher.jsx
+@@ -0,0 +1,184 @@
++import React, { useState, useEffect } from 'react';
++import { useAppStore } from '@/store/useAppStore';
++import SafeIcon from '@/common/SafeIcon';
++import DOMPurify from 'dompurify';
++
++const DispatchPublisher = () => {
++  const showToast = useAppStore(state => state.showToast);
++
++  const [formData, setFormData] = useState({
++    title: '',
++    category: 'Dispatch',
++    readTime: '',
++    excerpt: '',
++    content: '',
++    coverImage: ''
++  });
++
++  useEffect(() => {
++    // 1. Populate cover image from sessionStorage
++    const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
++    if (savedCoverImage) {
++      setFormData(prev => ({ ...prev, coverImage: savedCoverImage }));
++    }
++
++    // Load draft if exists
++    const savedDraft = localStorage.getItem('ellars_draft_dispatch');
++    if (savedDraft) {
++      try {
++        const parsed = JSON.parse(savedDraft);
++        setFormData(prev => ({ ...prev, ...parsed }));
++      } catch (e) {
++        console.warn('Failed to parse saved draft dispatch:', e);
++      }
++    }
++  }, []);
++
++  const handleChange = (e) => {
++    const { name, value } = e.target;
++    setFormData(prev => ({ ...prev, [name]: value }));
++  };
++
++  const handleClearCover = () => {
++    sessionStorage.removeItem('ellars_draft_cover_image');
++    setFormData(prev => ({ ...prev, coverImage: '' }));
++  };
++
++  const handleSaveDraft = () => {
++    localStorage.setItem('ellars_draft_dispatch', JSON.stringify(formData));
++    showToast('Draft saved locally.');
++  };
++
++  const handleStageDispatch = (e) => {
++    e.preventDefault();
++    if (!formData.title || !formData.content) {
++      showToast('Title and Content are required to stage.');
++      return;
++    }
++
++    // In a real app, send to API here
++    // For now, simulate success
++    showToast('Dispatch Staged Successfully.');
++  };
++
++  return (
++    <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
++      <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
++         <h2 className="text-yellow-electric font-editorial font-bold text-2xl tracking-tighter uppercase">
++            Intelligence Dispatch Publisher
++         </h2>
++         <SafeIcon name="FileText" className="w-6 h-6 text-yellow-electric" />
++      </div>
++
++      <form onSubmit={handleStageDispatch} className="space-y-6">
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++          <div className="space-y-2">
++            <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Title</label>
++            <input
++              type="text"
++              name="title"
++              value={formData.title}
++              onChange={handleChange}
++              placeholder="Enter dispatch title"
++              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
++            />
++          </div>
++          <div className="space-y-2">
++            <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Category</label>
++            <select
++              name="category"
++              value={formData.category}
++              onChange={handleChange}
++              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
++            >
++              <option value="Dispatch">Dispatch</option>
++              <option value="Business Briefing">Business Briefing</option>
++              <option value="Directive">Directive</option>
++            </select>
++          </div>
++        </div>
++
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++           <div className="space-y-2">
++              <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Read Time (Mins)</label>
++              <input
++                type="number"
++                name="readTime"
++                value={formData.readTime}
++                onChange={handleChange}
++                placeholder="e.g. 5"
++                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
++              />
++            </div>
++             <div className="space-y-2">
++              <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Excerpt</label>
++              <input
++                type="text"
++                name="excerpt"
++                value={formData.excerpt}
++                onChange={handleChange}
++                placeholder="Brief summary..."
++                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
++              />
++            </div>
++        </div>
++
++        <div className="space-y-2">
++          <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Cover Image URL</label>
++          <div className="flex space-x-2">
++            <input
++              type="text"
++              name="coverImage"
++              value={formData.coverImage}
++              onChange={handleChange}
++              placeholder="https://..."
++              className="flex-grow bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
++            />
++            {formData.coverImage && (
++              <button type="button" onClick={handleClearCover} className="px-4 py-2 bg-red-900/20 text-red-500 border border-red-500/30 rounded-sm hover:bg-red-900/40 transition-colors uppercase text-xs tracking-widest font-mono">
++                Clear
++              </button>
++            )}
++          </div>
++          {formData.coverImage && (
++             <div className="mt-4 border border-white/10 p-2 bg-black/50 rounded-sm inline-block">
++                <img src={formData.coverImage} alt="Cover Preview" className="h-32 object-cover rounded-sm border border-white/5" />
++             </div>
++          )}
++        </div>
++
++        <div className="space-y-2">
++          <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Content (HTML/Text)</label>
++          <textarea
++            name="content"
++            value={formData.content}
++            onChange={handleChange}
++            placeholder="Draft content here..."
++            rows={8}
++            className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-mono deco-brackets custom-scrollbar"
++          ></textarea>
++        </div>
++
++        <div className="flex items-center space-x-4 pt-4 border-t border-white/10">
++           <button
++            type="button"
++            onClick={handleSaveDraft}
++            className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
++           >
++              Save Draft Locally
++           </button>
++           <button
++            type="submit"
++            className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2"
++           >
++              <span>Stage Dispatch</span>
++              <SafeIcon name="Send" className="w-4 h-4" />
++           </button>
++        </div>
++
++      </form>
++    </div>
++  );
++};
++
++export default DispatchPublisher;
+diff --git a/src/components/home/LiveBroadcast.jsx b/src/components/home/LiveBroadcast.jsx
+index 74f25ac..0b1a59e 100644
+--- a/src/components/home/LiveBroadcast.jsx
++++ b/src/components/home/LiveBroadcast.jsx
+@@ -5,7 +5,7 @@ import SafeIcon from '@/common/SafeIcon';
+ import DOMPurify from 'dompurify';
+
+ const LiveBroadcast = () => {
+-  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
++  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();
+   const [chatMessage, setChatMessage] = useState('');
+   const [chatLogs, setChatLogs] = useState([]);
+   const chatContainerRef = useRef(null);
+@@ -60,10 +60,25 @@ const LiveBroadcast = () => {
+     const cleanMessage = DOMPurify.sanitize(chatMessage.trim());
+     if (!cleanMessage) return;
+
++    let userHandle = 'Observer';
++    if (isAuthenticated) {
++       userHandle = userRole || 'Navigator';
++       if (userToken) {
++           try {
++               const payload = JSON.parse(atob(userToken.split('.')[1]));
++               if (payload.email) {
++                   userHandle = payload.email.split('@')[0];
++               }
++           } catch (e) {
++               console.warn('Failed to decode JWT:', e);
++           }
++       }
++    }
++
+     setChatLogs(prev => {
+       const newLog = {
+         id: Date.now(),
+-        user: 'Observer',
++        user: userHandle,
+         message: cleanMessage,
+         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+       };
+diff --git a/src/components/intel/MediaPlaylist.jsx b/src/components/intel/MediaPlaylist.jsx
+index 1334848..6b2b27a 100644
+--- a/src/components/intel/MediaPlaylist.jsx
++++ b/src/components/intel/MediaPlaylist.jsx
+@@ -11,7 +11,7 @@ const mockPlaylist = [
+     type: 'video',
+     duration: '45:20',
+     thumbnail: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
++    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
+   },
+   {
+     id: 2,
+@@ -29,7 +29,7 @@ const mockPlaylist = [
+     type: 'video',
+     duration: '55:10',
+     thumbnail: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
++    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
+   },
+   {
+     id: 4,
+diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+index 38d24cc..3de1c4a 100644
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -6,6 +6,7 @@ import { fetchSavedVaultItems } from '@/lib/api';
+ import ArticleCard from '@/components/intel/ArticleCard';
+ import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
+ import AutomationCalculator from '@/components/intel/AutomationCalculator';
++import DispatchPublisher from '@/components/dashboard/DispatchPublisher';
+ import { useAppStore } from '@/store/useAppStore';
+ import AccountSettings from '../components/dashboard/AccountSettings';
+ import MediaUploads from '@/components/dashboard/MediaUploads';
+@@ -193,7 +194,7 @@ const Dashboard = () => {
+
+                   <div
+                     className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
+-                    onClick={() => handleTabChange('vault')}
++                    onClick={() => setActiveTool('publisher')}
+                   >
+                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
+                     <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
+@@ -208,6 +209,12 @@ const Dashboard = () => {
+                     </div>
+                   </div>
+                 )}
++
++                {activeTool === 'publisher' && (
++                  <div className="mt-8">
++                    <DispatchPublisher />
++                  </div>
++                )}
+               </motion.div>
+             )}
+
+diff --git a/v6.03-modifications.patch b/v6.03-modifications.patch
+new file mode 100644
+index 0000000..e105606
+--- /dev/null
++++ b/v6.03-modifications.patch
+@@ -0,0 +1,382 @@
++diff --git a/.env.example b/.env.example
++index 973b865..467856a 100644
++--- a/.env.example
+++++ b/.env.example
++@@ -2,3 +2,8 @@ VITE_WP_API_URL=https://wp.ellars.us.com/wp-json/wp/v2
++ VITE_EMAILIT_HOST=smtp.emailit.com
++
++ VITE_SUPABASE_URL=https://pvbcdndqjguzqeafhwhw.supabase.co
+++
+++VITE_CF_STREAM_LIVE_UID=
+++VITE_CF_FORM_ENDPOINT=
+++VITE_TURNSTILE_SITE_KEY=
+++VITE_DONATION_LINK=
++diff --git a/patch_dashboard.py b/patch_dashboard.py
++new file mode 100644
++index 0000000..4451911
++--- /dev/null
+++++ b/patch_dashboard.py
++@@ -0,0 +1,27 @@
+++import sys
+++
+++with open('src/pages/Dashboard.jsx', 'r') as f:
+++    content = f.read()
+++
+++target = """                {activeTool === 'calculator' && (
+++                  <div className="mt-8">
+++                    <h3 className="text-white font-editorial font-bold text-xl mb-4">Active Session: Impact Calculator</h3>
+++                    <div className="p-4 md:p-8 border border-white/10 bg-black/60 rounded-sm">
+++                      <AutomationCalculator />
+++                    </div>
+++                  </div>
+++                )}"""
+++
+++replacement = target + """
+++
+++                {activeTool === 'publisher' && (
+++                  <div className="mt-8">
+++                    <DispatchPublisher />
+++                  </div>
+++                )}"""
+++
+++content = content.replace(target, replacement)
+++content = content.replace("onClick={() => handleTabChange('vault')}", "onClick={() => setActiveTool('publisher')}")
+++
+++with open('src/pages/Dashboard.jsx', 'w') as f:
+++    f.write(content)
++diff --git a/patch_livebroadcast.py b/patch_livebroadcast.py
++new file mode 100644
++index 0000000..dae5522
++--- /dev/null
+++++ b/patch_livebroadcast.py
++@@ -0,0 +1,44 @@
+++import sys
+++
+++with open('src/components/home/LiveBroadcast.jsx', 'r') as f:
+++    content = f.read()
+++
+++target1 = "const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();"
+++replacement1 = """const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();"""
+++
+++target2 = """    setChatLogs(prev => {
+++      const newLog = {
+++        id: Date.now(),
+++        user: 'Observer',
+++        message: cleanMessage,
+++        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+++      };"""
+++replacement2 = """    let userHandle = 'Observer';
+++    if (isAuthenticated) {
+++       userHandle = userRole || 'Navigator';
+++       if (userToken) {
+++           try {
+++               const payload = JSON.parse(atob(userToken.split('.')[1]));
+++               if (payload.email) {
+++                   userHandle = payload.email.split('@')[0];
+++               }
+++           } catch (e) {
+++               console.warn('Failed to decode JWT:', e);
+++           }
+++       }
+++    }
+++
+++    setChatLogs(prev => {
+++      const newLog = {
+++        id: Date.now(),
+++        user: userHandle,
+++        message: cleanMessage,
+++        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+++      };"""
+++
+++
+++content = content.replace(target1, replacement1)
+++content = content.replace(target2, replacement2)
+++
+++with open('src/components/home/LiveBroadcast.jsx', 'w') as f:
+++    f.write(content)
++diff --git a/src/components/dashboard/DispatchPublisher.jsx b/src/components/dashboard/DispatchPublisher.jsx
++new file mode 100644
++index 0000000..61d8211
++--- /dev/null
+++++ b/src/components/dashboard/DispatchPublisher.jsx
++@@ -0,0 +1,184 @@
+++import React, { useState, useEffect } from 'react';
+++import { useAppStore } from '@/store/useAppStore';
+++import SafeIcon from '@/common/SafeIcon';
+++import DOMPurify from 'dompurify';
+++
+++const DispatchPublisher = () => {
+++  const showToast = useAppStore(state => state.showToast);
+++
+++  const [formData, setFormData] = useState({
+++    title: '',
+++    category: 'Dispatch',
+++    readTime: '',
+++    excerpt: '',
+++    content: '',
+++    coverImage: ''
+++  });
+++
+++  useEffect(() => {
+++    // 1. Populate cover image from sessionStorage
+++    const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
+++    if (savedCoverImage) {
+++      setFormData(prev => ({ ...prev, coverImage: savedCoverImage }));
+++    }
+++
+++    // Load draft if exists
+++    const savedDraft = localStorage.getItem('ellars_draft_dispatch');
+++    if (savedDraft) {
+++      try {
+++        const parsed = JSON.parse(savedDraft);
+++        setFormData(prev => ({ ...prev, ...parsed }));
+++      } catch (e) {
+++        console.warn('Failed to parse saved draft dispatch:', e);
+++      }
+++    }
+++  }, []);
+++
+++  const handleChange = (e) => {
+++    const { name, value } = e.target;
+++    setFormData(prev => ({ ...prev, [name]: value }));
+++  };
+++
+++  const handleClearCover = () => {
+++    sessionStorage.removeItem('ellars_draft_cover_image');
+++    setFormData(prev => ({ ...prev, coverImage: '' }));
+++  };
+++
+++  const handleSaveDraft = () => {
+++    localStorage.setItem('ellars_draft_dispatch', JSON.stringify(formData));
+++    showToast('Draft saved locally.');
+++  };
+++
+++  const handleStageDispatch = (e) => {
+++    e.preventDefault();
+++    if (!formData.title || !formData.content) {
+++      showToast('Title and Content are required to stage.');
+++      return;
+++    }
+++
+++    // In a real app, send to API here
+++    // For now, simulate success
+++    showToast('Dispatch Staged Successfully.');
+++  };
+++
+++  return (
+++    <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
+++      <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+++         <h2 className="text-yellow-electric font-editorial font-bold text-2xl tracking-tighter uppercase">
+++            Intelligence Dispatch Publisher
+++         </h2>
+++         <SafeIcon name="FileText" className="w-6 h-6 text-yellow-electric" />
+++      </div>
+++
+++      <form onSubmit={handleStageDispatch} className="space-y-6">
+++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+++          <div className="space-y-2">
+++            <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Title</label>
+++            <input
+++              type="text"
+++              name="title"
+++              value={formData.title}
+++              onChange={handleChange}
+++              placeholder="Enter dispatch title"
+++              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+++            />
+++          </div>
+++          <div className="space-y-2">
+++            <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Category</label>
+++            <select
+++              name="category"
+++              value={formData.category}
+++              onChange={handleChange}
+++              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+++            >
+++              <option value="Dispatch">Dispatch</option>
+++              <option value="Business Briefing">Business Briefing</option>
+++              <option value="Directive">Directive</option>
+++            </select>
+++          </div>
+++        </div>
+++
+++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+++           <div className="space-y-2">
+++              <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Read Time (Mins)</label>
+++              <input
+++                type="number"
+++                name="readTime"
+++                value={formData.readTime}
+++                onChange={handleChange}
+++                placeholder="e.g. 5"
+++                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+++              />
+++            </div>
+++             <div className="space-y-2">
+++              <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Excerpt</label>
+++              <input
+++                type="text"
+++                name="excerpt"
+++                value={formData.excerpt}
+++                onChange={handleChange}
+++                placeholder="Brief summary..."
+++                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+++              />
+++            </div>
+++        </div>
+++
+++        <div className="space-y-2">
+++          <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Cover Image URL</label>
+++          <div className="flex space-x-2">
+++            <input
+++              type="text"
+++              name="coverImage"
+++              value={formData.coverImage}
+++              onChange={handleChange}
+++              placeholder="https://..."
+++              className="flex-grow bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+++            />
+++            {formData.coverImage && (
+++              <button type="button" onClick={handleClearCover} className="px-4 py-2 bg-red-900/20 text-red-500 border border-red-500/30 rounded-sm hover:bg-red-900/40 transition-colors uppercase text-xs tracking-widest font-mono">
+++                Clear
+++              </button>
+++            )}
+++          </div>
+++          {formData.coverImage && (
+++             <div className="mt-4 border border-white/10 p-2 bg-black/50 rounded-sm inline-block">
+++                <img src={formData.coverImage} alt="Cover Preview" className="h-32 object-cover rounded-sm border border-white/5" />
+++             </div>
+++          )}
+++        </div>
+++
+++        <div className="space-y-2">
+++          <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Content (HTML/Text)</label>
+++          <textarea
+++            name="content"
+++            value={formData.content}
+++            onChange={handleChange}
+++            placeholder="Draft content here..."
+++            rows={8}
+++            className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-mono deco-brackets custom-scrollbar"
+++          ></textarea>
+++        </div>
+++
+++        <div className="flex items-center space-x-4 pt-4 border-t border-white/10">
+++           <button
+++            type="button"
+++            onClick={handleSaveDraft}
+++            className="px-6 py-2 bg-white/5 text-gray-300 border border-white/20 rounded-sm hover:bg-white/10 transition-colors uppercase text-xs tracking-widest font-editorial"
+++           >
+++              Save Draft Locally
+++           </button>
+++           <button
+++            type="submit"
+++            className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2"
+++           >
+++              <span>Stage Dispatch</span>
+++              <SafeIcon name="Send" className="w-4 h-4" />
+++           </button>
+++        </div>
+++
+++      </form>
+++    </div>
+++  );
+++};
+++
+++export default DispatchPublisher;
++diff --git a/src/components/home/LiveBroadcast.jsx b/src/components/home/LiveBroadcast.jsx
++index 74f25ac..0b1a59e 100644
++--- a/src/components/home/LiveBroadcast.jsx
+++++ b/src/components/home/LiveBroadcast.jsx
++@@ -5,7 +5,7 @@ import SafeIcon from '@/common/SafeIcon';
++ import DOMPurify from 'dompurify';
++
++ const LiveBroadcast = () => {
++-  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
+++  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();
++   const [chatMessage, setChatMessage] = useState('');
++   const [chatLogs, setChatLogs] = useState([]);
++   const chatContainerRef = useRef(null);
++@@ -60,10 +60,25 @@ const LiveBroadcast = () => {
++     const cleanMessage = DOMPurify.sanitize(chatMessage.trim());
++     if (!cleanMessage) return;
++
+++    let userHandle = 'Observer';
+++    if (isAuthenticated) {
+++       userHandle = userRole || 'Navigator';
+++       if (userToken) {
+++           try {
+++               const payload = JSON.parse(atob(userToken.split('.')[1]));
+++               if (payload.email) {
+++                   userHandle = payload.email.split('@')[0];
+++               }
+++           } catch (e) {
+++               console.warn('Failed to decode JWT:', e);
+++           }
+++       }
+++    }
+++
++     setChatLogs(prev => {
++       const newLog = {
++         id: Date.now(),
++-        user: 'Observer',
+++        user: userHandle,
++         message: cleanMessage,
++         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
++       };
++diff --git a/src/components/intel/MediaPlaylist.jsx b/src/components/intel/MediaPlaylist.jsx
++index 1334848..6b2b27a 100644
++--- a/src/components/intel/MediaPlaylist.jsx
+++++ b/src/components/intel/MediaPlaylist.jsx
++@@ -11,7 +11,7 @@ const mockPlaylist = [
++     type: 'video',
++     duration: '45:20',
++     thumbnail: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
++-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
+++    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
++   },
++   {
++     id: 2,
++@@ -29,7 +29,7 @@ const mockPlaylist = [
++     type: 'video',
++     duration: '55:10',
++     thumbnail: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
++-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
+++    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
++   },
++   {
++     id: 4,
++diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
++index 38d24cc..3de1c4a 100644
++--- a/src/pages/Dashboard.jsx
+++++ b/src/pages/Dashboard.jsx
++@@ -6,6 +6,7 @@ import { fetchSavedVaultItems } from '@/lib/api';
++ import ArticleCard from '@/components/intel/ArticleCard';
++ import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
++ import AutomationCalculator from '@/components/intel/AutomationCalculator';
+++import DispatchPublisher from '@/components/dashboard/DispatchPublisher';
++ import { useAppStore } from '@/store/useAppStore';
++ import AccountSettings from '../components/dashboard/AccountSettings';
++ import MediaUploads from '@/components/dashboard/MediaUploads';
++@@ -193,7 +194,7 @@ const Dashboard = () => {
++
++                   <div
++                     className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
++-                    onClick={() => handleTabChange('vault')}
+++                    onClick={() => setActiveTool('publisher')}
++                   >
++                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
++                     <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
++@@ -208,6 +209,12 @@ const Dashboard = () => {
++                     </div>
++                   </div>
++                 )}
+++
+++                {activeTool === 'publisher' && (
+++                  <div className="mt-8">
+++                    <DispatchPublisher />
+++                  </div>
+++                )}
++               </motion.div>
++             )}
++

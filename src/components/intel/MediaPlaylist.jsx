@@ -11,7 +11,7 @@ const mockPlaylist = [
     type: 'video',
     duration: '45:20',
     thumbnail: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
+    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ const mockPlaylist = [
     type: 'video',
     duration: '55:10',
     thumbnail: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
+    videoUrl: 'https://cdn.cloudflare.stream/secure-video-stream.mp4' // Using secure CDN streams
   },
   {
     id: 4,

@@ -5,7 +5,7 @@ import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
 
 const LiveBroadcast = () => {
-  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen } = useAppStore();
+  const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();
   const [chatMessage, setChatMessage] = useState('');
   const [chatLogs, setChatLogs] = useState([]);
   const chatContainerRef = useRef(null);
@@ -60,10 +60,25 @@ const LiveBroadcast = () => {
     const cleanMessage = DOMPurify.sanitize(chatMessage.trim());
     if (!cleanMessage) return;
 
+    let userHandle = 'Observer';
+    if (isAuthenticated) {
+       userHandle = userRole || 'Navigator';
+       if (userToken) {
+           try {
+               const payload = JSON.parse(atob(userToken.split('.')[1]));
+               if (payload.email) {
+                   userHandle = payload.email.split('@')[0];
+               }
+           } catch (e) {
+               console.warn('Failed to decode JWT:', e);
+           }
+       }
+    }
+
     setChatLogs(prev => {
       const newLog = {
         id: Date.now(),
-        user: 'Observer',
+        user: userHandle,
         message: cleanMessage,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
