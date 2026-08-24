@@ -38,11 +38,29 @@ export default {
     // Stream status route
     if (url.pathname === '/api/v1/stream/status' && request.method === 'GET') {
       try {
-        // Here we would typically fetch the live input status from Cloudflare Stream API using env.CF_ACCOUNT_ID / API keys.
-        // For now, we mock the response or determine based on a KV or static edge flag.
+        let isLive = false;
 
-        // Simulating the check
-        const isLive = false; // By default offline. In production, this checks the actual CF input.
+        // Check for QA override
+        if (url.searchParams.get('status') === 'live' || request.headers.get('X-Stream-Override') === 'live') {
+          isLive = true;
+        } else if (env.CLOUDFLARE_STREAM_API_TOKEN && env.CLOUDFLARE_ACCOUNT_ID) {
+          const uid = env.VITE_CF_STREAM_LIVE_UID || 'default';
+          const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/stream/live_inputs/${uid}`;
+          const cfResponse = await fetch(cfUrl, {
+            headers: {
+              'Authorization': `Bearer ${env.CLOUDFLARE_STREAM_API_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (cfResponse.ok) {
+            const data = await cfResponse.json();
+            const state = data.result?.status?.state;
+            if (state === 'connected' || state === 'live') {
+              isLive = true;
+            }
+          }
+        }
 
         const responseData = {
           isLiveStreamActive: isLive,

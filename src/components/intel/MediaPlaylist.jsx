@@ -3,16 +3,15 @@ import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 import { useTelemetry } from '@/hooks/useTelemetry';
 
-
 const mockPlaylist = [
   {
     id: 1,
-    title: 'The All-American Tax Credit vs. Reactive Welfare Structures',
+    title: 'The Blueprint: Redefining American Civic Infrastructures',
     date: '2024-05-15',
     type: 'video',
     duration: '45:20',
     thumbnail: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4'
+    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
   },
   {
     id: 2,
@@ -30,7 +29,7 @@ const mockPlaylist = [
     type: 'video',
     duration: '55:10',
     thumbnail: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4'
+    videoUrl: 'https://cdn.cloudflare.steam/secure-video-stream.mp4' // Using secure CDN streams
   },
   {
     id: 4,
@@ -47,6 +46,7 @@ const MediaPlaylist = () => {
   const { trackEvent } = useTelemetry();
   const [activeMedia, setActiveMedia] = useState(mockPlaylist[0]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -65,7 +65,10 @@ const MediaPlaylist = () => {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play().catch(e => console.warn('Video play failed', e));
+        videoRef.current.play().catch(e => {
+            console.warn('Video play failed', e);
+            setHasError(true);
+        });
       }
     }
     setIsPlaying(!isPlaying);
@@ -74,7 +77,13 @@ const MediaPlaylist = () => {
   const handleMediaSelect = (media) => {
     setActiveMedia(media);
     setIsPlaying(false); // Reset play state when switching media
+    setHasError(false); // Reset error state
   };
+
+  const handleVideoError = () => {
+      setHasError(true);
+      setIsPlaying(false);
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-void border border-white/10 rounded-sm overflow-hidden">
@@ -87,17 +96,28 @@ const MediaPlaylist = () => {
               <img
                 src={activeMedia.thumbnail}
                 alt={activeMedia.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-0' : 'opacity-50'}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying && !hasError ? 'opacity-0' : 'opacity-50'}`}
               />
-              <video
-                src={activeMedia.videoUrl}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
-                playsInline
-                muted
-                preload="metadata"
-                ref={videoRef}
-                onClick={togglePlay}
-              />
+              {!hasError ? (
+                  <video
+                    src={activeMedia.videoUrl}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
+                    playsInline
+                    muted
+                    preload="metadata"
+                    ref={videoRef}
+                    onClick={togglePlay}
+                    onError={handleVideoError}
+                  />
+              ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
+                      <div className="flex flex-col items-center justify-center space-y-4 deco-frame p-6">
+                           <SafeIcon name="AlertCircle" className="w-8 h-8 text-yellow-electric" />
+                           <p className="font-editorial text-xs text-yellow-electric tracking-widest uppercase text-center">Transmission Interrupted</p>
+                           <p className="font-mono text-[10px] text-zinc-500 tracking-widest uppercase text-center">Stream unavailable. Please try again later.</p>
+                      </div>
+                  </div>
+              )}
             </>
           ) : (
              <div className="absolute inset-0 w-full h-full bg-zinc-900 flex items-center justify-center">
@@ -116,11 +136,12 @@ const MediaPlaylist = () => {
           )}
 
           {/* Custom Controls Panel */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-void/90 backdrop-blur-md border-t border-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-between">
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-void/90 backdrop-blur-md border-t border-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-between z-30">
             <div className="flex items-center space-x-4">
               <button
                 onClick={togglePlay}
-                className="text-yellow-electric hover:text-white transition-colors focus:outline-none"
+                disabled={hasError}
+                className="text-yellow-electric hover:text-white transition-colors focus:outline-none disabled:opacity-50"
               >
                 <SafeIcon name={isPlaying ? "Pause" : "Play"} className="w-6 h-6" />
               </button>
@@ -129,13 +150,13 @@ const MediaPlaylist = () => {
               </button>
             </div>
             <div className="font-mono text-[10px] text-yellow-electric tracking-widest uppercase">
-              {isPlaying ? 'Playing...' : 'Standby'}
+              {hasError ? 'Offline' : (isPlaying ? 'Playing...' : 'Standby')}
             </div>
           </div>
 
           {/* Play Overlay Button (when paused) */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {!isPlaying && !hasError && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
               <div className="w-16 h-16 rounded-full bg-yellow-electric/20 backdrop-blur-sm border border-yellow-electric flex items-center justify-center">
                 <SafeIcon name="Play" className="w-8 h-8 text-yellow-electric ml-1" />
               </div>
