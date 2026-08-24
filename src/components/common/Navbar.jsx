@@ -14,7 +14,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const { setDonateModalOpen } = useAppStore();
+  const { setDonateModalOpen, setNewsletterModalOpen } = useAppStore();
   const modalRef = useRef(null);
   const menuButtonRef = useRef(null);
 
@@ -173,21 +173,31 @@ const Navbar = () => {
             </Link>
           ))}
 
-          <motion.button aria-label="Contribute"
-            onClick={() => setDonateModalOpen(true)}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatDelay: 10,
-              ease: "easeInOut"
-            }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 bg-yellow-electric text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:shadow-lg hover:shadow-blue-500/20"
-          >
-            CONTRIBUTE
-          </motion.button>
+          <div className="flex items-center space-x-4">
+            <motion.button aria-label="Contribute"
+              onClick={() => setDonateModalOpen(true)}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 10,
+                ease: "easeInOut"
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 bg-yellow-electric text-black hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:shadow-lg hover:shadow-blue-500/20"
+            >
+              CONTRIBUTE
+            </motion.button>
+            <motion.button aria-label="Join Newsletter"
+              onClick={() => setNewsletterModalOpen(true)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 border border-yellow-electric/30 text-yellow-electric hover:bg-yellow-electric/10 transition-colors uppercase tracking-widest text-[11px] font-editorial font-bold"
+            >
+              JOIN NEWSLETTER
+            </motion.button>
+          </div>
 
           {isAuthenticated && (
             <button
@@ -217,7 +227,7 @@ const Navbar = () => {
             )}
           </AnimatePresence>
 
-          <button className="btn-gold hidden sm:flex lg:hidden" aria-label="Join the Newsletter">Join the Newsletter</button>
+          <button className="btn-gold hidden sm:flex lg:hidden" onClick={() => setNewsletterModalOpen(true)} aria-label="Join the Newsletter">Join the Newsletter</button>
           <button 
             ref={menuButtonRef}
             className="lg:hidden text-white hover:text-yellow-electric transition-colors"
@@ -280,6 +290,15 @@ const Navbar = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (navLinks.length + 1) * 0.1 + 0.1 }}
             >
+              <motion.button aria-label="Join Newsletter"
+                onClick={() => {
+                  setIsOpen(false);
+                  setNewsletterModalOpen(true);
+                }}
+                className="w-full py-4 mb-4 border border-yellow-electric/30 text-yellow-electric font-editorial font-bold text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors"
+              >
+                JOIN NEWSLETTER
+              </motion.button>
               <motion.button aria-label="Contribute"
                 onClick={() => {
                   setIsOpen(false);
