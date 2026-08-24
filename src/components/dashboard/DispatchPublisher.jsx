@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
+import { v4 as uuidv4 } from 'uuid';
+import { publishVaultItem } from '@/lib/api';
 
 const DispatchPublisher = () => {
   const showToast = useAppStore(state => state.showToast);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(uuidv4());
 
   const [formData, setFormData] = useState({
     title: '',
@@ -49,17 +54,45 @@ const DispatchPublisher = () => {
     showToast('Draft saved locally.');
   };
 
-  const handleStageDispatch = (e) => {
+
+  const handleStageDispatch = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.content) {
       showToast('Title and Content are required to stage.');
       return;
     }
 
-    // In a real app, send to API here
-    // For now, simulate success
-    showToast('Dispatch Staged Successfully.');
+    setIsSubmitting(true);
+
+    try {
+        const payload = {
+            ...formData,
+            client_idempotency_key: idempotencyKey,
+            status: 'draft'
+        };
+        const success = await publishVaultItem(payload);
+
+        if (success) {
+            showToast('Dispatch Staged Successfully.');
+            setIdempotencyKey(uuidv4()); // reset key
+            setFormData({
+                title: '',
+                category: 'Dispatch',
+                readTime: '',
+                excerpt: '',
+                content: '',
+                coverImage: ''
+            });
+            sessionStorage.removeItem('ellars_draft_cover_image');
+            localStorage.removeItem('ellars_draft_dispatch');
+        } else {
+             showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
+        }
+    } finally {
+        setIsSubmitting(false);
+    }
   };
+
 
   return (
     <div className="deco-frame p-6 bg-black/40 backdrop-blur-md border border-white/10">
@@ -74,7 +107,7 @@ const DispatchPublisher = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Title</label>
-            <input
+            <input disabled={isSubmitting}
               type="text"
               name="title"
               value={formData.title}
@@ -85,7 +118,7 @@ const DispatchPublisher = () => {
           </div>
           <div className="space-y-2">
             <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Category</label>
-            <select
+            <select disabled={isSubmitting}
               name="category"
               value={formData.category}
               onChange={handleChange}
@@ -101,7 +134,7 @@ const DispatchPublisher = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            <div className="space-y-2">
               <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Read Time (Mins)</label>
-              <input
+              <input disabled={isSubmitting}
                 type="number"
                 name="readTime"
                 value={formData.readTime}
@@ -112,7 +145,7 @@ const DispatchPublisher = () => {
             </div>
              <div className="space-y-2">
               <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Excerpt</label>
-              <input
+              <input disabled={isSubmitting}
                 type="text"
                 name="excerpt"
                 value={formData.excerpt}
@@ -126,7 +159,7 @@ const DispatchPublisher = () => {
         <div className="space-y-2">
           <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Cover Image URL</label>
           <div className="flex space-x-2">
-            <input
+            <input disabled={isSubmitting}
               type="text"
               name="coverImage"
               value={formData.coverImage}
@@ -149,7 +182,7 @@ const DispatchPublisher = () => {
 
         <div className="space-y-2">
           <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Content (HTML/Text)</label>
-          <textarea
+          <textarea disabled={isSubmitting}
             name="content"
             value={formData.content}
             onChange={handleChange}
@@ -169,7 +202,8 @@ const DispatchPublisher = () => {
            </button>
            <button
             type="submit"
-            className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
            >
               <span>Stage Dispatch</span>
               <SafeIcon name="Send" className="w-4 h-4" />

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import useSWR from 'swr';
-import { fetchSavedVaultItems } from '@/lib/api';
-import ArticleCard from '@/components/intel/ArticleCard';
+import useSWR, { useSWRConfig } from 'swr';
+import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem } from '@/lib/api';
+import VaultArticleCard from '@/components/dashboard/VaultArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
+import ArticleCard from '@/components/intel/ArticleCard';
 import AutomationCalculator from '@/components/intel/AutomationCalculator';
 import DispatchPublisher from '@/components/dashboard/DispatchPublisher';
 import { useAppStore } from '@/store/useAppStore';
@@ -31,6 +32,9 @@ const EmptyState = ({ isFilterEmpty }) => (
 const Dashboard = () => {
   const token = useAppStore(state => state.userToken);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const { mutate } = useSWRConfig();
+  const showToast = useAppStore(state => state.showToast);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeTool, setActiveTool] = useState('calculator');
@@ -55,6 +59,47 @@ const Dashboard = () => {
     { id: 'tools', label: 'Tools & Automations' },
     { id: 'media', label: 'Media Library' }
   ];
+
+
+  const handleArchive = async (item) => {
+    // Optimistic update
+    mutate(
+      'saved_vault_items',
+      { data: allItems.map(i => i.id === item.id ? { ...i, status: 'archived' } : i), isError: false },
+      false
+    );
+
+    const result = await archiveVaultItem(item.id);
+    if (result.isError) {
+      showToast('// ERROR: UNABLE TO ARCHIVE VAULT ITEM');
+      mutate('saved_vault_items'); // rollback
+    } else {
+      showToast('Vault Item Archived.');
+      mutate('saved_vault_items'); // revalidate
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    const id = itemToDelete.id;
+    setItemToDelete(null);
+
+    // Optimistic update
+    mutate(
+      'saved_vault_items',
+      { data: allItems.filter(i => i.id !== id), isError: false },
+      false
+    );
+
+    const result = await deleteVaultItem(id);
+    if (result.isError) {
+      showToast('// ERROR: UNABLE TO DELETE VAULT ITEM');
+      mutate('saved_vault_items'); // rollback
+    } else {
+      showToast('Vault Item Deleted.');
+      mutate('saved_vault_items'); // revalidate
+    }
+  };
 
   const handleTabChange = (tabId) => {
     setSearchParams({ tab: tabId });
@@ -161,7 +206,7 @@ const Dashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                     {items.map(item => (
-                      <ArticleCard key={item.id} article={item} />
+                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} />
                     ))}
                   </div>
                 )}
@@ -243,6 +288,45 @@ const Dashboard = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="deco-frame bg-zinc-950 p-8 max-w-md w-full border border-white/20 shadow-2xl relative"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-yellow-electric"></div>
+              <h3 className="font-editorial font-bold text-2xl text-white uppercase tracking-tighter mb-4">Confirm Deletion</h3>
+              <p className="font-mono text-sm text-gray-400 mb-8 leading-relaxed">
+                Are you sure you want to delete <span className="text-yellow-electric">{itemToDelete.title?.rendered || 'this item'}</span>? This action cannot be undone and will remove it from the operational vault.
+              </p>
+              <div className="flex items-center justify-end space-x-4">
+                <button
+                  onClick={() => setItemToDelete(null)}
+                  className="px-4 py-2 font-mono text-xs uppercase tracking-widest text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-6 py-2 bg-red-900/20 border border-red-500/50 text-red-500 font-mono text-xs uppercase tracking-widest hover:bg-red-900/50 transition-colors"
+                >
+                  Delete Item
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

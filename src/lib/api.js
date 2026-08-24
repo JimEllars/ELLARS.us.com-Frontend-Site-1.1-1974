@@ -299,25 +299,41 @@ export async function getSocialFeed(limit = 10) {
   }
 }
 
-export async function saveToAximCore(payload) {
+export async function publishVaultItem(payload) {
+  const token = useAppStore.getState().userToken;
+  if (!token) {
+     console.warn("[AXiM Core] Unauthenticated attempt to publish to vault.");
+     return false;
+  }
+
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
+    const finalPayload = { ...payload, app_id: "ellars.us.com" };
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Prefer': 'return=minimal',
         'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(finalPayload)
     });
 
     if (!response.ok) {
       console.error("[AXiM Core] Failed to save to vault", response.status);
       return false;
     }
+
+    // Fire-and-forget edge cache invalidation
+    fetch('/api/v1/cache/purge-tag', {
+      method: 'POST',
+      headers: {
+        'X-Purge-Tag': 'ellars-intel-feed',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+      }
+    }).catch(err => console.warn('Cache purge signal failed:', err));
 
     return true;
   } catch (error) {
@@ -546,13 +562,42 @@ export async function deleteUploadedMedia(filename) {
   }
 }
 
-export async function createIntelBrief(payload) {
+
+
+export async function deleteVaultItem(itemId) {
   const token = useAppStore.getState().userToken;
-  if (!token) return false;
+  if (!token) return { isError: true, message: 'No active session' };
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?app_id=eq.ellars.us.com`, {
-      method: 'POST',
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+      }
+    });
+
+    if (!response.ok) {
+      console.error("[AXiM Core: Vault Error] Failed to delete item", response.status);
+      return { isError: true, message: `Failed to delete item with status ${response.status}` };
+    }
+
+    return { isError: false, message: 'Item deleted successfully' };
+  } catch (error) {
+    console.error("[AXiM Core: Vault Error] Exception deleting item:", error);
+    return { isError: true, message: error.message };
+  }
+}
+
+export async function archiveVaultItem(itemId) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return { isError: true, message: 'No active session' };
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -561,25 +606,17 @@ export async function createIntelBrief(payload) {
         'Prefer': 'return=minimal',
         'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ status: 'archived' })
     });
 
-    if (response.ok) {
-      // Fire-and-forget edge cache invalidation
-      fetch('/api/v1/cache/purge-tag', {
-        method: 'POST',
-        headers: {
-          'X-Purge-Tag': 'ellars-intel-feed',
-          'X-Client-Telemetry': 'AXiM-Frontend-v1'
-        }
-      }).catch(err => console.warn('Cache purge signal failed:', err));
-
-      return true;
+    if (!response.ok) {
+      console.error("[AXiM Core: Vault Error] Failed to archive item", response.status);
+      return { isError: true, message: `Failed to archive item with status ${response.status}` };
     }
 
-    return false;
+    return { isError: false, message: 'Item archived successfully' };
   } catch (error) {
-    console.error("[AXiM Core: Create Intel Error]", error);
-    return false;
+    console.error("[AXiM Core: Vault Error] Exception archiving item:", error);
+    return { isError: true, message: error.message };
   }
 }
