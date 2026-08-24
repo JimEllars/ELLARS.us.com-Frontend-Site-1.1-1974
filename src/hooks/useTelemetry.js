@@ -49,6 +49,7 @@ export const enqueuePayload = (payload) => {
     const prunedQueue = prunePayloadArray(limitedQueue);
     try {
       localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
+      if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
     } catch (storageError) {
       if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
         try {
@@ -186,6 +187,7 @@ export const useTelemetry = () => {
           if (response.status === 200 || response.ok) {
             // Safely clear the local browser persistent array cache upon verified gateway reception
             localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+            if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
             success = true;
             inFlightPayloads.current = []; // Clear in-flight payloads on success
           } else {

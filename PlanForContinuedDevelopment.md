@@ -1,6 +1,7 @@
 # Plan for Continued Development
 
 ## Completed Sprints
+- **V6.07 SWR Cache Hardening, New Dispatch Lifecycle Completion, & Vault Status Filtering:** Hardened SWR array cache keys for optimistic mutations on `handleArchive` and `confirmDelete` in `Dashboard.jsx`. Completed dispatch publisher lifecycle logic to properly redirect users on success. Implemented real-time tracking for telemetry by triggering custom `ellars_telemetry_updated` browser window events. Finally, added a robust search debounce with status filtering to the main vault dashboard.
 - **V6.06 Vault Pagination & Editing:** Added in-place editing functionality for intelligence dispatches, implemented range-based pagination to maintain performance at scale for Vault views, and fortified the telemetry system to actively flush queues on network reconnection.
 - **V5.98 Media Uploads:** Completed UI placeholders and base structure for file uploads.
 - **V5.99 Account Settings:** Initial groundwork for modular settings components.

@@ -36,6 +36,8 @@ const Dashboard = () => {
   const { mutate } = useSWRConfig();
   const showToast = useAppStore(state => state.showToast);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Active');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeTool, setActiveTool] = useState('calculator');
   const [editingItem, setEditingItem] = useState(null);
@@ -52,6 +54,13 @@ const Dashboard = () => {
   );
 
   const [allItems, setAllItems] = useState([]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (response && !response.isError) {
@@ -71,9 +80,16 @@ const Dashboard = () => {
     }
   }, [response, vaultPage]);
   const items = allItems.filter(item => {
-    const matchesSearch = !searchQuery || (item.title?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = !debouncedSearchQuery || (item.title?.rendered?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || item.excerpt?.rendered?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()));
+
+    let matchesStatus = true;
+    if (statusFilter === 'Active') {
+      matchesStatus = item.status !== 'archived';
+    } else if (statusFilter === 'Archived') {
+      matchesStatus = item.status === 'archived';
+    }
     const matchesCategory = activeCategory === 'All' || item.acf?.category_label === activeCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && matchesStatus;
   });
   const loading = isLoading;
 
@@ -95,18 +111,20 @@ const Dashboard = () => {
   const handleArchive = async (item) => {
     // Optimistic update
     mutate(
-      'saved_vault_items',
-      { data: allItems.map(i => i.id === item.id ? { ...i, status: 'archived' } : i), isError: false },
-      false
+      key => Array.isArray(key) && key[0] === 'saved_vault_items',
+      undefined,
+      { revalidate: true }
     );
+    // Optimistically update local state while SWR revalidates
+    setAllItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'archived' } : i));
 
     const result = await archiveVaultItem(item.id);
     if (result.isError) {
       showToast('// ERROR: UNABLE TO ARCHIVE VAULT ITEM');
-      mutate('saved_vault_items'); // rollback
+      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // rollback
     } else {
       showToast('Vault Item Archived.');
-      mutate('saved_vault_items'); // revalidate
+      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // revalidate
     }
   };
 
@@ -117,18 +135,20 @@ const Dashboard = () => {
 
     // Optimistic update
     mutate(
-      'saved_vault_items',
-      { data: allItems.filter(i => i.id !== id), isError: false },
-      false
+      key => Array.isArray(key) && key[0] === 'saved_vault_items',
+      undefined,
+      { revalidate: true }
     );
+    // Optimistically update local state while SWR revalidates
+    setAllItems(prev => prev.filter(i => i.id !== id));
 
     const result = await deleteVaultItem(id);
     if (result.isError) {
       showToast('// ERROR: UNABLE TO DELETE VAULT ITEM');
-      mutate('saved_vault_items'); // rollback
+      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // rollback
     } else {
       showToast('Vault Item Deleted.');
-      mutate('saved_vault_items'); // revalidate
+      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // revalidate
     }
   };
 
@@ -206,12 +226,26 @@ const Dashboard = () => {
                       aria-label="Search vault intel"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-sm py-2 px-4 pl-10 text-white font-mono text-sm focus:outline-none focus:border-yellow-electric/50 transition-colors deco-brackets"
+                      className="w-full bg-black/40 border border-white/10 rounded-sm py-2 px-4 pl-10 text-white font-mono text-xs uppercase tracking-widest focus:outline-none focus:border-yellow-electric/50 transition-colors deco-brackets"
                     />
                     <svg className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
+
+                  <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 mb-4">
+                    {['Active', 'Archived', 'All'].map(status => (
+                      <button
+                        key={status}
+                        aria-label={`Filter by status ${status}`}
+                        onClick={() => setStatusFilter(status)}
+                        className={`whitespace-nowrap px-3 py-1.5 border ${statusFilter === status ? 'border-yellow-electric text-yellow-electric bg-yellow-electric/10' : 'border-white/10 text-gray-400 hover:border-white/30'} rounded-sm font-mono text-xs uppercase tracking-widest transition-colors`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
                     {['All', 'Dispatch', 'Business Briefing', 'Directive'].map(cat => (
                       <button
