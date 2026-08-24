@@ -15,7 +15,10 @@ const LiveBroadcast = () => {
     const savedLogs = localStorage.getItem('ellars_live_chat_logs');
     if (savedLogs) {
       try {
-        setChatLogs(JSON.parse(savedLogs));
+        const parsed = JSON.parse(savedLogs);
+        if (Array.isArray(parsed)) {
+          setChatLogs(parsed.slice(-50));
+        }
       } catch (e) {
         console.warn('Failed to parse saved chat logs:', e);
       }

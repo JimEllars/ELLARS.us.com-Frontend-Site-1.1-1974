@@ -93,7 +93,7 @@ const MediaUploads = () => {
   const handleUseInDraft = (url) => {
     sessionStorage.setItem('ellars_draft_cover_image', url);
     showToast('Cover image assigned to draft');
-    setSearchParams({ tab: 'vault' });
+    setSearchParams({ tab: 'tools', tool: 'publisher' });
   };
 
   const confirmDelete = async () => {
@@ -188,13 +188,13 @@ const MediaUploads = () => {
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => handleUseInDraft(asset.url)}
-                    className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center"
+                    className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center font-mono"
                   >
                     Use in Draft
                   </button>
                   <button
                     onClick={() => copyToClipboard(asset.url)}
-                    className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center"
+                    className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center font-mono"
                   >
                     Copy URL
                   </button>

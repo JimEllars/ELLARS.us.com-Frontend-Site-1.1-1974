@@ -8,6 +8,16 @@ const TelemetryStatus = () => {
   const [queueDepth, setQueueDepth] = useState(0);
   const [isFlushing, setIsFlushing] = useState(false);
 
+  const [lastDispatch, setLastDispatch] = useState('N/A');
+
+  useEffect(() => {
+    const savedLastDispatch = localStorage.getItem('ellars_telemetry_last_dispatch');
+    if (savedLastDispatch) {
+      setLastDispatch(savedLastDispatch);
+    }
+  }, []);
+
+
   useEffect(() => {
     const checkQueue = () => {
       try {
@@ -29,6 +39,11 @@ const TelemetryStatus = () => {
   const handleFlush = async () => {
     setIsFlushing(true);
     await flushQueue();
+
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLastDispatch(now);
+    localStorage.setItem('ellars_telemetry_last_dispatch', now);
+
     // Update queue after flushing
     try {
       const queue = JSON.parse(localStorage.getItem('ellars_telemetry_queue') || '[]');
@@ -57,6 +72,30 @@ const TelemetryStatus = () => {
             {queueDepth} Pending
           </span>
         </div>
+
+        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Last Queue Dispatch</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-white">
+            {lastDispatch}
+          </span>
+        </div>
+        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Edge Sync Status</span>
+          <div className="flex items-center gap-2">
+            {queueDepth === 0 ? (
+              <>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="font-mono text-xs font-bold uppercase tracking-widest text-green-500">Nominal</span>
+              </>
+            ) : (
+              <span className="font-mono text-xs font-bold uppercase tracking-widest text-yellow-500">Pending</span>
+            )}
+          </div>
+        </div>
+
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
           <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Protocol</span>
           <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">
