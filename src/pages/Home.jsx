@@ -4,7 +4,7 @@ import Hero from '@/components/home/Hero';
 import Ventures from '@/components/home/Ventures';
 import Expertise from '@/components/home/Expertise';
 import RantsFeed from '@/components/home/RantsFeed';
-import Podcast from '@/components/home/Podcast';
+
 import Bio from '@/components/home/Bio';
 import Newsletter from '@/components/home/Newsletter';
 import LiveBroadcast from '@/components/home/LiveBroadcast';
@@ -55,7 +55,7 @@ const Home = () => {
       <Ventures />
       <RantsFeed />
       <Expertise />
-      <Podcast />
+
       <Bio />
       <Newsletter />
     </div>
