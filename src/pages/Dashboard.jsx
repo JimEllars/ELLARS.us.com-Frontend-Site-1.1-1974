@@ -13,19 +13,34 @@ import AccountSettings from '../components/dashboard/AccountSettings';
 import MediaUploads from '@/components/dashboard/MediaUploads';
 import { useSearchParams } from 'react-router-dom';
 
-const EmptyState = ({ isFilterEmpty }) => (
-  <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
-    <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
-      <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-      </svg>
+const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery }) => {
+  let message = 'You have not saved any operational intel to your secure vault yet.';
+  if (isFilterEmpty) {
+    if (hasSearchQuery) {
+      message = 'No records match your query.';
+    } else if (statusFilter === 'Archived') {
+      message = 'No archived operational intel found.';
+    } else if (statusFilter === 'Active') {
+      message = 'No active intel found.';
+    } else {
+      message = 'No saved items match your filter criteria.';
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
+      <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
+        <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      </div>
+      <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
+      <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
+        {message}
+      </p>
     </div>
-    <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
-    <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
-      {isFilterEmpty ? 'No saved items match your filter criteria.' : 'You have not saved any operational intel to your secure vault yet.'}
-    </p>
-  </div>
-);
+  );
+};
 
 
 
@@ -44,6 +59,14 @@ const Dashboard = () => {
   const [vaultPage, setVaultPage] = useState(1);
   const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
   const currentTab = searchParams.get('tab') || 'vault';
+
+  useEffect(() => {
+    const tool = searchParams.get('tool');
+    if (tool === 'publisher') {
+      setActiveTool('publisher');
+    }
+  }, [searchParams]);
+
 
   const fetcher = async ([key, page]) => {
     return fetchSavedVaultItems(page, 12);
@@ -261,19 +284,31 @@ const Dashboard = () => {
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                     {[1, 2, 3].map(i => (
                       <ArticleSkeleton key={i} />
                     ))}
                   </div>
                 ) : items.length === 0 ? (
-                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} />
+                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
-                    {items.map(item => (
-                      <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
-                    ))}
-                  </div>
+
+                  <>
+                    {items.length > 0 && (
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex gap-2 text-xs font-mono tracking-widest uppercase text-yellow-electric border border-yellow-electric/20 bg-yellow-electric/5 px-4 py-2 rounded-sm">
+                           DISPLAYING {items.length} OF {response?.total || allItems.length} SECURE RECORDS
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+                      {items.map(item => (
+                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
+                      ))}
+                    </div>
+                  </>
+
                 )}
                 {hasMoreVaultItems && items.length > 0 && !loading && (
                    <div className="mt-8 flex justify-center">

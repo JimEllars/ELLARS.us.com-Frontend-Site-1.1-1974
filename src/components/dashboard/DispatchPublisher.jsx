@@ -51,6 +51,23 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
     }
   }, [editingItem]);
 
+
+  useEffect(() => {
+    const checkCoverImage = () => {
+      const savedCoverImage = sessionStorage.getItem('ellars_draft_cover_image');
+      if (savedCoverImage && savedCoverImage !== formData.coverImage) {
+        setFormData(prev => ({ ...prev, coverImage: savedCoverImage }));
+      }
+    };
+
+    // Check on mount and focus
+    checkCoverImage();
+    window.addEventListener('focus', checkCoverImage);
+    return () => {
+      window.removeEventListener('focus', checkCoverImage);
+    };
+  }, [formData.coverImage]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
