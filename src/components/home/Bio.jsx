@@ -26,7 +26,7 @@ const Bio = () => {
                 </p>
               </div>
               <div className="mt-12">
-                <Link to="/articles" className="text-white font-editorial font-bold text-xs uppercase tracking-widest border-b border-white hover:border-gold-base hover:text-gold-base pb-1 transition-all">
+                <Link to="/news-media" className="text-white font-editorial font-bold text-xs uppercase tracking-widest border-b border-white hover:border-gold-base hover:text-gold-base pb-1 transition-all">
                   Read Articles
                 </Link>
               </div>
