@@ -118,7 +118,7 @@ const DonateModal = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Donate"
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -131,6 +131,7 @@ const DonateModal = () => {
             <button
               onClick={() => setDonateModalOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-yellow-electric transition-colors"
+              aria-label="Close donate modal"
             >
               <SafeIcon name="X" className="w-6 h-6" />
             </button>

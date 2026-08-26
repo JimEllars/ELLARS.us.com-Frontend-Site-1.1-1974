@@ -268,9 +268,7 @@ export const useTelemetry = () => {
 
       // If a 'CRITICAL' or 'HIGH' severity anomaly capture request fails to deliver
       const severity = payload?.event_payload?.severity;
-      if (severity === 'CRITICAL' || severity === 'HIGH' || error.name === 'AbortError') {
-        enqueuePayload(payload);
-      }
+      enqueuePayload(payload); // Queue all events on failure
 
       // Request completed (though failed), remove from in-flight if it wasn't captured in the beforeunload
       inFlightPayloads.current = inFlightPayloads.current.filter(p => p.telemetry_envelope.idempotency_key !== payload.telemetry_envelope.idempotency_key);
@@ -303,8 +301,10 @@ export const useTelemetry = () => {
 
   useEffect(() => {
     const sendTelemetry = async () => {
-      const payload = createTelemetryPayload('page_view', 'LOW', 'ROUTER', '', '', { path: pathname });
-      await dispatchTelemetry(payload);
+      try {
+        const payload = createTelemetryPayload('page_view', 'LOW', 'ROUTER', '', '', { path: pathname });
+        await dispatchTelemetry(payload);
+      } catch (e) { /* silent */ }
     };
 
     // Background isolation
@@ -313,9 +313,13 @@ export const useTelemetry = () => {
   }, [pathname, dispatchTelemetry, createTelemetryPayload]);
 
   const trackEvent = useCallback((eventName, eventData = {}, severity = 'MEDIUM', componentOrigin = 'UI_INTERACTION', errorMessage = "", stackTrace = "") => {
-    // Isolate telemetry from UI thread execution
-    const payload = createTelemetryPayload(eventName, severity, componentOrigin, errorMessage, stackTrace, { data: eventData });
-    dispatchTelemetry(payload);
+    try {
+      // Isolate telemetry from UI thread execution
+      const payload = createTelemetryPayload(eventName, severity, componentOrigin, errorMessage, stackTrace, { data: eventData });
+      dispatchTelemetry(payload).catch(() => {}); // Catch any stray rejections from dispatchTelemetry
+    } catch (e) {
+      // Ignore errors entirely to prevent UI disruption
+    }
   }, [createTelemetryPayload, dispatchTelemetry]);
 
   return { trackEvent, dispatchTelemetry, flushQueue };

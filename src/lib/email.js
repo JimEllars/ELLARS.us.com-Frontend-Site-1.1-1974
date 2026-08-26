@@ -19,7 +19,7 @@ export const subscribeToNewsletter = async (payload) => {
 
   const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
   if (!url || typeof url !== 'string' || url.trim() === '') {
-    throw new Error("Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid.");
+    return { isError: true, message: "Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid." };
   }
 
   const metadata = {
@@ -45,18 +45,18 @@ export const subscribeToNewsletter = async (payload) => {
 
     if (!response.ok) {
       if (response.status === 400) {
-        throw new Error("Transmission rejected: Invalid format");
+        return { isError: true, message: "Transmission rejected: Invalid format" };
       } else if (response.status === 500) {
-        throw new Error("Core server offline");
+        return { isError: true, message: "Core server offline" };
       } else {
-        throw new Error(`Subscription failed with status: ${response.status}`);
+        return { isError: true, message: `Subscription failed with status: ${response.status}` };
       }
     }
 
     return await response.json();
   } catch (error) {
     console.error("[EmailIt] Network or parsing error during subscription:", error);
-    throw error;
+    return { isError: true, message: error.message || 'An unknown network error occurred.' };
   }
 };
 
@@ -65,7 +65,7 @@ export const submitBookingInquiry = async (payload) => {
 
   const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
   if (!url || typeof url !== 'string' || url.trim() === '') {
-    throw new Error("Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid.");
+    return { isError: true, message: "Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid." };
   }
 
   try {
@@ -80,17 +80,17 @@ export const submitBookingInquiry = async (payload) => {
 
     if (!response.ok) {
       if (response.status === 400) {
-        throw new Error("Transmission rejected: Invalid format");
+        return { isError: true, message: "Transmission rejected: Invalid format" };
       } else if (response.status === 500) {
-        throw new Error("Core server offline");
+        return { isError: true, message: "Core server offline" };
       } else {
-        throw new Error(`Booking inquiry failed with status: ${response.status}`);
+        return { isError: true, message: `Booking inquiry failed with status: ${response.status}` };
       }
     }
 
     return await response.json();
   } catch (error) {
     console.error("[EmailIt] Network or parsing error during booking inquiry:", error);
-    throw error;
+    return { isError: true, message: error.message || 'An unknown network error occurred.' };
   }
 };
