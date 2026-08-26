@@ -167,7 +167,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
       console.error(`[API Error] HTTP ${response.status} from ${url}`);
       const error = new Error("Our systems are currently experiencing high traffic. We are utilizing fallback protocols to serve you.");
       error.status = response.status;
-      throw error;
+      return { isError: true, message: error.message || 'An unknown network error occurred.' };
     }
 
     return response;
@@ -429,17 +429,17 @@ export async function subscribeToNewsletter(email, turnstileToken) {
 
     if (!response.ok) {
       if (response.status === 400) {
-        throw new Error("Transmission rejected: Invalid format");
+        return { isError: true, message: "Transmission rejected: Invalid format" };
       } else if (response.status === 500) {
-        throw new Error("Core server offline");
+        return { isError: true, message: "Core server offline" };
       } else {
-        throw new Error(`Subscription failed with status: ${response.status}`);
+        return { isError: true, message: `Subscription failed with status: ${response.status}` };
       }
     }
     return await response.json();
   } catch (error) {
     console.error("[EmailIt] Network or parsing error during subscription:", error);
-    throw error;
+    return { isError: true, message: error.message || 'An unknown network error occurred.' };
   }
 }
 
