@@ -64,10 +64,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
 
             const handleKeyDown = (e) => {
         if (e.key === 'Escape' || e.key === 'Esc') {
-          const tagName = e.target.tagName.toLowerCase();
-          if (tagName !== 'input' && tagName !== 'textarea') {
-            onClose();
-          }
+          onClose();
         } else if (e.key === 'Tab') {
           if (!modalRef.current) return;
           const focusableElements = modalRef.current.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
@@ -137,6 +134,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search operational archives"
                 placeholder="SEARCH ARCHIVES..."
                 className="w-full bg-transparent border-none outline-none text-4xl md:text-6xl font-deco text-yellow-electric placeholder-white/20 uppercase tracking-widest border-b border-white/10 focus:border-yellow-electric/50 pb-4 transition-colors"
               />

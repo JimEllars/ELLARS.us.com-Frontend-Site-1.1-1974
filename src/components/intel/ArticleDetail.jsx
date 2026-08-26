@@ -69,6 +69,12 @@ const ArticleDetail = () => {
 
     const handleSaveToAximVault = async () => {
     if (!post) return;
+
+    if (!useAppStore.getState().userToken) {
+      showToast('// [AUTH REQUIRED] Sign in to save transmissions to Vault');
+      return;
+    }
+
     try {
       const payload = {
         id: post.id,
