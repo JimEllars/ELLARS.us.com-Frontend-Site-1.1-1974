@@ -87,32 +87,48 @@ export const useTelemetry = () => {
   // Setup tab unload handlers to serialize pending telemetry queues
   useEffect(() => {
     const handleUnload = () => {
-      if (inFlightPayloads.current.length > 0) {
-        try {
-          const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-          const newQueue = [...queue, ...inFlightPayloads.current];
-          const limitedQueue = newQueue.slice(-50);
-          const prunedQueue = prunePayloadArray(limitedQueue);
-          try {
-            localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
-          } catch (storageError) {
-            if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-              try {
-                // Slicing to remove the oldest 20 elements as recovery
-                const recoveredQueue = prunedQueue.slice(20);
-                localStorage.setItem(QUEUE_KEY, JSON.stringify(recoveredQueue));
-              } catch (retryError) {
-                try {
-                  sessionStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
-                } catch (sessionError) {
-                  // Fallback failed
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Silent
+      try {
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+        let payloadsToSend = [];
+        if (inFlightPayloads.current.length > 0) {
+          payloadsToSend = [...inFlightPayloads.current];
         }
+        if (queue.length > 0) {
+          payloadsToSend = [...queue, ...payloadsToSend];
+        }
+
+        if (payloadsToSend.length > 0) {
+          const limitedQueue = payloadsToSend.slice(-50);
+          const prunedQueue = prunePayloadArray(limitedQueue);
+
+          const hasConsented = localStorage.getItem('ellars_privacy_consent');
+          const apiKey = import.meta.env.VITE_AXIM_API_KEY;
+          const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+
+          if (hasConsented === 'true' && apiKey) {
+            // Using fetch with keepalive as a replacement for sendBeacon
+            // since sendBeacon doesn't easily support custom headers like Authorization
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'Accept': 'application/json',
+                'X-Project-Scope': 'ELLARS_FRONTEND'
+              },
+              body: JSON.stringify(prunedQueue),
+              keepalive: true
+            }).catch(() => {});
+
+            // Clear local storage queue since we attempted to send it
+            localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
+          } else {
+             // Fallback to saving to local storage if can't send
+             localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
+          }
+        }
+      } catch (e) {
+        // Silent
       }
     };
 
@@ -220,10 +236,18 @@ export const useTelemetry = () => {
       }
     }
 
+    // Auto flush every 30 seconds
+    const interval = setInterval(() => {
+      if (isOnline && !isFlushing.current) {
+        flushQueue();
+      }
+    }, 30000);
+
     // Ensure robust auto-flush execution on browser network reconnection
     window.addEventListener('online', flushQueue);
 
     return () => {
+       clearInterval(interval);
        window.removeEventListener('online', flushQueue);
     };
   }, [isOnline, flushQueue]);
@@ -232,48 +256,12 @@ export const useTelemetry = () => {
     const hasConsented = localStorage.getItem('ellars_privacy_consent');
     if (hasConsented !== 'true') return;
 
-    const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-    const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+    // Just enqueue it. The interval or unload will handle the flush.
+    enqueuePayload(payload);
 
-    if (!apiKey) return;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    // Track as an individual in-flight payload
-    const prunedPayload = prunePayloadArray([payload])[0];
-    inFlightPayloads.current.push(prunedPayload);
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'application/json',
-          'X-Project-Scope': 'ELLARS_FRONTEND'
-        },
-        body: JSON.stringify(prunedPayload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error('Server error');
-      }
-
-      // Successfully sent, remove from in-flight
-      inFlightPayloads.current = inFlightPayloads.current.filter(p => p.telemetry_envelope.idempotency_key !== payload.telemetry_envelope.idempotency_key);
-
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      // If a 'CRITICAL' or 'HIGH' severity anomaly capture request fails to deliver
-      const severity = payload?.event_payload?.severity;
-      enqueuePayload(payload); // Queue all events on failure
-
-      // Request completed (though failed), remove from in-flight if it wasn't captured in the beforeunload
-      inFlightPayloads.current = inFlightPayloads.current.filter(p => p.telemetry_envelope.idempotency_key !== payload.telemetry_envelope.idempotency_key);
+    // Trigger an event so UI can update queue depth
+    if (typeof window !== 'undefined') {
+       window.dispatchEvent(new CustomEvent('ellars_telemetry_updated'));
     }
   }, []);
 

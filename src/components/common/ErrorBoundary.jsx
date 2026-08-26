@@ -19,7 +19,8 @@ class ErrorBoundary extends React.Component {
 
   handleReset() {
     this.setState({ hasError: false, error: null });
-    window.location.href = '/';
+    const fallbackPath = this.props.fallbackPath || '/';
+    window.location.href = fallbackPath;
   }
 
   render() {
@@ -44,7 +45,7 @@ class ErrorBoundary extends React.Component {
             </p>
             <button
               onClick={this.handleReset}
-              className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-blue-500/20"
+              className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-yellow-electric/20"
             >
               Return to Home
             </button>
