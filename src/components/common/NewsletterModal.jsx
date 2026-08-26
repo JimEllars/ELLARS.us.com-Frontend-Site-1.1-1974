@@ -166,7 +166,7 @@ const NewsletterModal = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Newsletter Subscription"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="newsletter-modal-title"
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -189,7 +189,7 @@ const NewsletterModal = () => {
               <div ref={turnstileRef} className="hidden" />
 
               <div className="text-center mb-8">
-                <h2 className="font-editorial text-2xl font-black text-white uppercase tracking-tighter mb-2">
+                <h2 id="newsletter-modal-title" className="font-editorial text-2xl font-black text-white uppercase tracking-tighter mb-2">
                   JOIN THE <span className="text-yellow-electric">NEWSLETTER</span>
                 </h2>
                 <p className="font-mono text-xs text-zinc-400 tracking-widest uppercase">

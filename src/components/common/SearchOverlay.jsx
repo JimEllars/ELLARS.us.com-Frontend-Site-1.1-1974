@@ -117,6 +117,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
           className="fixed inset-0 z-[110] backdrop-blur-lg bg-void/90 flex flex-col pt-32 px-6 pb-6"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="search-modal-title"
         >
           {/* Close Button */}
           <button
@@ -135,6 +136,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search operational archives"
+                id="search-modal-title"
                 placeholder="SEARCH ARCHIVES..."
                 className="w-full bg-transparent border-none outline-none text-4xl md:text-6xl font-deco text-yellow-electric placeholder-white/20 uppercase tracking-widest border-b border-white/10 focus:border-yellow-electric/50 pb-4 transition-colors"
               />

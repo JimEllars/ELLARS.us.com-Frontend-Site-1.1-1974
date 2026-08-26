@@ -18,6 +18,8 @@ export const generateUUID = () => {
 };
 
 
+
+
 const prunePayloadArray = (queue) => {
   return queue.map(payload => {
     if (!payload || !payload.event_payload || !payload.event_payload.metadata) return payload;
