@@ -118,7 +118,7 @@ const DonateModal = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Donate"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-void/95 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="donate-modal-title"
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -139,7 +139,7 @@ const DonateModal = () => {
             <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
 
             <div className="text-center mb-8">
-              <h2 className="font-editorial text-2xl font-black text-white uppercase tracking-tighter mb-2">
+              <h2 id="donate-modal-title" className="font-editorial text-2xl font-black text-white uppercase tracking-tighter mb-2">
                 Fund The <span className="text-yellow-electric">Vision</span>
               </h2>
               <p className="font-mono text-xs text-zinc-400 tracking-widest uppercase">

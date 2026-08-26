@@ -1,6 +1,32 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+// Custom wrapper for localStorage with defensive try/catch to prevent crash loops
+const safeLocalStorage = {
+  getItem: (name) => {
+    try {
+      return localStorage.getItem(name);
+    } catch (error) {
+      console.warn(`[safeLocalStorage] Error getting item ${name}:`, error);
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (error) {
+      console.warn(`[safeLocalStorage] Error setting item ${name}:`, error);
+    }
+  },
+  removeItem: (name) => {
+    try {
+      localStorage.removeItem(name);
+    } catch (error) {
+      console.warn(`[safeLocalStorage] Error removing item ${name}:`, error);
+    }
+  },
+};
+
 export const useAppStore = create(
   persist(
     (set) => ({
@@ -18,29 +44,29 @@ export const useAppStore = create(
       isAuthenticated: false,
       isAuthChecking: true,
       _hasHydrated: false,
-      setHasHydrated: (state) => set({ _hasHydrated: state }),
-      setIsLiveStreamActive: (status) => set({ isLiveStreamActive: status }),
-      setArticles: (articles) => set({ articles }),
-      setWalletConnected: (status) => set({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' }),
-      setRole: (role) => set({ userRole: role }),
-      setDonateModalOpen: (isOpen) => set({ isDonateModalOpen: isOpen }),
-      setNewsletterModalOpen: (isOpen) => set({ isNewsletterModalOpen: isOpen }),
+      setHasHydrated: (status) => set(() => ({ _hasHydrated: status })),
+      setIsLiveStreamActive: (status) => set(() => ({ isLiveStreamActive: status })),
+      setArticles: (articles) => set(() => ({ articles: [...articles] })),
+      setWalletConnected: (status) => set(() => ({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' })),
+      setRole: (role) => set(() => ({ userRole: role })),
+      setDonateModalOpen: (isOpen) => set(() => ({ isDonateModalOpen: isOpen })),
+      setNewsletterModalOpen: (isOpen) => set(() => ({ isNewsletterModalOpen: isOpen })),
       showToast: (message) => {
-        set({ toastMessage: message });
+        set(() => ({ toastMessage: message }));
         setTimeout(() => {
-          set({ toastMessage: null });
+          set(() => ({ toastMessage: null }));
         }, 3000);
       },
-      setPrivacyConsent: (status) => set({ privacyConsent: status }),
-      setUpdateAvailable: (status) => set({ updateAvailable: status }),
-      setUserToken: (token) => set({ userToken: token, isAuthenticated: !!token }),
-      logout: () => set({ userToken: null, isAuthenticated: false }),
-      setIsAuthChecking: (status) => set({ isAuthChecking: status }),
-      clearAuth: () => set({ userToken: null, isAuthenticated: false })
+      setPrivacyConsent: (status) => set(() => ({ privacyConsent: status })),
+      setUpdateAvailable: (status) => set(() => ({ updateAvailable: status })),
+      setUserToken: (token) => set(() => ({ userToken: token, isAuthenticated: !!token })),
+      logout: () => set(() => ({ userToken: null, isAuthenticated: false })),
+      setIsAuthChecking: (status) => set(() => ({ isAuthChecking: status })),
+      clearAuth: () => set(() => ({ userToken: null, isAuthenticated: false }))
     }),
     {
       name: 'ellars_us_com_preferences',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHasHydrated(true);
