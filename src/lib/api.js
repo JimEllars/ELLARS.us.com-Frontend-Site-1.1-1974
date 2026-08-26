@@ -307,7 +307,11 @@ export async function publishVaultItem(payload) {
   }
 
   try {
-    const finalPayload = { ...payload, app_id: "ellars.us.com" };
+    const finalPayload = {
+      ...payload,
+      app_id: "ellars.us.com",
+      client_idempotency_key: payload.client_idempotency_key || generateUUID()
+    };
     const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault`, {
       method: 'POST',
       headers: {

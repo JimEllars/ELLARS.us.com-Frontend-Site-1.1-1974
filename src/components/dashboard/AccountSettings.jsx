@@ -41,6 +41,7 @@ const AccountSettings = () => {
   const handleClearCache = () => {
     try {
       localStorage.removeItem('ellars_telemetry_queue');
+      if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
       mutate(() => true, undefined, { revalidate: false }); // clear SWR cache (mutate all with undefined)
       showToast('Offline cache purged successfully');
     } catch (e) {
