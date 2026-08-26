@@ -207,6 +207,14 @@ const AutomationCalculator = () => {
   };
 
 
+  useEffect(() => {
+    localStorage.setItem('ellars_automation_efficiency', efficiency);
+  }, [efficiency]);
+
+  useEffect(() => {
+    localStorage.setItem('ellars_automation_hours', hours);
+  }, [hours]);
+
   const handleReset = () => {
     setEfficiency(15);
     setHours(40);
@@ -296,7 +304,7 @@ const AutomationCalculator = () => {
                 setEfficiency(clampValue(v, 1, 100));
               }
             }}
-            className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
+            className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors" title="Adjust to calculate projected return"
             style={{
               background: `linear-gradient(to right, #fde047 ${efficiency}%, #0a0a0a ${efficiency}%)`
             }}
@@ -327,7 +335,7 @@ const AutomationCalculator = () => {
                 setHours(clampValue(v, 0, 168));
               }
             }}
-            className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors"
+            className="w-full h-1 bg-void rounded-sm appearance-none cursor-pointer border border-white/10 accent-yellow-electric hover:accent-yellow-electric/80 focus:outline-none focus:border-yellow-electric/50 transition-colors" title="Adjust to calculate projected return"
             style={{
               background: `linear-gradient(to right, #fde047 ${(hours / 168) * 100}%, #0a0a0a ${(hours / 168) * 100}%)`
             }}
@@ -384,11 +392,15 @@ const AutomationCalculator = () => {
             animate={{ height: isBreakdownOpen ? 'auto' : 0, opacity: isBreakdownOpen ? 1 : 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-void border border-white/5 p-4 mt-4 text-[10px] font-mono text-gray-400 uppercase tracking-widest space-y-2">
-              <div className="flex justify-between"><span className="truncate mr-2">Total Corporate Tax Base</span><span className="shrink-0">2.5 Trillion</span></div>
-              <div className="flex justify-between"><span className="truncate mr-2">Eligible Population</span><span className="shrink-0">200 Million</span></div>
-              <div className="flex justify-between"><span className="truncate mr-2">Current Efficiency Rate</span><span className="shrink-0">{efficiency}%</span></div>
-              <div className="flex justify-between"><span className="truncate mr-2">Current Hours Multiplier</span><span className="shrink-0">{(hours / 40).toFixed(2)}x</span></div>
+            <div className="bg-void border border-white/5 p-4 mt-4 text-[10px] font-mono text-gray-400 uppercase tracking-widest overflow-x-auto">
+              <table className="w-full text-left min-w-[200px]">
+                <tbody>
+                  <tr className="border-b border-white/5"><th className="py-2 pr-2 font-normal truncate">Total Corporate Tax Base</th><td className="py-2 text-right">2.5 Trillion</td></tr>
+                  <tr className="border-b border-white/5"><th className="py-2 pr-2 font-normal truncate">Eligible Population</th><td className="py-2 text-right">200 Million</td></tr>
+                  <tr className="border-b border-white/5"><th className="py-2 pr-2 font-normal truncate">Current Efficiency Rate</th><td className="py-2 text-right">{efficiency}%</td></tr>
+                  <tr><th className="py-2 pr-2 font-normal truncate">Current Hours Multiplier</th><td className="py-2 text-right">{(hours / 40).toFixed(2)}x</td></tr>
+                </tbody>
+              </table>
 
               <div className="mt-4 pt-4 border-t border-white/5 flex justify-end print:hidden">
                 <button
