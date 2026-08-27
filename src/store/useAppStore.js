@@ -44,7 +44,9 @@ export const useAppStore = create(
       isAuthenticated: false,
       isAuthChecking: true,
       _hasHydrated: false,
+      isHydrating: true,
       setHasHydrated: (status) => set(() => ({ _hasHydrated: status })),
+      setIsHydrating: (status) => set(() => ({ isHydrating: status })),
       setIsLiveStreamActive: (status) => set(() => ({ isLiveStreamActive: status })),
       setArticles: (articles) => set(() => ({ articles: [...articles] })),
       setWalletConnected: (status) => set(() => ({ walletConnected: status, userRole: status ? 'Navigator' : 'Observer' })),
@@ -70,6 +72,7 @@ export const useAppStore = create(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHasHydrated(true);
+          state.setIsHydrating(false);
         }
       },
       partialize: (state) => ({

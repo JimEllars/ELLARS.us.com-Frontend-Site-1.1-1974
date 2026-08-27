@@ -83,6 +83,20 @@ export default {
       }
     }
 
+
+    // Telemetry batched payload ingestion endpoint
+    if (url.pathname === '/api/telemetry' && request.method === 'POST') {
+        // Here we would typically ingest and log the body or forward it to an aggregation pipeline.
+        // Returning 200 avoids taxing the client UI thread.
+        return new Response(JSON.stringify({ success: true, logged: true }), {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        });
+    }
+
     // Default fallback to fetch normally
     return fetch(request);
   }

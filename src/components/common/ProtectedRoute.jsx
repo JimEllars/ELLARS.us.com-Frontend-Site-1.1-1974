@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
+import { verifySession } from '@/lib/api';
 
 const ProtectedRoute = () => {
   const isAuthenticated = useAppStore(state => state.isAuthenticated);
   const _hasHydrated = useAppStore(state => state._hasHydrated);
+  const isHydrating = useAppStore(state => state.isHydrating);
   const userToken = useAppStore(state => state.userToken);
   const clearAuth = useAppStore(state => state.clearAuth);
 
   const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
-    if (!_hasHydrated) return;
+    // Wait until Zustand finishes hydrating local storage
+    if (isHydrating || !_hasHydrated) return;
 
     // Silent validation polling
     const validateToken = async () => {
@@ -21,24 +24,39 @@ const ProtectedRoute = () => {
        }
 
        try {
-         // In a real app we'd call an endpoint to validate, e.g.
-         // const res = await fetch('/api/validate', { headers: { Authorization: `Bearer ${userToken}` } });
-         // if (!res.ok) { clearAuth(); }
-
-         // Simulating valid token check
-         setIsValidating(false);
+         // Verify token validity against the backend silently
+         const session = await verifySession();
+         if (!session) {
+            clearAuth();
+         }
        } catch(e) {
+         clearAuth();
+       } finally {
          setIsValidating(false);
        }
     };
 
     validateToken();
-  }, [_hasHydrated, userToken, clearAuth]);
 
-  if (!_hasHydrated || isValidating) {
+    // Heartbeat to keep session alive and valid without blocking the UI
+    const interval = setInterval(async () => {
+        if (userToken) {
+            const session = await verifySession();
+            if (!session) {
+                clearAuth();
+            }
+        }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => clearInterval(interval);
+
+  }, [_hasHydrated, isHydrating, userToken, clearAuth]);
+
+  if (!_hasHydrated || isHydrating || isValidating) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-void">
-         <div className="w-8 h-8 border-2 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-void">
+         <div className="w-8 h-8 border-2 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin mb-4"></div>
+         <p className="font-mono text-xs tracking-widest text-zinc-500 uppercase">Verifying Authorization...</p>
       </div>
     );
   }

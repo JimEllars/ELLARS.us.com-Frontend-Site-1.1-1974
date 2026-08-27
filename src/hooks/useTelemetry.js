@@ -103,7 +103,7 @@ export const useTelemetry = () => {
 
           const hasConsented = localStorage.getItem('ellars_privacy_consent');
           const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-          const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+          const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
 
           if (hasConsented === 'true' && apiKey) {
             // Using fetch with keepalive as a replacement for sendBeacon
@@ -159,7 +159,7 @@ export const useTelemetry = () => {
       if (hasConsented !== 'true') return;
 
       const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-      const apiUrl = import.meta.env.VITE_AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+      const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
       if (!apiKey) return;
 
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
@@ -263,7 +263,15 @@ export const useTelemetry = () => {
     if (typeof window !== 'undefined') {
        window.dispatchEvent(new CustomEvent('ellars_telemetry_updated'));
     }
-  }, []);
+
+    // Flush immediately if buffer reaches 10 events
+    try {
+      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      if (queue.length >= 10 && isOnline && !isFlushing.current) {
+        flushQueue();
+      }
+    } catch(e) { /* silent */ }
+  }, [flushQueue, isOnline]);
 
   const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
     return {

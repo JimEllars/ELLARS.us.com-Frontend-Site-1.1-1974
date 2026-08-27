@@ -47,6 +47,7 @@ const MediaPlaylist = () => {
   const [activeMedia, setActiveMedia] = useState(mockPlaylist[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -83,7 +84,19 @@ const MediaPlaylist = () => {
   const handleVideoError = () => {
       setHasError(true);
       setIsPlaying(false);
+      setIsBuffering(false);
+      // Attempt recovery logic could be added here
+      setTimeout(() => {
+          if (videoRef.current) {
+              videoRef.current.load();
+              setHasError(false);
+          }
+      }, 5000);
   }
+
+  const handleWaiting = () => setIsBuffering(true);
+  const handlePlaying = () => setIsBuffering(false);
+
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-void border border-white/10 rounded-sm overflow-hidden">
@@ -99,16 +112,26 @@ const MediaPlaylist = () => {
                 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying && !hasError ? 'opacity-0' : 'opacity-50'}`}
               />
               {!hasError ? (
-                  <video
-                    src={activeMedia.videoUrl}
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
-                    playsInline
-                    muted
-                    preload="metadata"
-                    ref={videoRef}
-                    onClick={togglePlay}
-                    onError={handleVideoError}
-                  />
+                  <>
+                    <video
+                      src={activeMedia.videoUrl}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
+                      playsInline
+                      muted
+                      preload="metadata"
+                      ref={videoRef}
+                      onClick={togglePlay}
+                      onError={handleVideoError}
+                      onWaiting={handleWaiting}
+                      onPlaying={handlePlaying}
+                      onCanPlay={handlePlaying}
+                    />
+                    {isBuffering && isPlaying && !hasError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10 pointer-events-none">
+                            <div className="w-8 h-8 border-2 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin"></div>
+                        </div>
+                    )}
+                  </>
               ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
                       <div className="flex flex-col items-center justify-center space-y-4 deco-frame p-6">
