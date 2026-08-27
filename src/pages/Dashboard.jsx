@@ -298,7 +298,7 @@ const Dashboard = () => {
                     {items.length > 0 && (
                       <div className="flex justify-between items-center mb-6">
                         <div className="flex gap-2 text-xs font-mono tracking-widest uppercase text-yellow-electric border border-yellow-electric/20 bg-yellow-electric/5 px-4 py-2 rounded-sm">
-                           DISPLAYING {items.length} OF {response?.total || allItems.length} SECURE RECORDS
+                           DISPLAYING {items.length} OF {response?.total !== undefined ? response.total : allItems.length} SECURE RECORDS
                         </div>
                       </div>
                     )}

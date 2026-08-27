@@ -389,6 +389,7 @@ export async function fetchSavedVaultItems(page = 1, limit = 12) {
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Content-Type': 'application/json',
+        'Prefer': 'count=exact',
         'Range': `${from}-${to}`
       }
     });
@@ -397,12 +398,22 @@ export async function fetchSavedVaultItems(page = 1, limit = 12) {
       return { data: [], isError: true, message: response.message };
     }
 
+
+    let total = 0;
+    const contentRange = response.headers.get('Content-Range');
+    if (contentRange) {
+      const rangeParts = contentRange.split('/');
+      if (rangeParts.length > 1) {
+        total = parseInt(rangeParts[1], 10);
+      }
+    }
+
     const data = await response.json();
     if (data.isError) {
       return { data: [], isError: true, message: data.message };
     }
 
-    return { data, isError: false };
+    return { data, total, isError: false };
   } catch (error) {
     console.error("[AXiM Core: Vault Error] Failed to fetch saved items:", error);
     return { data: [], isError: true, message: error.message };

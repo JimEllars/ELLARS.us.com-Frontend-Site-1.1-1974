@@ -1,0 +1,250 @@
+diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
+index 2d19e16..e179200 100644
+--- a/PlanForContinuedDevelopment.md
++++ b/PlanForContinuedDevelopment.md
+@@ -1,6 +1,7 @@
+ # Plan for Continued Development
+
+ ## Completed Sprints
++- **V6.12 Exact Vault Metric Resolution, Media Asset Lightbox, & Live Broadcast Chat UX:** Refined Vault item counting utilizing exact metric resolution (`Prefer: count=exact`) ensuring the vault explicitly reads its size from Content-Range. Upgraded MediaUploads with a robust, focus-trapping preview Lightbox. Integrated smart auto-scrolling for the Live Broadcast chat ensuring seamless interactions when viewing old logs.
+ - **V6.10 Search Keyboard UX, Vault Auth Toast Clarification, & Telemetry Sync Hardening:** Hardened modal keyboard interactions to allow the Escape key to close SearchOverlay unconditionally. Provided clear auth-required toast feedback in ArticleDetail instead of failed network attempts. Ensured instant telemetry queue counter resets on cache purges in AccountSettings, and guaranteed UUID-based idempotency keys on all vault dispatches in api.js.
+ - **V6.09 Homepage Section Pruning, Route Link Resolution, & Stream Polling Hardening:** Removed unpolished Podcast section from the homepage, fixed broken internal route links to `/news-media`, cleaned up duplicate lifecycle hooks in NewsMedia, and hardened edge stream status polling with a 5-second AbortController timeout.
+ - **V6.08 Media Gallery Authoring Integration, Vault Pagination Metrics, & Chat Memory Bounding:** Connected the Media Library directly to the Dispatch Publisher by routing "Use in Draft" to `?tab=tools&tool=publisher`. Added granular pagination counts ("DISPLAYING X OF Y SECURE RECORDS") and customized empty states to the Vault based on filter parameters. Bounded the live broadcast chat storage overhead to cap at 50 items and added a "Last Queue Dispatch" timestamp to Telemetry Monitor.
+diff --git a/src/components/dashboard/MediaUploads.jsx b/src/components/dashboard/MediaUploads.jsx
+index 8006581..3c686b0 100644
+--- a/src/components/dashboard/MediaUploads.jsx
++++ b/src/components/dashboard/MediaUploads.jsx
+@@ -8,6 +8,7 @@ const MediaUploads = () => {
+   const [mediaList, setMediaList] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [itemToDelete, setItemToDelete] = useState(null);
++  const [inspectedAsset, setInspectedAsset] = useState(null);
+   const showToast = useAppStore(state => state.showToast);
+   const [, setSearchParams] = useSearchParams();
+
+@@ -166,7 +167,9 @@ const MediaUploads = () => {
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ delay: index * 0.05 }}
+-              className="relative group border border-white/10 bg-black/60 rounded-sm overflow-hidden flex flex-col h-48 deco-brackets"
++              className="relative group border border-white/10 bg-black/60 rounded-sm overflow-hidden flex flex-col h-48 deco-brackets cursor-pointer"
++              onClick={() => setInspectedAsset(asset)}
++
+             >
+               <div className="h-32 w-full overflow-hidden bg-black/40 flex items-center justify-center relative">
+                 {asset.url && asset.url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
+@@ -187,19 +190,19 @@ const MediaUploads = () => {
+                 <p className="text-xs text-white/80 font-mono truncate">{asset.name}</p>
+                 <div className="flex gap-2 mt-2">
+                   <button
+-                    onClick={() => handleUseInDraft(asset.url)}
++                    onClick={(e) => { e.stopPropagation(); handleUseInDraft(asset.url); }}
+                     className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center font-mono"
+                   >
+                     Use in Draft
+                   </button>
+                   <button
+-                    onClick={() => copyToClipboard(asset.url)}
++                    onClick={(e) => { e.stopPropagation(); copyToClipboard(asset.url); }}
+                     className="flex-1 py-1 px-2 border border-yellow-electric/30 text-yellow-electric text-[10px] tracking-widest uppercase hover:bg-yellow-electric/10 transition-colors text-center font-mono"
+                   >
+                     Copy URL
+                   </button>
+                   <button
+-                    onClick={() => setItemToDelete(asset)}
++                    onClick={(e) => { e.stopPropagation(); setItemToDelete(asset); }}
+                     className="p-1 px-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center"
+                     title="Delete Asset"
+                   >
+@@ -214,7 +217,101 @@ const MediaUploads = () => {
+         </div>
+       )}
+
+-      {/* Delete Confirmation Modal */}
++
++      {/* Asset Inspection Lightbox */}
++      <AnimatePresence>
++        {inspectedAsset && (
++          <motion.div
++            initial={{ opacity: 0 }}
++            animate={{ opacity: 1 }}
++            exit={{ opacity: 0 }}
++            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
++            onClick={() => setInspectedAsset(null)}
++            onKeyDown={(e) => e.key === 'Escape' && setInspectedAsset(null)}
++            tabIndex={-1}
++            ref={(el) => { if(el) el.focus(); }}
++          >
++            <motion.div
++              role="dialog"
++              aria-modal="true"
++              aria-labelledby="lightbox-dialog-title"
++              initial={{ scale: 0.95, y: 20, opacity: 0 }}
++              animate={{ scale: 1, y: 0, opacity: 1 }}
++              exit={{ scale: 0.95, y: 20, opacity: 0 }}
++              className="deco-frame bg-zinc-950 border border-white/20 p-6 max-w-4xl w-full flex flex-col md:flex-row gap-6 shadow-2xl relative"
++              onClick={(e) => e.stopPropagation()}
++            >
++              <button
++                onClick={() => setInspectedAsset(null)}
++                className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
++                aria-label="Close"
++              >
++                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
++                </svg>
++              </button>
++
++              <div className="flex-1 bg-black/60 border border-white/10 flex items-center justify-center min-h-[300px] overflow-hidden">
++                {inspectedAsset.url && inspectedAsset.url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
++                  <img src={inspectedAsset.url} alt={inspectedAsset.name} className="max-w-full max-h-[60vh] object-contain" />
++                ) : (
++                  <div className="text-center">
++                    <svg className="w-16 h-16 text-white/20 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
++                    </svg>
++                    <p className="font-mono text-xs uppercase tracking-widest text-gray-500">Preview Not Available</p>
++                  </div>
++                )}
++              </div>
++
++              <div className="w-full md:w-80 flex flex-col gap-6">
++                <div>
++                  <h4 id="lightbox-dialog-title" className="font-editorial font-bold text-xl text-yellow-electric mb-1 truncate" title={inspectedAsset.name}>
++                    Asset Details
++                  </h4>
++                  <div className="h-px w-12 bg-yellow-electric/30 mb-4"></div>
++
++                  <div className="space-y-3 font-mono text-xs">
++                    <div>
++                      <p className="text-gray-500 uppercase tracking-widest mb-1">Filename</p>
++                      <p className="text-white break-all">{inspectedAsset.name}</p>
++                    </div>
++                    <div>
++                      <p className="text-gray-500 uppercase tracking-widest mb-1">Size</p>
++                      <p className="text-white">{(inspectedAsset.metadata?.size / 1024).toFixed(2)} KB</p>
++                    </div>
++                    <div>
++                      <p className="text-gray-500 uppercase tracking-widest mb-1">MIME Type</p>
++                      <p className="text-white">{inspectedAsset.metadata?.mimetype || 'Unknown'}</p>
++                    </div>
++                  </div>
++                </div>
++
++                <div className="flex flex-col gap-3 mt-auto">
++                   <div className="p-3 bg-black/40 border border-white/10 rounded-sm">
++                      <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mb-1">CDN Reference URL</p>
++                      <p className="text-white font-mono text-[10px] truncate">{inspectedAsset.url}</p>
++                   </div>
++                  <button
++                    onClick={() => { copyToClipboard(inspectedAsset.url); setInspectedAsset(null); }}
++                    className="w-full py-3 border border-white/20 text-white font-mono text-xs uppercase tracking-widest hover:bg-white/5 transition-colors"
++                  >
++                    Copy URL
++                  </button>
++                  <button
++                    onClick={() => { handleUseInDraft(inspectedAsset.url); setInspectedAsset(null); }}
++                    className="w-full py-3 border border-yellow-electric/30 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors"
++                  >
++                    Use in Draft
++                  </button>
++                </div>
++              </div>
++            </motion.div>
++          </motion.div>
++        )}
++      </AnimatePresence>
++
++      {{/* Delete Confirmation Modal */}}
+       <AnimatePresence>
+         {itemToDelete && (
+           <motion.div
+diff --git a/src/components/home/LiveBroadcast.jsx b/src/components/home/LiveBroadcast.jsx
+index f98f1a7..c42a180 100644
+--- a/src/components/home/LiveBroadcast.jsx
++++ b/src/components/home/LiveBroadcast.jsx
+@@ -8,6 +8,7 @@ const LiveBroadcast = () => {
+   const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();
+   const [chatMessage, setChatMessage] = useState('');
+   const [chatLogs, setChatLogs] = useState([]);
++  const [isScrolledUp, setIsScrolledUp] = useState(false);
+   const chatContainerRef = useRef(null);
+
+   // Initialize chatLogs from localStorage
+@@ -55,10 +56,21 @@ const LiveBroadcast = () => {
+
+   // Auto-scroll chat container to the bottom when chatLogs change
+   useEffect(() => {
++    if (chatContainerRef.current && !isScrolledUp) {
++      chatContainerRef.current.scrollTo({
++        top: chatContainerRef.current.scrollHeight,
++        behavior: 'smooth'
++      });
++    }
++  }, [chatLogs, isScrolledUp]);
++
++  const handleScroll = () => {
+     if (chatContainerRef.current) {
+-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
++      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
++      // If we are more than 10px from the bottom, user scrolled up
++      setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 10);
+     }
+-  }, [chatLogs]);
++  };
+
+   const handleChatSubmit = (e) => {
+     e.preventDefault();
+@@ -102,6 +114,15 @@ const LiveBroadcast = () => {
+       return cappedLogs;
+     });
+     setChatMessage('');
++    setIsScrolledUp(false);
++    setTimeout(() => {
++        if (chatContainerRef.current) {
++            chatContainerRef.current.scrollTo({
++                top: chatContainerRef.current.scrollHeight,
++                behavior: 'smooth'
++            });
++        }
++    }, 100);
+   };
+
+   // Resolve embed URL
+@@ -176,7 +197,8 @@ const LiveBroadcast = () => {
+
+             <div
+               ref={chatContainerRef}
+-              className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3"
++              onScroll={handleScroll}
++              className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3 relative"
+             >
+               {chatLogs.length === 0 ? (
+                 <div className="h-full flex items-center justify-center">
+@@ -195,6 +217,26 @@ const LiveBroadcast = () => {
+                   </div>
+                 ))
+               )}
++              {isScrolledUp && chatLogs.length > 0 && (
++                <button
++                  onClick={(e) => {
++                    e.preventDefault();
++                    setIsScrolledUp(false);
++                    if (chatContainerRef.current) {
++                       chatContainerRef.current.scrollTo({
++                          top: chatContainerRef.current.scrollHeight,
++                          behavior: 'smooth'
++                       });
++                    }
++                  }}
++                  className="absolute bottom-20 right-4 z-20 px-3 py-1.5 bg-zinc-900 border border-yellow-electric/30 text-yellow-electric font-mono text-[10px] uppercase tracking-widest rounded-sm shadow-xl hover:bg-yellow-electric/10 transition-colors flex items-center space-x-1"
++                >
++                  <span>Latest</span>
++                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
++                  </svg>
++                </button>
++              )}
+             </div>
+
+             <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/10 bg-white/5">

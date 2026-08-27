@@ -8,6 +8,7 @@ const LiveBroadcast = () => {
   const { isLiveStreamActive, setIsLiveStreamActive, streamEmbedUrl, setNewsletterModalOpen, userToken, isAuthenticated, userRole } = useAppStore();
   const [chatMessage, setChatMessage] = useState('');
   const [chatLogs, setChatLogs] = useState([]);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
   const chatContainerRef = useRef(null);
 
   // Initialize chatLogs from localStorage
@@ -55,10 +56,21 @@ const LiveBroadcast = () => {
 
   // Auto-scroll chat container to the bottom when chatLogs change
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    if (chatContainerRef.current && !isScrolledUp) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
-  }, [chatLogs]);
+  }, [chatLogs, isScrolledUp]);
+
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // If we are more than 10px from the bottom, user scrolled up
+      setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 10);
+    }
+  };
 
   const handleChatSubmit = (e) => {
     e.preventDefault();
@@ -102,6 +114,15 @@ const LiveBroadcast = () => {
       return cappedLogs;
     });
     setChatMessage('');
+    setIsScrolledUp(false);
+    setTimeout(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, 100);
   };
 
   // Resolve embed URL
@@ -176,7 +197,8 @@ const LiveBroadcast = () => {
 
             <div
               ref={chatContainerRef}
-              className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3"
+              onScroll={handleScroll}
+              className="flex-grow p-4 overflow-y-auto flex flex-col space-y-3 relative"
             >
               {chatLogs.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
@@ -194,6 +216,26 @@ const LiveBroadcast = () => {
                     <p className="text-sm text-gray-300 font-editorial" dangerouslySetInnerHTML={{ __html: log.message }}></p>
                   </div>
                 ))
+              )}
+              {isScrolledUp && chatLogs.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsScrolledUp(false);
+                    if (chatContainerRef.current) {
+                       chatContainerRef.current.scrollTo({
+                          top: chatContainerRef.current.scrollHeight,
+                          behavior: 'smooth'
+                       });
+                    }
+                  }}
+                  className="absolute bottom-20 right-4 z-20 px-3 py-1.5 bg-zinc-900 border border-yellow-electric/30 text-yellow-electric font-mono text-[10px] uppercase tracking-widest rounded-sm shadow-xl hover:bg-yellow-electric/10 transition-colors flex items-center space-x-1"
+                >
+                  <span>Latest</span>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </button>
               )}
             </div>
 
