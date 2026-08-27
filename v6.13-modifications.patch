@@ -1,0 +1,207 @@
+From 7b2fd765284717802726ab8f6824cfaa8b78a86d Mon Sep 17 00:00:00 2001
+From: "google-labs-jules[bot]"
+ <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date: Thu, 27 Aug 2026 22:54:04 +0000
+Subject: [PATCH] feat: Add Vault Item Restoration, Micro-Program Sync &
+ Telemetry Failover
+
+- Implemented `restoreVaultItem` in API and Dashboard
+- Added 'Restore' button to VaultArticleCard action menu
+- Synced URL params for Dashboard micro-programs
+- Built automatic failover for `useTelemetry` to `/api/telemetry`
+- Logged changes in PlanForContinuedDevelopment.md
+---
+ PlanForContinuedDevelopment.md                |  1 +
+ src/components/dashboard/VaultArticleCard.jsx | 14 ++++++--
+ src/hooks/useTelemetry.js                     |  8 ++++-
+ src/lib/api.js                                | 30 ++++++++++++++++
+ src/pages/Dashboard.jsx                       | 35 +++++++++++++++----
+ 5 files changed, 78 insertions(+), 10 deletions(-)
+
+diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
+index e179200..42294e1 100644
+--- a/PlanForContinuedDevelopment.md
++++ b/PlanForContinuedDevelopment.md
+@@ -1,6 +1,7 @@
+ # Plan for Continued Development
+
+ ## Completed Sprints
++- **V6.13 Vault Item Restoration, Dashboard URL State Sync, & Telemetry Failover:** Added `restoreVaultItem` API utility to reverse archival states and integrated it with optimistic updates and the action menu in the Dashboard's Vault. Synchronized micro-program URL states (`?tab=tools&tool=...`) to dynamically load active tools on direct visits. Hardened the `useTelemetry` background sync queue with an automatic edge-gateway failover route (`/api/telemetry`) triggered upon 8-second timeouts or network rejections.
+ - **V6.12 Exact Vault Metric Resolution, Media Asset Lightbox, & Live Broadcast Chat UX:** Refined Vault item counting utilizing exact metric resolution (`Prefer: count=exact`) ensuring the vault explicitly reads its size from Content-Range. Upgraded MediaUploads with a robust, focus-trapping preview Lightbox. Integrated smart auto-scrolling for the Live Broadcast chat ensuring seamless interactions when viewing old logs.
+ - **V6.10 Search Keyboard UX, Vault Auth Toast Clarification, & Telemetry Sync Hardening:** Hardened modal keyboard interactions to allow the Escape key to close SearchOverlay unconditionally. Provided clear auth-required toast feedback in ArticleDetail instead of failed network attempts. Ensured instant telemetry queue counter resets on cache purges in AccountSettings, and guaranteed UUID-based idempotency keys on all vault dispatches in api.js.
+ - **V6.09 Homepage Section Pruning, Route Link Resolution, & Stream Polling Hardening:** Removed unpolished Podcast section from the homepage, fixed broken internal route links to `/news-media`, cleaned up duplicate lifecycle hooks in NewsMedia, and hardened edge stream status polling with a 5-second AbortController timeout.
+diff --git a/src/components/dashboard/VaultArticleCard.jsx b/src/components/dashboard/VaultArticleCard.jsx
+index 10732a9..206aacf 100644
+--- a/src/components/dashboard/VaultArticleCard.jsx
++++ b/src/components/dashboard/VaultArticleCard.jsx
+@@ -10,7 +10,7 @@ const truncateText = (str, max) => {
+   return stripped.substring(0, max) + '...';
+ };
+
+-const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
++const VaultArticleCard = ({ post, date, onDelete, onArchive, onRestore, onEdit }) => {
+   const [showMenu, setShowMenu] = useState(false);
+   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+
+@@ -103,7 +103,17 @@ const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
+                   <span>Edit</span>
+                </button>
+              )}
+-             {post.status !== 'archived' && (
++
++             {post.status === 'archived' && onRestore && (
++               <button
++                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onRestore(post); }}
++                  className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
++               >
++                  <SafeIcon name="RefreshCw" className="w-4 h-4" />
++                  <span>Restore</span>
++               </button>
++             )}
++             {post.status !== 'archived' && onArchive && (
+                <button
+                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onArchive(post); }}
+                   className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
+diff --git a/src/hooks/useTelemetry.js b/src/hooks/useTelemetry.js
+index c981c03..deb067e 100644
+--- a/src/hooks/useTelemetry.js
++++ b/src/hooks/useTelemetry.js
+@@ -189,7 +189,13 @@ export const useTelemetry = () => {
+         const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+         try {
+-          const response = await fetch(apiUrl, {
++          let currentApiUrl = apiUrl;
++          // Fallback logic for subsequent attempts if primary is not the edge route
++          if (attempt > 0 && apiUrl !== '/api/telemetry') {
++             currentApiUrl = '/api/telemetry';
++          }
++
++          const response = await fetch(currentApiUrl, {
+             method: 'POST',
+             headers: {
+               'Content-Type': 'application/json',
+diff --git a/src/lib/api.js b/src/lib/api.js
+index b24df07..9260a5a 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -671,3 +671,33 @@ export async function archiveVaultItem(itemId) {
+     return { isError: true, message: error.message };
+   }
+ }
++
++export async function restoreVaultItem(itemId) {
++  const token = useAppStore.getState().userToken;
++  if (!token) return { isError: true, message: 'No active session' };
++
++  try {
++    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
++      method: 'PATCH',
++      headers: {
++        'Content-Type': 'application/json',
++        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
++        'Authorization': `Bearer ${token}`,
++        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
++        'Prefer': 'return=minimal',
++        'X-Client-Telemetry': 'AXiM-Frontend-v1'
++      },
++      body: JSON.stringify({ status: 'published' })
++    });
++
++    if (!response.ok) {
++      console.error("[AXiM Core: Vault Error] Failed to restore item", response.status);
++      return { isError: true, message: `Failed to restore item with status ${response.status}` };
++    }
++
++    return { isError: false, message: 'Item restored successfully' };
++  } catch (error) {
++    console.error("[AXiM Core: Vault Error] Exception restoring item:", error);
++    return { isError: true, message: error.message };
++  }
++}
+diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+index 07b72ee..f145a1a 100644
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
+ import { Helmet } from 'react-helmet-async';
+ import { motion, AnimatePresence } from 'framer-motion';
+ import useSWR, { useSWRConfig } from 'swr';
+-import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem } from '@/lib/api';
++import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem, restoreVaultItem } from '@/lib/api';
+ import VaultArticleCard from '@/components/dashboard/VaultArticleCard';
+ import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
+ import ArticleCard from '@/components/intel/ArticleCard';
+@@ -60,10 +60,12 @@ const Dashboard = () => {
+   const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
+   const currentTab = searchParams.get('tab') || 'vault';
+
+-  useEffect(() => {
++useEffect(() => {
+     const tool = searchParams.get('tool');
+     if (tool === 'publisher') {
+       setActiveTool('publisher');
++    } else if (tool === 'calculator') {
++      setActiveTool('calculator');
+     }
+   }, [searchParams]);
+
+@@ -127,8 +129,27 @@ const Dashboard = () => {
+
+   const handleEdit = (item) => {
+     setEditingItem(item);
+-    setActiveTool('publisher');
+-    setSearchParams({ tab: 'tools' });
++    setSearchParams({ tab: 'tools', tool: 'publisher' });
++  };
++
++
++  const handleRestore = async (item) => {
++    // Optimistic update
++    mutate(
++      key => Array.isArray(key) && key[0] === 'saved_vault_items',
++      undefined,
++      { revalidate: true }
++    );
++    // Optimistically update local state while SWR revalidates
++    setAllItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'published' } : i));
++
++    const result = await restoreVaultItem(item.id);
++    if (result.isError) {
++      showToast('// ERROR: UNABLE TO RESTORE VAULT ITEM');
++      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // rollback
++    } else {
++      showToast('Vault Item Restored.');
++    }
+   };
+
+   const handleArchive = async (item) => {
+@@ -304,7 +325,7 @@ const Dashboard = () => {
+                     )}
+                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+                       {items.map(item => (
+-                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
++                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
+                       ))}
+                     </div>
+                   </>
+@@ -341,7 +362,7 @@ const Dashboard = () => {
+                 <div className="grid grid-cols-1 gap-6 mb-8">
+                   <div
+                     className={`deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer transition-colors ${activeTool === 'calculator' ? 'border-yellow-electric/50' : 'hover:border-yellow-electric/50'}`}
+-                    onClick={() => setActiveTool('calculator')}
++                    onClick={() => setSearchParams({ tab: 'tools', tool: 'calculator' })}
+                   >
+                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Directive Impact Calculator</h4>
+                     <p className="text-gray-400 text-sm font-mono">Evaluate automated economic offsets and negative income tax distributions.</p>
+@@ -349,7 +370,7 @@ const Dashboard = () => {
+
+                   <div
+                     className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
+-                    onClick={() => setActiveTool('publisher')}
++                    onClick={() => setSearchParams({ tab: 'tools', tool: 'publisher' })}
+                   >
+                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
+                     <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
+--
+2.53.0

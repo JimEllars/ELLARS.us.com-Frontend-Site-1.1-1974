@@ -671,3 +671,33 @@ export async function archiveVaultItem(itemId) {
     return { isError: true, message: error.message };
   }
 }
+
+export async function restoreVaultItem(itemId) {
+  const token = useAppStore.getState().userToken;
+  if (!token) return { isError: true, message: 'No active session' };
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
+        'Prefer': 'return=minimal',
+        'X-Client-Telemetry': 'AXiM-Frontend-v1'
+      },
+      body: JSON.stringify({ status: 'published' })
+    });
+
+    if (!response.ok) {
+      console.error("[AXiM Core: Vault Error] Failed to restore item", response.status);
+      return { isError: true, message: `Failed to restore item with status ${response.status}` };
+    }
+
+    return { isError: false, message: 'Item restored successfully' };
+  } catch (error) {
+    console.error("[AXiM Core: Vault Error] Exception restoring item:", error);
+    return { isError: true, message: error.message };
+  }
+}

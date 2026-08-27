@@ -10,7 +10,7 @@ const truncateText = (str, max) => {
   return stripped.substring(0, max) + '...';
 };
 
-const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
+const VaultArticleCard = ({ post, date, onDelete, onArchive, onRestore, onEdit }) => {
   const [showMenu, setShowMenu] = useState(false);
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
@@ -103,7 +103,17 @@ const VaultArticleCard = ({ post, date, onDelete, onArchive, onEdit }) => {
                   <span>Edit</span>
                </button>
              )}
-             {post.status !== 'archived' && (
+
+             {post.status === 'archived' && onRestore && (
+               <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onRestore(post); }}
+                  className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
+               >
+                  <SafeIcon name="RefreshCw" className="w-4 h-4" />
+                  <span>Restore</span>
+               </button>
+             )}
+             {post.status !== 'archived' && onArchive && (
                <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onArchive(post); }}
                   className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
