@@ -96,6 +96,7 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
     try {
         const payload = {
             ...formData,
+            content: DOMPurify.sanitize(formData.content),
             client_idempotency_key: idempotencyKey,
             status: 'draft'
         };
