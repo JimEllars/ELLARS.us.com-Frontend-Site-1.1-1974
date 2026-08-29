@@ -189,7 +189,13 @@ export const useTelemetry = () => {
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         try {
-          const response = await fetch(apiUrl, {
+          let currentApiUrl = apiUrl;
+          // Fallback logic for subsequent attempts if primary is not the edge route
+          if (attempt > 0 && apiUrl !== '/api/telemetry') {
+             currentApiUrl = '/api/telemetry';
+          }
+
+          const response = await fetch(currentApiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

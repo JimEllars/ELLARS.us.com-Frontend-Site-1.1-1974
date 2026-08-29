@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSWR, { useSWRConfig } from 'swr';
-import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem } from '@/lib/api';
+import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem, restoreVaultItem } from '@/lib/api';
 import VaultArticleCard from '@/components/dashboard/VaultArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import ArticleCard from '@/components/intel/ArticleCard';
@@ -60,10 +60,12 @@ const Dashboard = () => {
   const [hasMoreVaultItems, setHasMoreVaultItems] = useState(true);
   const currentTab = searchParams.get('tab') || 'vault';
 
-  useEffect(() => {
+useEffect(() => {
     const tool = searchParams.get('tool');
     if (tool === 'publisher') {
       setActiveTool('publisher');
+    } else if (tool === 'calculator') {
+      setActiveTool('calculator');
     }
   }, [searchParams]);
 
@@ -127,8 +129,27 @@ const Dashboard = () => {
 
   const handleEdit = (item) => {
     setEditingItem(item);
-    setActiveTool('publisher');
-    setSearchParams({ tab: 'tools' });
+    setSearchParams({ tab: 'tools', tool: 'publisher' });
+  };
+
+
+  const handleRestore = async (item) => {
+    // Optimistic update
+    mutate(
+      key => Array.isArray(key) && key[0] === 'saved_vault_items',
+      undefined,
+      { revalidate: true }
+    );
+    // Optimistically update local state while SWR revalidates
+    setAllItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'published' } : i));
+
+    const result = await restoreVaultItem(item.id);
+    if (result.isError) {
+      showToast('// ERROR: UNABLE TO RESTORE VAULT ITEM');
+      mutate(key => Array.isArray(key) && key[0] === 'saved_vault_items'); // rollback
+    } else {
+      showToast('Vault Item Restored.');
+    }
   };
 
   const handleArchive = async (item) => {
@@ -304,7 +325,7 @@ const Dashboard = () => {
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                       {items.map(item => (
-                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onEdit={handleEdit} />
+                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
                       ))}
                     </div>
                   </>
@@ -341,7 +362,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 gap-6 mb-8">
                   <div
                     className={`deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer transition-colors ${activeTool === 'calculator' ? 'border-yellow-electric/50' : 'hover:border-yellow-electric/50'}`}
-                    onClick={() => setActiveTool('calculator')}
+                    onClick={() => setSearchParams({ tab: 'tools', tool: 'calculator' })}
                   >
                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Directive Impact Calculator</h4>
                     <p className="text-gray-400 text-sm font-mono">Evaluate automated economic offsets and negative income tax distributions.</p>
@@ -349,7 +370,7 @@ const Dashboard = () => {
 
                   <div
                     className="deco-frame p-6 bg-black/40 backdrop-blur-md cursor-pointer hover:border-yellow-electric/50 transition-colors"
-                    onClick={() => setActiveTool('publisher')}
+                    onClick={() => setSearchParams({ tab: 'tools', tool: 'publisher' })}
                   >
                     <h4 className="text-yellow-electric font-editorial font-bold text-xl mb-2">Intelligence Dispatch Publisher</h4>
                     <p className="text-gray-400 text-sm font-mono">Access secure vault modules to publish and manage intelligence dispatches.</p>
