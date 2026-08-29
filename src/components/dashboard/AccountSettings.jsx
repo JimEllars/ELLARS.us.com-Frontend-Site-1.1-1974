@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Honeypot from '@/components/common/Honeypot';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import TelemetryStatus from './TelemetryStatus';
@@ -14,7 +15,8 @@ const AccountSettings = () => {
   const setPrivacyConsent = useAppStore(state => state.setPrivacyConsent);
   const showToast = useAppStore(state => state.showToast);
 
-  const [email, setEmail] = useState('Unknown User');
+    const [botValue, setBotValue] = useState('');
+const [email, setEmail] = useState('Unknown User');
   const [telemetryEnabled, setTelemetryEnabled] = useState(privacyConsent);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ const AccountSettings = () => {
   }, [token]);
 
   const handleToggleTelemetry = () => {
+    if (botValue) return;
     const newValue = !telemetryEnabled;
     setTelemetryEnabled(newValue);
     setPrivacyConsent(newValue);
@@ -39,6 +42,7 @@ const AccountSettings = () => {
   };
 
   const handleClearCache = () => {
+    if (botValue) return;
     try {
       localStorage.removeItem('ellars_telemetry_queue');
       if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
@@ -50,12 +54,14 @@ const AccountSettings = () => {
   };
 
   const handleEndSession = () => {
+    if (botValue) return;
     clearAuth();
     navigate('/login');
   };
 
   return (
     <div className="w-full">
+      <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
       <div className="deco-frame p-6 bg-black/40 backdrop-blur-md rounded-sm border border-white/10">
         <h3 className="font-editorial font-bold text-2xl text-white mb-4">
           Account <span className="text-yellow-electric">Security</span>

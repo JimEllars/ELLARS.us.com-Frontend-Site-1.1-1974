@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Honeypot from '@/components/common/Honeypot';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
@@ -8,7 +9,8 @@ import { publishVaultItem, updateVaultItem } from '@/lib/api';
 const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
   const showToast = useAppStore(state => state.showToast);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [botValue, setBotValue] = useState('');
+const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(uuidv4());
 
   const [formData, setFormData] = useState({
@@ -86,6 +88,14 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
 
   const handleStageDispatch = async (e) => {
     e.preventDefault();
+    if (botValue) {
+      setIsSubmitting(true);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        if (onSuccess) onSuccess(); // silently pretend success
+      }, 800);
+      return;
+    }
     if (!formData.title || !formData.content) {
       showToast('Title and Content are required to stage.');
       return;
@@ -151,6 +161,7 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
       )}
 
       <form onSubmit={handleStageDispatch} className="space-y-6">
+        <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block text-xs font-editorial uppercase tracking-widest text-gray-400">Title</label>

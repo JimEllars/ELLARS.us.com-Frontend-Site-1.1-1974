@@ -21,6 +21,8 @@ const NewsletterModal = () => {
   const { trackEvent } = useTelemetry();
 
   useEffect(() => {
+    const previousFocus = document.activeElement;
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setNewsletterModalOpen(false);
