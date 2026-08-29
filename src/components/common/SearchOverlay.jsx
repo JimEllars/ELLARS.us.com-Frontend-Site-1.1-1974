@@ -59,10 +59,12 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       if (scrollbarWidth > 0) {
         document.body.style.paddingRight = `${scrollbarWidth}px`;
       }
+      const previousFocus = document.activeElement;
+
       // Focus after small delay for animation
       setTimeout(() => inputRef.current?.focus(), 100);
 
-            const handleKeyDown = (e) => {
+      const handleKeyDown = (e) => {
         if (e.key === 'Escape' || e.key === 'Esc') {
           onClose();
         } else if (e.key === 'Tab') {

@@ -108,17 +108,26 @@ export const useTelemetry = () => {
           if (hasConsented === 'true' && apiKey) {
             // Using fetch with keepalive as a replacement for sendBeacon
             // since sendBeacon doesn't easily support custom headers like Authorization
-            fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'Accept': 'application/json',
-                'X-Project-Scope': 'ELLARS_FRONTEND'
-              },
-              body: JSON.stringify(prunedQueue),
-              keepalive: true
-            }).catch(() => {});
+            const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
+
+            // Note: Since sendBeacon doesn't easily support custom headers, we use fetch with keepalive as primary
+            // and sendBeacon as fallback or we use a query param if backend supports it. For now, try sendBeacon,
+            // if it returns false, we fallback to fetch with keepalive. Or we can just use sendBeacon.
+            const beaconSent = navigator.sendBeacon(apiUrl, blob);
+
+            if (!beaconSent) {
+                fetch(apiUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Accept': 'application/json',
+                    'X-Project-Scope': 'ELLARS_FRONTEND'
+                  },
+                  body: JSON.stringify(prunedQueue),
+                  keepalive: true
+                }).catch(() => {});
+            }
 
             // Clear local storage queue since we attempted to send it
             localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
@@ -138,11 +147,11 @@ export const useTelemetry = () => {
       }
     };
 
-    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);

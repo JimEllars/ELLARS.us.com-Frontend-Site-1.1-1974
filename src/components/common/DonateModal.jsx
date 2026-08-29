@@ -13,6 +13,8 @@ const DonateModal = () => {
   const modalRef = useRef(null);
 
   useEffect(() => {
+    const previousFocus = document.activeElement;
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setDonateModalOpen(false);
