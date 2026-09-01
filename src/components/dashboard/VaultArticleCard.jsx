@@ -13,6 +13,29 @@ const truncateText = (str, max) => {
 const VaultArticleCard = ({ post, date, onDelete, onArchive, onRestore, onEdit }) => {
   const [showMenu, setShowMenu] = useState(false);
   const imageUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+  const handleExport = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMenu(false);
+    const exportData = {
+      title: stripHtml(post.title?.rendered || 'Untitled'),
+      excerpt: stripHtml(post.excerpt?.rendered || ''),
+      content: stripHtml(post.content?.rendered || ''),
+      category: post.acf?.category_label || 'Dispatch',
+      read_time: post.content?.rendered ? Math.ceil(stripHtml(post.content.rendered).split(/\s+/).length / 200) + ' Min Read' : (post.acf?.read_time || '8 Min Read'),
+      date: date ? date : formatDate(post.date)
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vault-item-${post.id || 'export'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
 
   return (
     <div className="relative group/vault">
@@ -94,6 +117,14 @@ const VaultArticleCard = ({ post, date, onDelete, onArchive, onRestore, onEdit }
         {showMenu && (
           <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-white/20 shadow-2xl rounded-sm overflow-hidden deco-frame z-50">
 
+
+             <button
+                onClick={handleExport}
+                className="w-full text-left px-4 py-3 text-xs font-mono uppercase tracking-widest text-gray-300 hover:bg-white/10 hover:text-yellow-electric transition-colors border-b border-white/10 flex items-center space-x-2"
+             >
+                <SafeIcon name="Download" className="w-4 h-4" />
+                <span>Export JSON</span>
+             </button>
              {onEdit && (
                <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); onEdit(post); }}

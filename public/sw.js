@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ellars-us-com-v1';
+const CACHE_NAME = 'ellars-us-com-v1.1';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -25,7 +25,7 @@ self.addEventListener('activate', (event) => {
             return caches.delete(cacheName);
           }
         })
-      );
+      ).catch(() => {});
     })
   );
   self.clients.claim();
@@ -37,7 +37,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Try network first, then cache
+  const url = new URL(event.request.url);
+
+  // Stale-While-Revalidate for Intelligence Feeds (/wp-json/wp/v2/posts*)
+  if (url.pathname.includes('/wp-json/wp/v2/posts')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          const fetchPromise = fetch(event.request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => {
+            // Ignore fetch errors in background if we have cache
+          });
+
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // Try network first, then cache for other requests
   event.respondWith(
     fetch(event.request).then((response) => {
       // If we got a valid response, clone it and put it in cache

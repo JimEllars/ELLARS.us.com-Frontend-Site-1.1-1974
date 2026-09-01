@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useEngagementScoring } from './useEngagementScoring';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
@@ -77,6 +78,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const useTelemetry = () => {
   const { pathname } = useLocation();
   const isOnline = useNetworkStatus();
+  const { score, tier, signals } = useEngagementScoring();
 
   // Implement an in-memory boolean flag locker ('isFlushing') directly within the hook layer.
   const isFlushing = useRef(false);
@@ -289,6 +291,7 @@ export const useTelemetry = () => {
   }, [flushQueue, isOnline]);
 
   const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
+    const lead_score_payload = { score, tier, signals };
     return {
       telemetry_envelope: {
         project_id: 'ELLARS_FRONTEND',
@@ -306,11 +309,12 @@ export const useTelemetry = () => {
         metadata: {
           current_route: pathname,
           network_status: isOnline ? 'online' : 'offline',
-          ...metadata
+          ...metadata,
+          lead_score_payload
         }
       }
     };
-  }, [pathname, isOnline]);
+  }, [pathname, isOnline, score, tier, signals]);
 
   useEffect(() => {
     const sendTelemetry = async () => {
@@ -326,6 +330,20 @@ export const useTelemetry = () => {
   }, [pathname, dispatchTelemetry, createTelemetryPayload]);
 
   const trackEvent = useCallback((eventName, eventData = {}, severity = 'MEDIUM', componentOrigin = 'UI_INTERACTION', errorMessage = "", stackTrace = "") => {
+    // Dispatch engagement signals based on known event names
+    if (typeof window !== 'undefined') {
+      if (eventName === 'calculator_interaction' || eventName === 'calculator_update') {
+        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'calculator_interaction' } }));
+      } else if (eventName === 'platform_click' || eventName === 'platform_exploration' || pathname === '/platform') {
+        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'platform_click' } }));
+      } else if (eventName === 'newsletter_activation' || eventName === 'newsletter_modal_open') {
+        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'newsletter_activation' } }));
+      } else if (eventName === 'newsletter_submission' || eventName === 'newsletter_success') {
+        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'newsletter_submission' } }));
+      } else if (eventName === 'article_completion' || eventName === 'article_read') {
+        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'article_completion' } }));
+      }
+    }
     try {
       // Isolate telemetry from UI thread execution
       const payload = createTelemetryPayload(eventName, severity, componentOrigin, errorMessage, stackTrace, { data: eventData });

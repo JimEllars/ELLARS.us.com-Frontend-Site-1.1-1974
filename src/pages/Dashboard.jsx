@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSWR, { useSWRConfig } from 'swr';
-import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem, restoreVaultItem } from '@/lib/api';
+import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem, restoreVaultItem, stripHtml, formatDate } from '@/lib/api';
 import VaultArticleCard from '@/components/dashboard/VaultArticleCard';
 import ArticleSkeleton from '@/components/intel/ArticleSkeleton';
 import ArticleCard from '@/components/intel/ArticleCard';
@@ -48,6 +48,30 @@ const Dashboard = () => {
   const token = useAppStore(state => state.userToken);
   const [searchParams, setSearchParams] = useSearchParams();
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  const handleExportAll = () => {
+    const itemsToExport = items && items.length > 0 ? items : (allItems && allItems.length > 0 ? allItems : []);
+    if (itemsToExport.length === 0) return;
+    const exportData = itemsToExport.map(post => ({
+      id: post.id,
+      title: stripHtml(post.title?.rendered || 'Untitled'),
+      excerpt: stripHtml(post.excerpt?.rendered || ''),
+      content: stripHtml(post.content?.rendered || ''),
+      category: post.acf?.category_label || 'Dispatch',
+      read_time: post.content?.rendered ? Math.ceil(stripHtml(post.content.rendered).split(/\s+/).length / 200) + ' Min Read' : (post.acf?.read_time || '8 Min Read'),
+      date: formatDate(post.date)
+    }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vault-intel-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const { mutate } = useSWRConfig();
   const showToast = useAppStore(state => state.showToast);
   const [searchQuery, setSearchQuery] = useState('');
@@ -321,6 +345,14 @@ useEffect(() => {
                         <div className="flex gap-2 text-xs font-mono tracking-widest uppercase text-yellow-electric border border-yellow-electric/20 bg-yellow-electric/5 px-4 py-2 rounded-sm">
                            DISPLAYING {items.length} OF {response?.total !== undefined ? response.total : allItems.length} SECURE RECORDS
                         </div>
+
+                        <button
+                          onClick={handleExportAll}
+                          className="px-4 py-2 border border-yellow-electric/30 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/10 transition-colors flex items-center space-x-2"
+                        >
+                          <SafeIcon name="Download" className="w-4 h-4" />
+                          <span>Export All Vault Intel</span>
+                        </button>
                       </div>
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
