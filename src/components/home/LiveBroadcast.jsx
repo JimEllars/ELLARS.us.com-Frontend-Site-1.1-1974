@@ -26,9 +26,10 @@ const LiveBroadcast = () => {
     }
   }, []);
 
-  // Polling for live status
+  // Polling for live status with exponential backoff
   useEffect(() => {
-    let intervalId;
+    let pollTimeout;
+    let currentDelay = 5000;
 
     const checkLiveStatus = async () => {
       const controller = new AbortController();
@@ -39,19 +40,32 @@ const LiveBroadcast = () => {
         if (response.ok) {
           const data = await response.json();
           setIsLiveStreamActive(data.isLiveStreamActive);
+          if (data.isLiveStreamActive) {
+            currentDelay = 5000;
+          } else {
+            currentDelay = Math.min(currentDelay * 1.5, 60000);
+          }
+        } else {
+          setIsLiveStreamActive(false);
+          currentDelay = Math.min(currentDelay * 1.5, 60000);
         }
       } catch (err) {
         clearTimeout(timeoutId);
         console.warn('[LiveBroadcast] Edge status polling failed:', err);
         setIsLiveStreamActive(false);
+        currentDelay = Math.min(currentDelay * 1.5, 60000);
       }
+      pollTimeout = setTimeout(checkLiveStatus, currentDelay);
     };
 
-    // Check immediately, then poll every 30 seconds
+    // Check immediately
     checkLiveStatus();
-    intervalId = setInterval(checkLiveStatus, 30000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (pollTimeout) {
+        clearTimeout(pollTimeout);
+      }
+    };
   }, [setIsLiveStreamActive]);
 
   // Auto-scroll chat container to the bottom when chatLogs change

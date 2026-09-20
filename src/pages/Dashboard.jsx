@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSWR, { useSWRConfig } from 'swr';
@@ -13,7 +13,88 @@ import AccountSettings from '../components/dashboard/AccountSettings';
 import MediaUploads from '@/components/dashboard/MediaUploads';
 import { useSearchParams } from 'react-router-dom';
 
-const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery }) => {
+
+const LazyVaultCard = ({ item, onDelete, onArchive, onRestore, onEdit }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={cardRef} className="h-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px' }}>
+      {isVisible ? (
+        <VaultArticleCard post={item} onDelete={onDelete} onArchive={onArchive} onRestore={onRestore} onEdit={onEdit} />
+      ) : (
+        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-[400px] animate-pulse rounded-sm"></div>
+      )}
+    </div>
+  );
+};
+
+
+const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
+  if (!isFilterEmpty && !hasSearchQuery) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center border border-yellow-electric/20 bg-black/60 backdrop-blur-md rounded-sm deco-brackets mt-8">
+        <div className="w-16 h-16 rounded-full border-2 border-yellow-electric/30 flex items-center justify-center mb-6 relative">
+           <div className="absolute inset-0 rounded-full border border-yellow-electric/10 animate-ping"></div>
+           <svg className="w-8 h-8 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+           </svg>
+        </div>
+        <div className="inline-block px-3 py-1 mb-4 border border-yellow-electric/30 bg-yellow-electric/5 rounded-sm">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-electric">ELLARS_PERSONAL // AXiM Tenant Isolated</span>
+        </div>
+        <h3 className="text-white font-editorial font-bold text-2xl mb-4">Secure Space Initialized</h3>
+        <ul className="text-left space-y-4 mb-8">
+          <li className="flex items-start space-x-3">
+             <span className="w-4 h-4 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center shrink-0 mt-0.5">
+               <span className="w-2 h-2 rounded-full bg-green-500"></span>
+             </span>
+             <div>
+               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 1: Security Handshake Verified</p>
+               <p className="text-xs text-gray-500 font-editorial">Encrypted local queue & Supabase auth linked.</p>
+             </div>
+          </li>
+          <li className="flex items-start space-x-3">
+             <span className="w-4 h-4 rounded-full bg-yellow-electric/20 border border-yellow-electric flex items-center justify-center shrink-0 mt-0.5">
+               <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
+             </span>
+             <div>
+               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 2: Initialize First Transmission</p>
+               <p className="text-xs text-gray-500 font-editorial">Your vault is empty. Draft an initial dispatch to store your first intelligence asset.</p>
+             </div>
+          </li>
+        </ul>
+        <button
+          onClick={onNavigate}
+          className="px-6 py-3 bg-yellow-electric/10 border border-yellow-electric/50 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/20 transition-colors flex items-center space-x-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <span>Draft Initial Dispatch</span>
+        </button>
+      </div>
+    );
+  }
+
   let message = 'You have not saved any operational intel to your secure vault yet.';
   if (isFilterEmpty) {
     if (hasSearchQuery) {
@@ -336,7 +417,7 @@ useEffect(() => {
                     ))}
                   </div>
                 ) : items.length === 0 ? (
-                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} />
+                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} onNavigate={() => setSearchParams({ tab: 'tools', tool: 'publisher' })} />
                 ) : (
 
                   <>
@@ -357,7 +438,7 @@ useEffect(() => {
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
                       {items.map(item => (
-                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
+                        <LazyVaultCard key={item.id} item={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
                       ))}
                     </div>
                   </>

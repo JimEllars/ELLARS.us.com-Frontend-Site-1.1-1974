@@ -1,0 +1,971 @@
+commit ed3b56c0ea611c2dfaafb494d34013154b0fe5ad
+Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date:   Sun Sep 20 02:21:32 2026 +0000
+
+    Finalize sprint V6.15 objectives
+
+diff --git a/v1.3-release.patch b/v1.3-release.patch
+index e8ab357..4afc1c2 100644
+--- a/v1.3-release.patch
++++ b/v1.3-release.patch
+@@ -2,7 +2,7 @@ From c7ad1f6fdc5bfda0560c9e4f848ca31a5864730b Mon Sep 17 00:00:00 2001
+ From: "google-labs-jules[bot]"
+  <161369871+google-labs-jules[bot]@users.noreply.github.com>
+ Date: Sun, 20 Sep 2026 02:19:18 +0000
+-Subject: [PATCH] feat: Add Vault Virtualization, Stream Polling Backoff &
++Subject: [PATCH 1/2] feat: Add Vault Virtualization, Stream Polling Backoff &
+  Onboarding Flow (v1.3)
+
+ ---
+@@ -1584,3 +1584,951 @@ index 0000000..b020447
+ --
+ 2.53.0
+
++
++From 296a0a6c558c855adf1756f968a6954383f85009 Mon Sep 17 00:00:00 2001
++From: "google-labs-jules[bot]"
++ <161369871+google-labs-jules[bot]@users.noreply.github.com>
++Date: Sun, 20 Sep 2026 02:20:01 +0000
++Subject: [PATCH 2/2] chore: clean up script files
++
++---
++ patch_dashboard_imports.py |  63 -----
++ patch_emptystate.py        | 125 --------
++ patch_livebroadcast.py     |  85 ------
++ patch_plan.py              |  12 -
++ test_plan.txt              |  24 --
++ v1.3-release.patch         | 564 ++++++++++++++++++++++++++++++++++++-
++ 6 files changed, 560 insertions(+), 313 deletions(-)
++ delete mode 100644 patch_dashboard_imports.py
++ delete mode 100644 patch_emptystate.py
++ delete mode 100644 patch_livebroadcast.py
++ delete mode 100644 patch_plan.py
++ delete mode 100644 test_plan.txt
++
++diff --git a/patch_dashboard_imports.py b/patch_dashboard_imports.py
++deleted file mode 100644
++index f547144..0000000
++--- a/patch_dashboard_imports.py
+++++ /dev/null
++@@ -1,63 +0,0 @@
++-import re
++-
++-with open('src/pages/Dashboard.jsx', 'r') as f:
++-    content = f.read()
++-
++-# Add useRef to React import
++-content = re.sub(r"import React, { useState, useEffect } from 'react';", "import React, { useState, useEffect, useRef } from 'react';", content)
++-
++-# Define LazyVaultCard
++-lazy_card_code = """
++-const LazyVaultCard = ({ item, onDelete, onArchive, onRestore, onEdit }) => {
++-  const [isVisible, setIsVisible] = useState(false);
++-  const cardRef = useRef(null);
++-
++-  useEffect(() => {
++-    const observer = new IntersectionObserver(
++-      ([entry]) => {
++-        if (entry.isIntersecting) {
++-          setIsVisible(true);
++-          observer.disconnect();
++-        }
++-      },
++-      { rootMargin: '200px' }
++-    );
++-
++-    if (cardRef.current) {
++-      observer.observe(cardRef.current);
++-    }
++-
++-    return () => observer.disconnect();
++-  }, []);
++-
++-  return (
++-    <div ref={cardRef} className="h-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px' }}>
++-      {isVisible ? (
++-        <VaultArticleCard post={item} onDelete={onDelete} onArchive={onArchive} onRestore={onRestore} onEdit={onEdit} />
++-      ) : (
++-        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-[400px] animate-pulse rounded-sm"></div>
++-      )}
++-    </div>
++-  );
++-};
++-"""
++-
++-# Insert LazyVaultCard before EmptyState
++-content = re.sub(r"const EmptyState = ", lazy_card_code + "\n\nconst EmptyState = ", content)
++-
++-# Update EmptyState to receive setSearchParams
++-content = re.sub(
++-    r"const EmptyState = \(\{ isFilterEmpty, statusFilter, hasSearchQuery \}\) => \{",
++-    "const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {",
++-    content
++-)
++-
++-# Replace items.map in render
++-content = content.replace(
++-    "<VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />",
++-    "<LazyVaultCard key={item.id} item={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />"
++-)
++-
++-with open('src/pages/Dashboard.jsx', 'w') as f:
++-    f.write(content)
++-
++diff --git a/patch_emptystate.py b/patch_emptystate.py
++deleted file mode 100644
++index e8b653f..0000000
++--- a/patch_emptystate.py
+++++ /dev/null
++@@ -1,125 +0,0 @@
++-import re
++-
++-with open('src/pages/Dashboard.jsx', 'r') as f:
++-    content = f.read()
++-
++-old_empty_state = """
++-const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
++-  let message = 'You have not saved any operational intel to your secure vault yet.';
++-  if (isFilterEmpty) {
++-    if (hasSearchQuery) {
++-      message = 'No records match your query.';
++-    } else if (statusFilter === 'Archived') {
++-      message = 'No archived operational intel found.';
++-    } else if (statusFilter === 'Active') {
++-      message = 'No active intel found.';
++-    } else {
++-      message = 'No saved items match your filter criteria.';
++-    }
++-  }
++-
++-  return (
++-    <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
++-      <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
++-        <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
++-        </svg>
++-      </div>
++-      <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
++-      <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
++-        {message}
++-      </p>
++-    </div>
++-  );
++-};
++-"""
++-
++-new_empty_state = """
++-const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
++-  if (!isFilterEmpty && !hasSearchQuery) {
++-    return (
++-      <div className="flex flex-col items-center justify-center p-12 text-center border border-yellow-electric/20 bg-black/60 backdrop-blur-md rounded-sm deco-brackets mt-8">
++-        <div className="w-16 h-16 rounded-full border-2 border-yellow-electric/30 flex items-center justify-center mb-6 relative">
++-           <div className="absolute inset-0 rounded-full border border-yellow-electric/10 animate-ping"></div>
++-           <svg className="w-8 h-8 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
++-           </svg>
++-        </div>
++-        <div className="inline-block px-3 py-1 mb-4 border border-yellow-electric/30 bg-yellow-electric/5 rounded-sm">
++-          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-electric">ELLARS_PERSONAL // AXiM Tenant Isolated</span>
++-        </div>
++-        <h3 className="text-white font-editorial font-bold text-2xl mb-4">Secure Space Initialized</h3>
++-        <ul className="text-left space-y-4 mb-8">
++-          <li className="flex items-start space-x-3">
++-             <span className="w-4 h-4 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center shrink-0 mt-0.5">
++-               <span className="w-2 h-2 rounded-full bg-green-500"></span>
++-             </span>
++-             <div>
++-               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 1: Security Handshake Verified</p>
++-               <p className="text-xs text-gray-500 font-editorial">Encrypted local queue & Supabase auth linked.</p>
++-             </div>
++-          </li>
++-          <li className="flex items-start space-x-3">
++-             <span className="w-4 h-4 rounded-full bg-yellow-electric/20 border border-yellow-electric flex items-center justify-center shrink-0 mt-0.5">
++-               <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
++-             </span>
++-             <div>
++-               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 2: Initialize First Transmission</p>
++-               <p className="text-xs text-gray-500 font-editorial">Your vault is empty. Draft an initial dispatch to store your first intelligence asset.</p>
++-             </div>
++-          </li>
++-        </ul>
++-        <button
++-          onClick={onNavigate}
++-          className="px-6 py-3 bg-yellow-electric/10 border border-yellow-electric/50 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/20 transition-colors flex items-center space-x-2"
++-        >
++-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
++-          </svg>
++-          <span>Draft Initial Dispatch</span>
++-        </button>
++-      </div>
++-    );
++-  }
++-
++-  let message = 'You have not saved any operational intel to your secure vault yet.';
++-  if (isFilterEmpty) {
++-    if (hasSearchQuery) {
++-      message = 'No records match your query.';
++-    } else if (statusFilter === 'Archived') {
++-      message = 'No archived operational intel found.';
++-    } else if (statusFilter === 'Active') {
++-      message = 'No active intel found.';
++-    } else {
++-      message = 'No saved items match your filter criteria.';
++-    }
++-  }
++-
++-  return (
++-    <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
++-      <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
++-        <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
++-        </svg>
++-      </div>
++-      <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
++-      <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
++-        {message}
++-      </p>
++-    </div>
++-  );
++-};
++-"""
++-
++-content = content.replace(old_empty_state.strip(), new_empty_state.strip())
++-
++-# Find the EmptyState instantiation and add onNavigate
++-content = re.sub(
++-    r"<EmptyState isFilterEmpty=\{allItems\.length > 0 && items\.length === 0\} statusFilter=\{statusFilter\} hasSearchQuery=\{!!debouncedSearchQuery\} />",
++-    r"<EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} onNavigate={() => setSearchParams({ tab: 'tools', tool: 'publisher' })} />",
++-    content
++-)
++-
++-with open('src/pages/Dashboard.jsx', 'w') as f:
++-    f.write(content)
++-
++diff --git a/patch_livebroadcast.py b/patch_livebroadcast.py
++deleted file mode 100644
++index 3673537..0000000
++--- a/patch_livebroadcast.py
+++++ /dev/null
++@@ -1,85 +0,0 @@
++-import re
++-
++-with open('src/components/home/LiveBroadcast.jsx', 'r') as f:
++-    content = f.read()
++-
++-# Replace the polling logic
++-old_polling = """
++-  // Polling for live status
++-  useEffect(() => {
++-    let intervalId;
++-
++-    const checkLiveStatus = async () => {
++-      const controller = new AbortController();
++-      const timeoutId = setTimeout(() => controller.abort(), 5000);
++-      try {
++-        const response = await fetch('/api/v1/stream/status', { signal: controller.signal });
++-        clearTimeout(timeoutId);
++-        if (response.ok) {
++-          const data = await response.json();
++-          setIsLiveStreamActive(data.isLiveStreamActive);
++-        }
++-      } catch (err) {
++-        clearTimeout(timeoutId);
++-        console.warn('[LiveBroadcast] Edge status polling failed:', err);
++-        setIsLiveStreamActive(false);
++-      }
++-    };
++-
++-    // Check immediately, then poll every 30 seconds
++-    checkLiveStatus();
++-    intervalId = setInterval(checkLiveStatus, 30000);
++-
++-    return () => clearInterval(intervalId);
++-  }, [setIsLiveStreamActive]);
++-"""
++-
++-new_polling = """
++-  // Polling for live status with exponential backoff
++-  useEffect(() => {
++-    let pollTimeout;
++-    let currentDelay = 5000;
++-
++-    const checkLiveStatus = async () => {
++-      const controller = new AbortController();
++-      const timeoutId = setTimeout(() => controller.abort(), 5000);
++-      try {
++-        const response = await fetch('/api/v1/stream/status', { signal: controller.signal });
++-        clearTimeout(timeoutId);
++-        if (response.ok) {
++-          const data = await response.json();
++-          setIsLiveStreamActive(data.isLiveStreamActive);
++-          if (data.isLiveStreamActive) {
++-            currentDelay = 5000;
++-          } else {
++-            currentDelay = Math.min(currentDelay * 1.5, 60000);
++-          }
++-        } else {
++-          setIsLiveStreamActive(false);
++-          currentDelay = Math.min(currentDelay * 1.5, 60000);
++-        }
++-      } catch (err) {
++-        clearTimeout(timeoutId);
++-        console.warn('[LiveBroadcast] Edge status polling failed:', err);
++-        setIsLiveStreamActive(false);
++-        currentDelay = Math.min(currentDelay * 1.5, 60000);
++-      }
++-      pollTimeout = setTimeout(checkLiveStatus, currentDelay);
++-    };
++-
++-    // Check immediately
++-    checkLiveStatus();
++-
++-    return () => {
++-      if (pollTimeout) {
++-        clearTimeout(pollTimeout);
++-      }
++-    };
++-  }, [setIsLiveStreamActive]);
++-"""
++-
++-content = content.replace(old_polling.strip(), new_polling.strip())
++-
++-with open('src/components/home/LiveBroadcast.jsx', 'w') as f:
++-    f.write(content)
++-
++diff --git a/patch_plan.py b/patch_plan.py
++deleted file mode 100644
++index d1349b7..0000000
++--- a/patch_plan.py
+++++ /dev/null
++@@ -1,12 +0,0 @@
++-import re
++-
++-with open('PlanForContinuedDevelopment.md', 'r') as f:
++-    content = f.read()
++-
++-new_sprint = """- **V6.15 Vault Grid Lazy Rendering & DOM Virtualization, Live Broadcast Dynamic Stream Polling, & Secure Space Onboarding Flow:** Implemented `LazyVaultCard` wrapper in `Dashboard.jsx` to render vault items with `content-visibility: auto` using `IntersectionObserver` when items approach the viewport, enhancing rapid scroll performance. Refactored the `LiveBroadcast.jsx` stream status polling from a fixed `setInterval` to a recursive `setTimeout` with exponential backoff (starting at 5s, capping at 60s) to minimize edge requests during downtime while maintaining real-time sync when active. Enhanced the `EmptyState` component with a dedicated "Secure Space Onboarding Flow" for new users, featuring an Art Deco security badge, verification steps, and a "Draft Initial Dispatch" button to seamlessly guide them into the micro-program publisher tool."""
++-
++-content = content.replace("## Completed Sprints\n", f"## Completed Sprints\n{new_sprint}\n")
++-
++-with open('PlanForContinuedDevelopment.md', 'w') as f:
++-    f.write(content)
++-
++diff --git a/test_plan.txt b/test_plan.txt
++deleted file mode 100644
++index 4db8816..0000000
++--- a/test_plan.txt
+++++ /dev/null
++@@ -1,24 +0,0 @@
++-1. Implement Vault Grid Lazy Rendering & DOM Virtualization in Dashboard.jsx.
++-   - Create a `LazyVaultCard` wrapper component inside `Dashboard.jsx`.
++-   - Use `IntersectionObserver` to track when the card approaches the viewport.
++-   - When not visible, render a placeholder div with `content-visibility: auto`, `contain-intrinsic-size: 400px`, and matching aspect ratio.
++-   - When visible, render the actual `VaultArticleCard`.
++-   - Replace the `VaultArticleCard` mapping with `LazyVaultCard`.
++-2. Refactor LiveBroadcast.jsx stream polling to use exponential backoff.
++-   - Remove `setInterval`.
++-   - Create a recursive `setTimeout` loop.
++-   - State `pollDelay` initialized to 5000ms.
++-   - On success (`isLiveStreamActive: true`), reset `pollDelay` to 5000ms.
++-   - On error or `isLiveStreamActive: false`, multiply `pollDelay` by 1.5, capped at 60000ms.
++-   - Ensure clean up of timeouts on unmount.
++-3. Enhance Secure Space Onboarding Flow in Dashboard.jsx's EmptyState.
++-   - Check if `!isFilterEmpty`, `!hasSearchQuery`, and `allItems.length === 0`.
++-   - If true, display the onboarding flow with Art Deco badge, steps, and a "Draft Initial Dispatch" button using `useSearchParams` or an `onClick` that triggers `setSearchParams({ tab: 'tools', tool: 'publisher' })`.
++-   - Need to pass `setSearchParams` down to `EmptyState` or handle it correctly.
++-4. Update PlanForContinuedDevelopment.md.
++-   - Add Sprint V6.15 to "Completed Sprints".
++-   - Document the implemented features: Vault Virtualization, Stream Polling Backoff, Onboarding Flow.
++-5. Verification and Diff.
++-   - Run `npm run lint` and `npm run build`.
++-   - Generate diff patch `v1.3-release.patch`.
++-6. Pre-commit check.
++diff --git a/v1.3-release.patch b/v1.3-release.patch
++index b020447..e8ab357 100644
++--- a/v1.3-release.patch
+++++ b/v1.3-release.patch
++@@ -1,3 +1,28 @@
+++From c7ad1f6fdc5bfda0560c9e4f848ca31a5864730b Mon Sep 17 00:00:00 2001
+++From: "google-labs-jules[bot]"
+++ <161369871+google-labs-jules[bot]@users.noreply.github.com>
+++Date: Sun, 20 Sep 2026 02:19:18 +0000
+++Subject: [PATCH] feat: Add Vault Virtualization, Stream Polling Backoff &
+++ Onboarding Flow (v1.3)
+++
+++---
+++ PlanForContinuedDevelopment.md        |    1 +
+++ patch_dashboard_imports.py            |   63 ++
+++ patch_emptystate.py                   |  125 +++
+++ patch_livebroadcast.py                |   85 ++
+++ patch_plan.py                         |   12 +
+++ src/components/home/LiveBroadcast.jsx |   24 +-
+++ src/pages/Dashboard.jsx               |   89 ++-
+++ test_plan.txt                         |   24 +
+++ v1.3-release.patch                    | 1030 +++++++++++++++++++++++++
+++ 9 files changed, 1444 insertions(+), 9 deletions(-)
+++ create mode 100644 patch_dashboard_imports.py
+++ create mode 100644 patch_emptystate.py
+++ create mode 100644 patch_livebroadcast.py
+++ create mode 100644 patch_plan.py
+++ create mode 100644 test_plan.txt
+++ create mode 100644 v1.3-release.patch
+++
++ diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
++ index db3287b..48dcfc1 100644
++ --- a/PlanForContinuedDevelopment.md
++@@ -522,10 +547,10 @@ index 0000000..4db8816
++ +6. Pre-commit check.
++ diff --git a/v1.3-release.patch b/v1.3-release.patch
++ new file mode 100644
++-index 0000000..c37fbbe
+++index 0000000..b020447
++ --- /dev/null
++ +++ b/v1.3-release.patch
++-@@ -0,0 +1,501 @@
+++@@ -0,0 +1,1030 @@
++ +diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
++ +index db3287b..48dcfc1 100644
++ +--- a/PlanForContinuedDevelopment.md
++@@ -1026,5 +1051,536 @@ index 0000000..c37fbbe
++ +@@ -0,0 +1,24 @@
++ ++1. Implement Vault Grid Lazy Rendering & DOM Virtualization in Dashboard.jsx.
++ ++   - Create a `LazyVaultCard` wrapper component inside `Dashboard.jsx`.
++-++   - Use `IntersectionObserver` to track when the card approaches
++-\ No newline at end of file
+++++   - Use `IntersectionObserver` to track when the card approaches the viewport.
+++++   - When not visible, render a placeholder div with `content-visibility: auto`, `contain-intrinsic-size: 400px`, and matching aspect ratio.
+++++   - When visible, render the actual `VaultArticleCard`.
+++++   - Replace the `VaultArticleCard` mapping with `LazyVaultCard`.
+++++2. Refactor LiveBroadcast.jsx stream polling to use exponential backoff.
+++++   - Remove `setInterval`.
+++++   - Create a recursive `setTimeout` loop.
+++++   - State `pollDelay` initialized to 5000ms.
+++++   - On success (`isLiveStreamActive: true`), reset `pollDelay` to 5000ms.
+++++   - On error or `isLiveStreamActive: false`, multiply `pollDelay` by 1.5, capped at 60000ms.
+++++   - Ensure clean up of timeouts on unmount.
+++++3. Enhance Secure Space Onboarding Flow in Dashboard.jsx's EmptyState.
+++++   - Check if `!isFilterEmpty`, `!hasSearchQuery`, and `allItems.length === 0`.
+++++   - If true, display the onboarding flow with Art Deco badge, steps, and a "Draft Initial Dispatch" button using `useSearchParams` or an `onClick` that triggers `setSearchParams({ tab: 'tools', tool: 'publisher' })`.
+++++   - Need to pass `setSearchParams` down to `EmptyState` or handle it correctly.
+++++4. Update PlanForContinuedDevelopment.md.
+++++   - Add Sprint V6.15 to "Completed Sprints".
+++++   - Document the implemented features: Vault Virtualization, Stream Polling Backoff, Onboarding Flow.
+++++5. Verification and Diff.
+++++   - Run `npm run lint` and `npm run build`.
+++++   - Generate diff patch `v1.3-release.patch`.
+++++6. Pre-commit check.
++++diff --git a/v1.3-release.patch b/v1.3-release.patch
++++new file mode 100644
++++index 0000000..c37fbbe
++++--- /dev/null
+++++++ b/v1.3-release.patch
++++@@ -0,0 +1,501 @@
+++++diff --git a/PlanForContinuedDevelopment.md b/PlanForContinuedDevelopment.md
+++++index db3287b..48dcfc1 100644
+++++--- a/PlanForContinuedDevelopment.md
++++++++ b/PlanForContinuedDevelopment.md
+++++@@ -1,6 +1,7 @@
+++++ # Plan for Continued Development
+++++
+++++ ## Completed Sprints
++++++- **V6.15 Vault Grid Lazy Rendering & DOM Virtualization, Live Broadcast Dynamic Stream Polling, & Secure Space Onboarding Flow:** Implemented `LazyVaultCard` wrapper in `Dashboard.jsx` to render vault items with `content-visibility: auto` using `IntersectionObserver` when items approach the viewport, enhancing rapid scroll performance. Refactored the `LiveBroadcast.jsx` stream status polling from a fixed `setInterval` to a recursive `setTimeout` with exponential backoff (starting at 5s, capping at 60s) to minimize edge requests during downtime while maintaining real-time sync when active. Enhanced the `EmptyState` component with a dedicated "Secure Space Onboarding Flow" for new users, featuring an Art Deco security badge, verification steps, and a "Draft Initial Dispatch" button to seamlessly guide them into the micro-program publisher tool.
+++++ - **V6.14 Predictive Engagement Scoring & Vault Export Utility:** Implemented a `useEngagementScoring` hook to calculate lead scores (0-100) and intent tiers (OBSERVER_COLD, CIVIC_WARM, STRATEGIC_HOT) based on session activity (time, scroll depth, interactions) and attached this to telemetry metadata. Added "Export JSON" functionality to individual Vault item cards and an "Export All Vault Intel" utility to the main Dashboard to generate structured .json backups of secured intelligence. Upgraded the Service Worker with a Stale-While-Revalidate pattern for `/wp-json/wp/v2/posts*` routes and graceful offline fallback routing.
+++++ - **V6.13 Vault Item Restoration, Dashboard URL State Sync, & Telemetry Failover:** Added `restoreVaultItem` API utility to reverse archival states and integrated it with optimistic updates and the action menu in the Dashboard's Vault. Synchronized micro-program URL states (`?tab=tools&tool=...`) to dynamically load active tools on direct visits. Hardened the `useTelemetry` background sync queue with an automatic edge-gateway failover route (`/api/telemetry`) triggered upon 8-second timeouts or network rejections.
+++++ - **V6.12 Exact Vault Metric Resolution, Media Asset Lightbox, & Live Broadcast Chat UX:** Refined Vault item counting utilizing exact metric resolution (`Prefer: count=exact`) ensuring the vault explicitly reads its size from Content-Range. Upgraded MediaUploads with a robust, focus-trapping preview Lightbox. Integrated smart auto-scrolling for the Live Broadcast chat ensuring seamless interactions when viewing old logs.
+++++diff --git a/patch_dashboard_imports.py b/patch_dashboard_imports.py
+++++new file mode 100644
+++++index 0000000..f547144
+++++--- /dev/null
++++++++ b/patch_dashboard_imports.py
+++++@@ -0,0 +1,63 @@
++++++import re
++++++
++++++with open('src/pages/Dashboard.jsx', 'r') as f:
++++++    content = f.read()
++++++
++++++# Add useRef to React import
++++++content = re.sub(r"import React, { useState, useEffect } from 'react';", "import React, { useState, useEffect, useRef } from 'react';", content)
++++++
++++++# Define LazyVaultCard
++++++lazy_card_code = """
++++++const LazyVaultCard = ({ item, onDelete, onArchive, onRestore, onEdit }) => {
++++++  const [isVisible, setIsVisible] = useState(false);
++++++  const cardRef = useRef(null);
++++++
++++++  useEffect(() => {
++++++    const observer = new IntersectionObserver(
++++++      ([entry]) => {
++++++        if (entry.isIntersecting) {
++++++          setIsVisible(true);
++++++          observer.disconnect();
++++++        }
++++++      },
++++++      { rootMargin: '200px' }
++++++    );
++++++
++++++    if (cardRef.current) {
++++++      observer.observe(cardRef.current);
++++++    }
++++++
++++++    return () => observer.disconnect();
++++++  }, []);
++++++
++++++  return (
++++++    <div ref={cardRef} className="h-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px' }}>
++++++      {isVisible ? (
++++++        <VaultArticleCard post={item} onDelete={onDelete} onArchive={onArchive} onRestore={onRestore} onEdit={onEdit} />
++++++      ) : (
++++++        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-[400px] animate-pulse rounded-sm"></div>
++++++      )}
++++++    </div>
++++++  );
++++++};
++++++"""
++++++
++++++# Insert LazyVaultCard before EmptyState
++++++content = re.sub(r"const EmptyState = ", lazy_card_code + "\n\nconst EmptyState = ", content)
++++++
++++++# Update EmptyState to receive setSearchParams
++++++content = re.sub(
++++++    r"const EmptyState = \(\{ isFilterEmpty, statusFilter, hasSearchQuery \}\) => \{",
++++++    "const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {",
++++++    content
++++++)
++++++
++++++# Replace items.map in render
++++++content = content.replace(
++++++    "<VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />",
++++++    "<LazyVaultCard key={item.id} item={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />"
++++++)
++++++
++++++with open('src/pages/Dashboard.jsx', 'w') as f:
++++++    f.write(content)
++++++
+++++diff --git a/patch_emptystate.py b/patch_emptystate.py
+++++new file mode 100644
+++++index 0000000..e8b653f
+++++--- /dev/null
++++++++ b/patch_emptystate.py
+++++@@ -0,0 +1,125 @@
++++++import re
++++++
++++++with open('src/pages/Dashboard.jsx', 'r') as f:
++++++    content = f.read()
++++++
++++++old_empty_state = """
++++++const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
++++++  let message = 'You have not saved any operational intel to your secure vault yet.';
++++++  if (isFilterEmpty) {
++++++    if (hasSearchQuery) {
++++++      message = 'No records match your query.';
++++++    } else if (statusFilter === 'Archived') {
++++++      message = 'No archived operational intel found.';
++++++    } else if (statusFilter === 'Active') {
++++++      message = 'No active intel found.';
++++++    } else {
++++++      message = 'No saved items match your filter criteria.';
++++++    }
++++++  }
++++++
++++++  return (
++++++    <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
++++++      <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
++++++        <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
++++++        </svg>
++++++      </div>
++++++      <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
++++++      <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
++++++        {message}
++++++      </p>
++++++    </div>
++++++  );
++++++};
++++++"""
++++++
++++++new_empty_state = """
++++++const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
++++++  if (!isFilterEmpty && !hasSearchQuery) {
++++++    return (
++++++      <div className="flex flex-col items-center justify-center p-12 text-center border border-yellow-electric/20 bg-black/60 backdrop-blur-md rounded-sm deco-brackets mt-8">
++++++        <div className="w-16 h-16 rounded-full border-2 border-yellow-electric/30 flex items-center justify-center mb-6 relative">
++++++           <div className="absolute inset-0 rounded-full border border-yellow-electric/10 animate-ping"></div>
++++++           <svg className="w-8 h-8 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
++++++           </svg>
++++++        </div>
++++++        <div className="inline-block px-3 py-1 mb-4 border border-yellow-electric/30 bg-yellow-electric/5 rounded-sm">
++++++          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-electric">ELLARS_PERSONAL // AXiM Tenant Isolated</span>
++++++        </div>
++++++        <h3 className="text-white font-editorial font-bold text-2xl mb-4">Secure Space Initialized</h3>
++++++        <ul className="text-left space-y-4 mb-8">
++++++          <li className="flex items-start space-x-3">
++++++             <span className="w-4 h-4 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center shrink-0 mt-0.5">
++++++               <span className="w-2 h-2 rounded-full bg-green-500"></span>
++++++             </span>
++++++             <div>
++++++               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 1: Security Handshake Verified</p>
++++++               <p className="text-xs text-gray-500 font-editorial">Encrypted local queue & Supabase auth linked.</p>
++++++             </div>
++++++          </li>
++++++          <li className="flex items-start space-x-3">
++++++             <span className="w-4 h-4 rounded-full bg-yellow-electric/20 border border-yellow-electric flex items-center justify-center shrink-0 mt-0.5">
++++++               <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
++++++             </span>
++++++             <div>
++++++               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 2: Initialize First Transmission</p>
++++++               <p className="text-xs text-gray-500 font-editorial">Your vault is empty. Draft an initial dispatch to store your first intelligence asset.</p>
++++++             </div>
++++++          </li>
++++++        </ul>
++++++        <button
++++++          onClick={onNavigate}
++++++          className="px-6 py-3 bg-yellow-electric/10 border border-yellow-electric/50 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/20 transition-colors flex items-center space-x-2"
++++++        >
++++++          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
++++++          </svg>
++++++          <span>Draft Initial Dispatch</span>
++++++        </button>
++++++      </div>
++++++    );
++++++  }
++++++
++++++  let message = 'You have not saved any operational intel to your secure vault yet.';
++++++  if (isFilterEmpty) {
++++++    if (hasSearchQuery) {
++++++      message = 'No records match your query.';
++++++    } else if (statusFilter === 'Archived') {
++++++      message = 'No archived operational intel found.';
++++++    } else if (statusFilter === 'Active') {
++++++      message = 'No active intel found.';
++++++    } else {
++++++      message = 'No saved items match your filter criteria.';
++++++    }
++++++  }
++++++
++++++  return (
++++++    <div className="flex flex-col items-center justify-center p-12 text-center border border-white/10 bg-black/40 backdrop-blur-md rounded-sm deco-brackets mt-8">
++++++      <div className="w-12 h-12 rounded-full border border-yellow-electric/20 flex items-center justify-center mb-4">
++++++        <svg className="w-6 h-6 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
++++++        </svg>
++++++      </div>
++++++      <h3 className="text-white font-editorial font-bold text-xl mb-2">Vault Empty</h3>
++++++      <p className="text-gray-400 text-sm max-w-md font-mono uppercase tracking-widest text-xs">
++++++        {message}
++++++      </p>
++++++    </div>
++++++  );
++++++};
++++++"""
++++++
++++++content = content.replace(old_empty_state.strip(), new_empty_state.strip())
++++++
++++++# Find the EmptyState instantiation and add onNavigate
++++++content = re.sub(
++++++    r"<EmptyState isFilterEmpty=\{allItems\.length > 0 && items\.length === 0\} statusFilter=\{statusFilter\} hasSearchQuery=\{!!debouncedSearchQuery\} />",
++++++    r"<EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} onNavigate={() => setSearchParams({ tab: 'tools', tool: 'publisher' })} />",
++++++    content
++++++)
++++++
++++++with open('src/pages/Dashboard.jsx', 'w') as f:
++++++    f.write(content)
++++++
+++++diff --git a/patch_livebroadcast.py b/patch_livebroadcast.py
+++++new file mode 100644
+++++index 0000000..3673537
+++++--- /dev/null
++++++++ b/patch_livebroadcast.py
+++++@@ -0,0 +1,85 @@
++++++import re
++++++
++++++with open('src/components/home/LiveBroadcast.jsx', 'r') as f:
++++++    content = f.read()
++++++
++++++# Replace the polling logic
++++++old_polling = """
++++++  // Polling for live status
++++++  useEffect(() => {
++++++    let intervalId;
++++++
++++++    const checkLiveStatus = async () => {
++++++      const controller = new AbortController();
++++++      const timeoutId = setTimeout(() => controller.abort(), 5000);
++++++      try {
++++++        const response = await fetch('/api/v1/stream/status', { signal: controller.signal });
++++++        clearTimeout(timeoutId);
++++++        if (response.ok) {
++++++          const data = await response.json();
++++++          setIsLiveStreamActive(data.isLiveStreamActive);
++++++        }
++++++      } catch (err) {
++++++        clearTimeout(timeoutId);
++++++        console.warn('[LiveBroadcast] Edge status polling failed:', err);
++++++        setIsLiveStreamActive(false);
++++++      }
++++++    };
++++++
++++++    // Check immediately, then poll every 30 seconds
++++++    checkLiveStatus();
++++++    intervalId = setInterval(checkLiveStatus, 30000);
++++++
++++++    return () => clearInterval(intervalId);
++++++  }, [setIsLiveStreamActive]);
++++++"""
++++++
++++++new_polling = """
++++++  // Polling for live status with exponential backoff
++++++  useEffect(() => {
++++++    let pollTimeout;
++++++    let currentDelay = 5000;
++++++
++++++    const checkLiveStatus = async () => {
++++++      const controller = new AbortController();
++++++      const timeoutId = setTimeout(() => controller.abort(), 5000);
++++++      try {
++++++        const response = await fetch('/api/v1/stream/status', { signal: controller.signal });
++++++        clearTimeout(timeoutId);
++++++        if (response.ok) {
++++++          const data = await response.json();
++++++          setIsLiveStreamActive(data.isLiveStreamActive);
++++++          if (data.isLiveStreamActive) {
++++++            currentDelay = 5000;
++++++          } else {
++++++            currentDelay = Math.min(currentDelay * 1.5, 60000);
++++++          }
++++++        } else {
++++++          setIsLiveStreamActive(false);
++++++          currentDelay = Math.min(currentDelay * 1.5, 60000);
++++++        }
++++++      } catch (err) {
++++++        clearTimeout(timeoutId);
++++++        console.warn('[LiveBroadcast] Edge status polling failed:', err);
++++++        setIsLiveStreamActive(false);
++++++        currentDelay = Math.min(currentDelay * 1.5, 60000);
++++++      }
++++++      pollTimeout = setTimeout(checkLiveStatus, currentDelay);
++++++    };
++++++
++++++    // Check immediately
++++++    checkLiveStatus();
++++++
++++++    return () => {
++++++      if (pollTimeout) {
++++++        clearTimeout(pollTimeout);
++++++      }
++++++    };
++++++  }, [setIsLiveStreamActive]);
++++++"""
++++++
++++++content = content.replace(old_polling.strip(), new_polling.strip())
++++++
++++++with open('src/components/home/LiveBroadcast.jsx', 'w') as f:
++++++    f.write(content)
++++++
+++++diff --git a/patch_plan.py b/patch_plan.py
+++++new file mode 100644
+++++index 0000000..d1349b7
+++++--- /dev/null
++++++++ b/patch_plan.py
+++++@@ -0,0 +1,12 @@
++++++import re
++++++
++++++with open('PlanForContinuedDevelopment.md', 'r') as f:
++++++    content = f.read()
++++++
++++++new_sprint = """- **V6.15 Vault Grid Lazy Rendering & DOM Virtualization, Live Broadcast Dynamic Stream Polling, & Secure Space Onboarding Flow:** Implemented `LazyVaultCard` wrapper in `Dashboard.jsx` to render vault items with `content-visibility: auto` using `IntersectionObserver` when items approach the viewport, enhancing rapid scroll performance. Refactored the `LiveBroadcast.jsx` stream status polling from a fixed `setInterval` to a recursive `setTimeout` with exponential backoff (starting at 5s, capping at 60s) to minimize edge requests during downtime while maintaining real-time sync when active. Enhanced the `EmptyState` component with a dedicated "Secure Space Onboarding Flow" for new users, featuring an Art Deco security badge, verification steps, and a "Draft Initial Dispatch" button to seamlessly guide them into the micro-program publisher tool."""
++++++
++++++content = content.replace("## Completed Sprints\n", f"## Completed Sprints\n{new_sprint}\n")
++++++
++++++with open('PlanForContinuedDevelopment.md', 'w') as f:
++++++    f.write(content)
++++++
+++++diff --git a/src/components/home/LiveBroadcast.jsx b/src/components/home/LiveBroadcast.jsx
+++++index c42a180..97b8938 100644
+++++--- a/src/components/home/LiveBroadcast.jsx
++++++++ b/src/components/home/LiveBroadcast.jsx
+++++@@ -26,9 +26,10 @@ const LiveBroadcast = () => {
+++++     }
+++++   }, []);
+++++
+++++-  // Polling for live status
++++++  // Polling for live status with exponential backoff
+++++   useEffect(() => {
+++++-    let intervalId;
++++++    let pollTimeout;
++++++    let currentDelay = 5000;
+++++
+++++     const checkLiveStatus = async () => {
+++++       const controller = new AbortController();
+++++@@ -39,19 +40,32 @@ const LiveBroadcast = () => {
+++++         if (response.ok) {
+++++           const data = await response.json();
+++++           setIsLiveStreamActive(data.isLiveStreamActive);
++++++          if (data.isLiveStreamActive) {
++++++            currentDelay = 5000;
++++++          } else {
++++++            currentDelay = Math.min(currentDelay * 1.5, 60000);
++++++          }
++++++        } else {
++++++          setIsLiveStreamActive(false);
++++++          currentDelay = Math.min(currentDelay * 1.5, 60000);
+++++         }
+++++       } catch (err) {
+++++         clearTimeout(timeoutId);
+++++         console.warn('[LiveBroadcast] Edge status polling failed:', err);
+++++         setIsLiveStreamActive(false);
++++++        currentDelay = Math.min(currentDelay * 1.5, 60000);
+++++       }
++++++      pollTimeout = setTimeout(checkLiveStatus, currentDelay);
+++++     };
+++++
+++++-    // Check immediately, then poll every 30 seconds
++++++    // Check immediately
+++++     checkLiveStatus();
+++++-    intervalId = setInterval(checkLiveStatus, 30000);
+++++
+++++-    return () => clearInterval(intervalId);
++++++    return () => {
++++++      if (pollTimeout) {
++++++        clearTimeout(pollTimeout);
++++++      }
++++++    };
+++++   }, [setIsLiveStreamActive]);
+++++
+++++   // Auto-scroll chat container to the bottom when chatLogs change
+++++diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+++++index d0d16a0..5db8bb0 100644
+++++--- a/src/pages/Dashboard.jsx
++++++++ b/src/pages/Dashboard.jsx
+++++@@ -1,4 +1,4 @@
+++++-import React, { useState, useEffect } from 'react';
++++++import React, { useState, useEffect, useRef } from 'react';
+++++ import { Helmet } from 'react-helmet-async';
+++++ import { motion, AnimatePresence } from 'framer-motion';
+++++ import useSWR, { useSWRConfig } from 'swr';
+++++@@ -13,7 +13,88 @@ import AccountSettings from '../components/dashboard/AccountSettings';
+++++ import MediaUploads from '@/components/dashboard/MediaUploads';
+++++ import { useSearchParams } from 'react-router-dom';
+++++
+++++-const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery }) => {
++++++
++++++const LazyVaultCard = ({ item, onDelete, onArchive, onRestore, onEdit }) => {
++++++  const [isVisible, setIsVisible] = useState(false);
++++++  const cardRef = useRef(null);
++++++
++++++  useEffect(() => {
++++++    const observer = new IntersectionObserver(
++++++      ([entry]) => {
++++++        if (entry.isIntersecting) {
++++++          setIsVisible(true);
++++++          observer.disconnect();
++++++        }
++++++      },
++++++      { rootMargin: '200px' }
++++++    );
++++++
++++++    if (cardRef.current) {
++++++      observer.observe(cardRef.current);
++++++    }
++++++
++++++    return () => observer.disconnect();
++++++  }, []);
++++++
++++++  return (
++++++    <div ref={cardRef} className="h-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '400px' }}>
++++++      {isVisible ? (
++++++        <VaultArticleCard post={item} onDelete={onDelete} onArchive={onArchive} onRestore={onRestore} onEdit={onEdit} />
++++++      ) : (
++++++        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-[400px] animate-pulse rounded-sm"></div>
++++++      )}
++++++    </div>
++++++  );
++++++};
++++++
++++++
++++++const EmptyState = ({ isFilterEmpty, statusFilter, hasSearchQuery, onNavigate }) => {
++++++  if (!isFilterEmpty && !hasSearchQuery) {
++++++    return (
++++++      <div className="flex flex-col items-center justify-center p-12 text-center border border-yellow-electric/20 bg-black/60 backdrop-blur-md rounded-sm deco-brackets mt-8">
++++++        <div className="w-16 h-16 rounded-full border-2 border-yellow-electric/30 flex items-center justify-center mb-6 relative">
++++++           <div className="absolute inset-0 rounded-full border border-yellow-electric/10 animate-ping"></div>
++++++           <svg className="w-8 h-8 text-yellow-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
++++++           </svg>
++++++        </div>
++++++        <div className="inline-block px-3 py-1 mb-4 border border-yellow-electric/30 bg-yellow-electric/5 rounded-sm">
++++++          <span className="font-mono text-[10px] uppercase tracking-widest text-yellow-electric">ELLARS_PERSONAL // AXiM Tenant Isolated</span>
++++++        </div>
++++++        <h3 className="text-white font-editorial font-bold text-2xl mb-4">Secure Space Initialized</h3>
++++++        <ul className="text-left space-y-4 mb-8">
++++++          <li className="flex items-start space-x-3">
++++++             <span className="w-4 h-4 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center shrink-0 mt-0.5">
++++++               <span className="w-2 h-2 rounded-full bg-green-500"></span>
++++++             </span>
++++++             <div>
++++++               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 1: Security Handshake Verified</p>
++++++               <p className="text-xs text-gray-500 font-editorial">Encrypted local queue & Supabase auth linked.</p>
++++++             </div>
++++++          </li>
++++++          <li className="flex items-start space-x-3">
++++++             <span className="w-4 h-4 rounded-full bg-yellow-electric/20 border border-yellow-electric flex items-center justify-center shrink-0 mt-0.5">
++++++               <span className="w-2 h-2 rounded-full bg-yellow-electric animate-pulse"></span>
++++++             </span>
++++++             <div>
++++++               <p className="text-sm font-mono tracking-widest text-gray-300 uppercase">Step 2: Initialize First Transmission</p>
++++++               <p className="text-xs text-gray-500 font-editorial">Your vault is empty. Draft an initial dispatch to store your first intelligence asset.</p>
++++++             </div>
++++++          </li>
++++++        </ul>
++++++        <button
++++++          onClick={onNavigate}
++++++          className="px-6 py-3 bg-yellow-electric/10 border border-yellow-electric/50 text-yellow-electric font-mono text-xs uppercase tracking-widest hover:bg-yellow-electric/20 transition-colors flex items-center space-x-2"
++++++        >
++++++          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++++++             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
++++++          </svg>
++++++          <span>Draft Initial Dispatch</span>
++++++        </button>
++++++      </div>
++++++    );
++++++  }
++++++
+++++   let message = 'You have not saved any operational intel to your secure vault yet.';
+++++   if (isFilterEmpty) {
+++++     if (hasSearchQuery) {
+++++@@ -336,7 +417,7 @@ useEffect(() => {
+++++                     ))}
+++++                   </div>
+++++                 ) : items.length === 0 ? (
+++++-                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} />
++++++                  <EmptyState isFilterEmpty={allItems.length > 0 && items.length === 0} statusFilter={statusFilter} hasSearchQuery={!!debouncedSearchQuery} onNavigate={() => setSearchParams({ tab: 'tools', tool: 'publisher' })} />
+++++                 ) : (
+++++
+++++                   <>
+++++@@ -357,7 +438,7 @@ useEffect(() => {
+++++                     )}
+++++                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+++++                       {items.map(item => (
+++++-                        <VaultArticleCard key={item.id} post={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
++++++                        <LazyVaultCard key={item.id} item={item} onDelete={setItemToDelete} onArchive={handleArchive} onRestore={handleRestore} onEdit={handleEdit} />
+++++                       ))}
+++++                     </div>
+++++                   </>
+++++diff --git a/test_plan.txt b/test_plan.txt
+++++new file mode 100644
+++++index 0000000..4db8816
+++++--- /dev/null
++++++++ b/test_plan.txt
+++++@@ -0,0 +1,24 @@
++++++1. Implement Vault Grid Lazy Rendering & DOM Virtualization in Dashboard.jsx.
++++++   - Create a `LazyVaultCard` wrapper component inside `Dashboard.jsx`.
++++++   - Use `IntersectionObserver` to track when the card approaches
++++\ No newline at end of file
+++--
+++2.53.0
+++
++--
++2.53.0
++
