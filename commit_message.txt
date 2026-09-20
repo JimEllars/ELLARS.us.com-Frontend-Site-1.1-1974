@@ -1,7 +1,0 @@
-Production hardening, telemetry queueing, and UI polish.
-
-- Configured useTelemetry hook with offline-safe local queues and `keepalive: true` fetches.
-- Integrated real-time "Queued Local Events" metric display to TelemetryStatus dashboard.
-- Addressed flickering auth states in ProtectedRoute with an animated pulse skeleton guard verifying via `_hasHydrated` and `isHydrating` fields.
-- Implemented robust `Escape` key listeners and complete keyboard trap behavior across Newsletter, Search, and Donate modals while restoring trigger focus.
-- Updated Cloudflare edge cache-busting headers to lock immutable asset requests while expiring entry endpoints; updated PWA `sw.js` cache to v1.2-prod with cleanup events.
