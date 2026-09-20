@@ -24,7 +24,7 @@ const NewsletterModal = () => {
     const previousFocus = document.activeElement;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'Esc') {
         setNewsletterModalOpen(false);
       }
       if (e.key === 'Tab') {
@@ -74,6 +74,9 @@ const NewsletterModal = () => {
     }
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        previousFocus.focus();
+      }
     };
   }, [isNewsletterModalOpen, setNewsletterModalOpen]);
 

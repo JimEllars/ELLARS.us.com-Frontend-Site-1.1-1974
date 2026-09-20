@@ -16,7 +16,7 @@ const DonateModal = () => {
     const previousFocus = document.activeElement;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'Esc') {
         setDonateModalOpen(false);
       }
       if (e.key === 'Tab') {
@@ -56,6 +56,9 @@ const DonateModal = () => {
     }
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        previousFocus.focus();
+      }
     };
   }, [isDonateModalOpen, setDonateModalOpen]);
   const [botValue, setBotValue] = useState('');

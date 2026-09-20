@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ellars-us-com-v1.1';
+const CACHE_NAME = 'ellars-us-com-v1.2-prod';
 
 const PRECACHE_ASSETS = [
   '/',
