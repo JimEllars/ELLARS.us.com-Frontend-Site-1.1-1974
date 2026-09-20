@@ -46,9 +46,8 @@ const ProtectedRoute = () => {
        } catch(e) {
          if (import.meta.env.DEV) console.error("[ProtectedRoute] Exception during validation:", e);
          // Instead of immediate logout on network drop, handle transient network drop
-         if (isOnline) {
-             clearAuth();
-         }
+         // Removed clearAuth on transient network failure
+         if (!isOnline) { /* keep auth */ } else { clearAuth(); }
        } finally {
          setIsValidating(false);
        }

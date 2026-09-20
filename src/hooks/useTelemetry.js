@@ -115,7 +115,7 @@ export const useTelemetry = () => {
             // Note: Since sendBeacon doesn't easily support custom headers, we use fetch with keepalive as primary
             // and sendBeacon as fallback or we use a query param if backend supports it. For now, try sendBeacon,
             // if it returns false, we fallback to fetch with keepalive. Or we can just use sendBeacon.
-            const beaconSent = navigator.sendBeacon(apiUrl, blob);
+            const beaconSent = navigator.sendBeacon(apiUrl, JSON.stringify(prunedQueue));
 
             if (!beaconSent) {
                 fetch(apiUrl, {

@@ -403,6 +403,19 @@ const AutomationCalculator = () => {
               </table>
 
               <div className="mt-4 pt-4 border-t border-white/5 flex justify-end print:hidden">
+
+                <button
+                  onClick={() => {
+                    const text = `Automation Dividend Calculator Summary\nCorporate Tax Base: 2.5 Trillion\nEligible Population: 200 Million\nEfficiency Rate: ${efficiency}%\nHours Multiplier: ${(hours / 40).toFixed(2)}x\nProjected Monthly Return: ${displayMonthly.toLocaleString()}\nProjected Annual Dividend: ${displayAnnual.toLocaleString()}`;
+                    navigator.clipboard.writeText(text);
+                    trackEvent('engagement_scoring', { action: 'copy_summary', value: displayAnnual });
+                    toast.success('Summary copied to clipboard!');
+                  }}
+                  className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:outline-none mr-4"
+                >
+                  <span className="shrink-0">[📋]</span>
+                  <span className="truncate">Copy Summary</span>
+                </button>
                 <button
                   onClick={() => window.print()}
                   className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:outline-none"
