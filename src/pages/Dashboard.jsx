@@ -359,8 +359,7 @@ useEffect(() => {
           </motion.div>
 
           <AnimatePresence mode="wait">
-            {currentTab === 'vault' && (
-              <motion.div
+            <motion.div style={{ display: currentTab === "vault" ? "block" : "none" }}
                 key="vault"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -455,10 +454,8 @@ useEffect(() => {
                    </div>
                 )}
               </motion.div>
-            )}
 
-            {currentTab === 'tools' && (
-              <motion.div
+            <motion.div style={{ display: currentTab === "tools" ? "block" : "none" }}
                 key="tools"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -505,11 +502,9 @@ useEffect(() => {
                   </div>
                 )}
               </motion.div>
-            )}
 
 
-            {currentTab === 'media' && (
-              <motion.div
+            <motion.div style={{ display: currentTab === "media" ? "block" : "none" }}
                 key="media"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -517,10 +512,8 @@ useEffect(() => {
               >
                 <MediaUploads />
               </motion.div>
-            )}
 
-            {currentTab === 'settings' && (
-              <motion.div
+            <motion.div style={{ display: currentTab === "settings" ? "block" : "none" }}
                 key="settings"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -528,7 +521,6 @@ useEffect(() => {
               >
                 <AccountSettings />
               </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </div>

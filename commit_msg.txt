@@ -1,6 +1,7 @@
-Sprint V5.44: Hardening layout, linking and telemetry
+Sprint v6.14: Production Hardening, Telemetry Edge-Sync & Session Resilience
 
-This commit completes the tasks required for Sprint V5.44:
-- Task 1: Verified that dynamic routing in App.jsx and Platform.jsx connects seamlessly into the DirectiveDetail view and lazy-loads the correct embedded views, particularly the AutomationCalculator nested mapping.
-- Task 2: Upgraded structural wrapper layouts in DirectiveDetail.jsx to use strict Tailwind 'min-w-0 break-words' bounds alongside 'deco-frame' block classes to guarantee uniform cross-platform behavior.
-- Task 3: Audited and verified all component lifecycle teardowns and interval clearances during unmount inside useTelemetry.js and AutomationCalculator.jsx, ensuring out-of-band telemetry pipelines inject the proper tracing headers uniformly.
+This commit completes the tasks required for Sprint v6.14:
+- Auth & Dashboard Session Shielding: ProtectedRoute gracefully handles transient network drops without logging the user out. Dashboard tabs maintain their state during sub-tab switches using CSS `display` logic instead of unmounting.
+- Telemetry Pipeline & Edge Worker Activation: useTelemetry.js batches telemetry events and correctly implements `navigator.sendBeacon` for edge syncing on page unload.
+- Cloudflare Edge Caching & Service Worker Synchronization: public/_headers correctly caches assets. Service worker updates trigger a seamless reload by dispatching `SKIP_WAITING` via `UpdatePrompt.jsx`.
+- UI/UX Refinement & Enterprise Micro-Interactions: AutomationCalculator includes a 'Copy Summary' action. TelemetryStatus uses lighter text for improved contrast. SearchOverlay is visually accessible and properly handles keyboard commands.

@@ -7,7 +7,16 @@ const UpdatePrompt = () => {
 
   const handleRefresh = () => {
     setUpdateAvailable(false);
-    window.location.reload();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
   };
 
   return (

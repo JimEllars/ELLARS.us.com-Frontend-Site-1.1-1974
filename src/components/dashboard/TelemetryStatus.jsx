@@ -61,26 +61,26 @@ const TelemetryStatus = () => {
       </h3>
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Network State</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-300">Network State</span>
           <span className={`font-mono text-xs font-bold uppercase tracking-widest ${isOnline ? 'text-green-500' : 'text-red-500'}`}>
             {isOnline ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Queued Local Events</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-300">Queued Local Events</span>
           <span className="font-mono text-xs uppercase tracking-widest text-white">
             {queueDepth} Pending
           </span>
         </div>
 
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Last Queue Dispatch</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-300">Last Queue Dispatch</span>
           <span className="font-mono text-xs uppercase tracking-widest text-white">
             {lastDispatch}
           </span>
         </div>
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Edge Sync Status</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-300">Edge Sync Status</span>
           <div className="flex items-center gap-2">
             {queueDepth === 0 ? (
               <>
@@ -97,7 +97,7 @@ const TelemetryStatus = () => {
         </div>
 
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Protocol</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-300">Protocol</span>
           <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">
             AXiM-Frontend-v1
           </span>
