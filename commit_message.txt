@@ -1,7 +1,7 @@
-Sprint V6.02 – Cloudflare Stream Edge Status Verification, Chat Persistence, & Media Hardening
+Production hardening, telemetry queueing, and UI polish.
 
-- Enhanced public/worker.js to query Cloudflare Stream Live Input status directly with a test override flag
-- Implemented client/edge chat persistence in LiveBroadcast.jsx utilizing localStorage and DOMPurify for sanitization
-- Pruned legacy components (MicroProgramLoader.jsx)
-- Hardened MediaPlaylist.jsx video sources with native fallbacks and Art Deco poster display on errors
-- Generated v6.02-modifications.patch output
+- Configured useTelemetry hook with offline-safe local queues and `keepalive: true` fetches.
+- Integrated real-time "Queued Local Events" metric display to TelemetryStatus dashboard.
+- Addressed flickering auth states in ProtectedRoute with an animated pulse skeleton guard verifying via `_hasHydrated` and `isHydrating` fields.
+- Implemented robust `Escape` key listeners and complete keyboard trap behavior across Newsletter, Search, and Donate modals while restoring trigger focus.
+- Updated Cloudflare edge cache-busting headers to lock immutable asset requests while expiring entry endpoints; updated PWA `sw.js` cache to v1.2-prod with cleanup events.

@@ -91,6 +91,9 @@ const SearchOverlay = ({ isOpen, onClose }) => {
         document.body.style.overflow = 'unset';
         document.body.style.paddingRight = '';
         document.removeEventListener('keydown', handleKeyDown);
+        if (previousFocus && typeof previousFocus.focus === 'function') {
+          previousFocus.focus();
+        }
       };
     }
   }, [isOpen, onClose]);

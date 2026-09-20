@@ -67,7 +67,7 @@ const TelemetryStatus = () => {
           </span>
         </div>
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Queue Depth</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Queued Local Events</span>
           <span className="font-mono text-xs uppercase tracking-widest text-white">
             {queueDepth} Pending
           </span>

@@ -216,6 +216,7 @@ export const useTelemetry = () => {
             },
             body: JSON.stringify(prunedQueue), // Single array payload block
             signal: controller.signal,
+            keepalive: true,
           });
 
           // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
