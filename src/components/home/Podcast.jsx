@@ -1,31 +1,36 @@
 import React, { useState, useRef } from 'react';
+import { useAppStore } from '@/store/useAppStore';
 import { motion } from 'framer-motion';
 import SafeIcon from '@/common/SafeIcon';
 
 const Podcast = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const audioIsPlaying = useAppStore(state => state.audioIsPlaying);
+  const setAudioIsPlaying = useAppStore(state => state.setAudioIsPlaying);
+  const setAudioActiveTrack = useAppStore(state => state.setAudioActiveTrack);
+  const audioActiveTrack = useAppStore(state => state.audioActiveTrack);
+
+  const isPlaying = audioIsPlaying && audioActiveTrack?.id === 'episode-4';
+
   const [isMuted, setIsMuted] = useState(true);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(true);
   const [videoError, setVideoError] = useState(false);
-  const videoRef = useRef(null);
+
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    if (audioActiveTrack?.id !== 'episode-4') {
+        setAudioActiveTrack({ id: 'episode-4', title: 'Ellars Rants: Episode 04', url: 'https://www.w3schools.com/html/mov_bbb.webm' });
+        setAudioIsPlaying(true);
+    } else {
+        setAudioIsPlaying(!audioIsPlaying);
     }
   };
 
+
+
+
   const toggleMute = (e) => {
     e.stopPropagation();
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
+    setIsMuted(!isMuted);
   };
 
   const handleVideoLoaded = () => {
@@ -69,18 +74,12 @@ const Podcast = () => {
                 </div>
               )}
 
-              <video
-                ref={videoRef}
+              <img
+                src="/assets/podcast_thumbnail.jpg"
+                alt="Ellars Rants Episode 4"
                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
-                playsInline
-                muted={isMuted}
-                preload="metadata"
-                onLoadedData={handleVideoLoaded}
-                onError={handleVideoError}
-              >
-                <source src="https://www.w3schools.com/html/mov_bbb.webm" type="video/webm" />
-                Your browser does not support the video tag.
-              </video>
+                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'; }}
+              />
 
               <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="w-20 h-20 bg-void/40 backdrop-blur-md rounded-full flex items-center justify-center border border-yellow-electric/30 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(253,224,71,0.1)]">

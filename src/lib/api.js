@@ -476,13 +476,19 @@ export async function verifySession() {
 
     if (error) {
        console.error("Session verification error:", error.message);
+       if (error.message.includes('fetch') || error.message.includes('Network')) {
+           throw error; // Let the caller handle transient errors
+       }
+       if (error.status === 401 || error.status === 403) {
+           return false; // Explicitly unauthenticated
+       }
        return null;
     }
 
     return session;
   } catch (error) {
     console.error("Session verification failed:", error);
-    return null;
+    throw error; // Throw so we don't return null and clear auth by mistake
   }
 }
 

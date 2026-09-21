@@ -3,6 +3,7 @@ import Honeypot from '@/components/common/Honeypot';
 import { useAppStore } from '@/store/useAppStore';
 import SafeIcon from '@/common/SafeIcon';
 import DOMPurify from 'dompurify';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { v4 as uuidv4 } from 'uuid';
 import { publishVaultItem, updateVaultItem } from '@/lib/api';
 
@@ -10,6 +11,7 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
   const showToast = useAppStore(state => state.showToast);
 
     const [botValue, setBotValue] = useState('');
+  const isOnline = useNetworkStatus();
 const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(uuidv4());
 
@@ -89,6 +91,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const handleStageDispatch = async (e) => {
     e.preventDefault();
     if (botValue) {
+      // Strictly enforce Honeypot check
       setIsSubmitting(true);
       setTimeout(() => {
         setIsSubmitting(false);
@@ -99,6 +102,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     if (!formData.title || !formData.content) {
       showToast('Title and Content are required to stage.');
       return;
+    }
+
+    if (!isOnline) {
+       const offlineQueue = JSON.parse(localStorage.getItem('ellars_offline_forms') || '[]');
+       offlineQueue.push({ type: 'dispatch', payload: formData, editingId: editingItem?.id, timestamp: Date.now() });
+       localStorage.setItem('ellars_offline_forms', JSON.stringify(offlineQueue));
+       showToast("Network offline. Dispatch queued locally.");
+       if (onSuccess) onSuccess();
+       return;
     }
 
     setIsSubmitting(true);

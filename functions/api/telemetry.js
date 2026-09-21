@@ -1,15 +1,22 @@
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, env } = context;
 
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*', // Adjust based on origin checking
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, X-Project-Scope',
   };
 
+  const origin = request.headers.get('Origin');
+  const allowedOrigins = ['https://ellars.us.com', 'https://www.ellars.us.com', 'https://ellars.io', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+
+  if (origin && allowedOrigins.includes(origin)) {
+    corsHeaders['Access-Control-Allow-Origin'] = origin;
+  }
+
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   if (request.method !== 'POST') {
@@ -17,13 +24,6 @@ export async function onRequest(context) {
   }
 
   try {
-    const origin = request.headers.get('Origin');
-    const allowedOrigins = ['https://ellars.us.com', 'https://www.ellars.us.com', 'https://ellars.io', 'http://localhost:5173', 'http://127.0.0.1:5173'];
-
-    if (origin && allowedOrigins.includes(origin)) {
-      corsHeaders['Access-Control-Allow-Origin'] = origin;
-    }
-
     // Attempt to read the payload
     let payload;
     try {
@@ -42,14 +42,24 @@ export async function onRequest(context) {
       }
     }
 
-    // NOTE: Here we would forward the payload to the AXiM Core API.
-    // For now, we simulate successful ingestion by returning 200/204 to the client
-    // This allows the SPA to clear its local queue.
+    // Verify Cloudflare environment bindings
+    if (!env || (!env.TELEMETRY_KV && !env.ANALYTICS)) {
+      // Fallback to structured JSON console.log streaming
+      console.log(JSON.stringify({ type: "edge_telemetry_log", count: payload.length, data: payload }));
+
+      return new Response(JSON.stringify({ status: "accepted", mode: "edge_log" }), {
+        status: 202,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
 
     // Example: Forwarding to AXiM Core (pseudo-code)
     /*
-    const aximApiKey = context.env.AXIM_API_KEY;
-    const aximUrl = context.env.AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
+    const aximApiKey = env.AXIM_API_KEY;
+    const aximUrl = env.AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
 
     if (aximApiKey) {
        await fetch(aximUrl, {

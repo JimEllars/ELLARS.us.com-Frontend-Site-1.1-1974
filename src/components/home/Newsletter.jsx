@@ -3,11 +3,13 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
 import { subscribeToNewsletter } from '@/lib/api';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import Honeypot from '@/components/common/Honeypot';
 
 
 const Newsletter = () => {
   const [email, setEmail] = useState('');
+  const isOnline = useNetworkStatus();
   const turnstileRef = useRef(null);
   const widgetIdRef = useRef(null);
 
@@ -60,6 +62,7 @@ const Newsletter = () => {
     }
 
     if (botValue) {
+      // Strictly enforce Honeypot check
       // Fake success for bots
       setEmail('');
       setBotValue('');
@@ -79,7 +82,21 @@ const Newsletter = () => {
     }
 
     setIsSubmitting(true);
-    setHasError(false);    try {
+    setHasError(false);
+
+    if (!isOnline) {
+       const offlineQueue = JSON.parse(localStorage.getItem('ellars_offline_forms') || '[]');
+       offlineQueue.push({ type: 'newsletter', email: sanitizedEmail, timestamp: Date.now() });
+       localStorage.setItem('ellars_offline_forms', JSON.stringify(offlineQueue));
+       toast.warning("Network offline. Subscription queued and will dispatch when connection restores.");
+       setEmail('');
+       setBotValue('');
+       setSuccess(true);
+       setIsSubmitting(false);
+       return;
+    }
+
+    try {
       const turnstileToken = window.turnstile ? window.turnstile.getResponse() : null;
       const payload = { email: sanitizedEmail, turnstileToken };
       const timeoutPromise = new Promise((_, reject) =>
