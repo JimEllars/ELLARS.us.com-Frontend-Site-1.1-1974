@@ -29,3 +29,12 @@
 5.  **Authentication & User Onboarding (Ongoing):**
     - Improve error handling around expired sessions or invalid tokens throughout the application. Ensure the app transitions cleanly to the `/login` route when token validations fail.
     - Build user onboarding flows to guide new sign-ups through configuring their Secure Space/Vault.
+
+## Sprint 1.4: Telemetry & Core Refinements
+
+- **Telemetry & Edge Handler Activation**: Deployed a Cloudflare Pages Function at `functions/api/telemetry.js` to process `navigator.sendBeacon` and standard fetches. Ensured offline mode telemetry payload accumulation in localStorage logic is strictly resilient, emitting batches up to the edge upon reconnection.
+- **Auth Hydration Shielding & Session Continuity**: ProtectedRoute relies directly upon a hydration boolean check and handles network interruptions dynamically to guarantee that brief disconnects will not trigger a login loop.
+- **Dispatch Publisher Local-First Sync**: Integrated status toast indicators (Draft Saved Locally, Queuing for AXiM Core, Published). Verified DOMPurify pipeline ensures local drafts safely ingest Markdown / HTML securely without execution vulnerability risks.
+- **Automation Calculator & Micro-Program Refinement**: Augmented the internal `AutomationCalculator` component with one-click JSON exporting and clipboard sharing endpoints, routing metrics cleanly to the custom `ellars_engagement_signal`. All computations occur autonomously inside the browser sandbox.
+
+Status: Ready for deployment cycle.

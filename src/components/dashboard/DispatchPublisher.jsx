@@ -82,7 +82,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSaveDraft = () => {
     localStorage.setItem('ellars_draft_dispatch', JSON.stringify(formData));
-    showToast('Draft saved locally.');
+    showToast('Draft Saved Locally.');
   };
 
 
@@ -123,7 +123,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         } else {
            const success = await publishVaultItem(payload);
            if (success) {
-               showToast('Dispatch Staged Successfully.');
+               showToast('Published.');
                setIdempotencyKey(uuidv4()); // reset key
                setFormData({
                    title: '',
@@ -274,7 +274,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             disabled={isSubmitting}
             className="px-6 py-2 bg-yellow-electric/10 text-yellow-electric border border-yellow-electric/30 rounded-sm hover:bg-yellow-electric/20 transition-colors uppercase text-xs tracking-widest font-editorial font-bold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
            >
-              <span>{editingItem ? 'Save Changes' : 'Stage Dispatch'}</span>
+              <span>{isSubmitting ? "Queuing for AXiM Core..." : (editingItem ? "Save Changes" : "Stage Dispatch")}</span>
               <SafeIcon name="Send" className="w-4 h-4" />
            </button>
         </div>

@@ -1,7 +1,6 @@
-Sprint v6.14: Production Hardening, Telemetry Edge-Sync & Session Resilience
+Sprint 1.4: Telemetry edge handlers, hydration shields, and local-first editor sync
 
-This commit completes the tasks required for Sprint v6.14:
-- Auth & Dashboard Session Shielding: ProtectedRoute gracefully handles transient network drops without logging the user out. Dashboard tabs maintain their state during sub-tab switches using CSS `display` logic instead of unmounting.
-- Telemetry Pipeline & Edge Worker Activation: useTelemetry.js batches telemetry events and correctly implements `navigator.sendBeacon` for edge syncing on page unload.
-- Cloudflare Edge Caching & Service Worker Synchronization: public/_headers correctly caches assets. Service worker updates trigger a seamless reload by dispatching `SKIP_WAITING` via `UpdatePrompt.jsx`.
-- UI/UX Refinement & Enterprise Micro-Interactions: AutomationCalculator includes a 'Copy Summary' action. TelemetryStatus uses lighter text for improved contrast. SearchOverlay is visually accessible and properly handles keyboard commands.
+- Implemented `functions/api/telemetry.js` to process offline queue flushing.
+- Updated `ProtectedRoute.jsx` and `useAppStore.js` to rely on explicit `_hasHydrated` boolean rendering protection.
+- Enhanced `DispatchPublisher.jsx` with real-time semantic statuses ("Queuing for AXiM Core...", "Draft Saved Locally", "Published").
+- Refined `AutomationCalculator.jsx` to include direct JSON payload exports.

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useTelemetry } from '@/hooks/useTelemetry';
+import { useAppStore } from "@/store/useAppStore";
 import { toast } from 'react-toastify';
 
 const generateUUID = () => {
@@ -15,6 +16,7 @@ const generateUUID = () => {
 };
 
 const AutomationCalculator = () => {
+  const showToast = useAppStore(state => state.showToast);
   const { trackEvent } = useTelemetry();
 
   const clampValue = (val, min, max) => Math.min(Math.max(val, min), max);
@@ -409,12 +411,25 @@ const AutomationCalculator = () => {
                     const text = `Automation Dividend Calculator Summary\nCorporate Tax Base: 2.5 Trillion\nEligible Population: 200 Million\nEfficiency Rate: ${efficiency}%\nHours Multiplier: ${(hours / 40).toFixed(2)}x\nProjected Monthly Return: ${displayMonthly.toLocaleString()}\nProjected Annual Dividend: ${displayAnnual.toLocaleString()}`;
                     navigator.clipboard.writeText(text);
                     trackEvent('engagement_scoring', { action: 'copy_summary', value: displayAnnual });
-                    toast.success('Summary copied to clipboard!');
+                    showToast("Summary copied to clipboard!");
                   }}
                   className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:outline-none mr-4"
                 >
                   <span className="shrink-0">[📋]</span>
                   <span className="truncate">Copy Summary</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const data = { corporateTaxBase: "2.5 Trillion", eligiblePopulation: "200 Million", efficiencyRate: efficiency, hoursMultiplier: (hours / 40).toFixed(2), projectedMonthlyReturn: displayMonthly, projectedAnnualDividend: displayAnnual };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = "automation_analysis.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                    trackEvent("engagement_scoring", { action: "export_analysis", value: displayAnnual });
+                  }}
+                  className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:outline-none mr-4"
+                >
+                  <span className="shrink-0">[⬇️]</span>
+                  <span className="truncate">Export Analysis</span>
                 </button>
                 <button
                   onClick={() => window.print()}
