@@ -2,7 +2,7 @@ import React from 'react';
 
 const ArticleSkeleton = () => {
   return (
-    <article className="interactive-card flex flex-col h-full rounded-sm overflow-hidden border border-white/5 bg-zinc-900 animate-pulse">
+    <article className="interactive-card flex flex-col h-full rounded-sm overflow-hidden border border-white/5 bg-zinc-900/50 animate-pulse transition-all duration-300">
       <div className="block relative w-full h-64 md:h-80 overflow-hidden border-b border-white/5 bg-zinc-800">
       </div>
 

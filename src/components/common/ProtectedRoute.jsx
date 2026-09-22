@@ -77,7 +77,8 @@ const ProtectedRoute = () => {
 
   }, [_hasHydrated, isHydrating, userToken, clearAuth, isOnline]);
 
-  if (!_hasHydrated || isHydrating || isValidating) {
+  // Non-blocking fallback: only show loader if we have NO token and are validating, otherwise trust token and render Outlet silently.
+  if (!_hasHydrated || isHydrating || (isValidating && !userToken)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-void">
         <div className="flex items-center justify-center animate-pulse">

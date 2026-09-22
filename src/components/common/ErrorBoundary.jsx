@@ -45,9 +45,9 @@ class ErrorBoundary extends React.Component {
             </p>
             <button
               onClick={this.handleReset}
-              className="w-full py-4 bg-yellow-electric text-black font-editorial font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.3)] hover:bg-yellow-400 transition-colors hover:shadow-lg hover:shadow-yellow-electric/20"
+              className="w-full py-4 border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-editorial font-bold text-xs uppercase tracking-widest transition-colors shadow-[0_0_15px_rgba(250,204,21,0.1)] hover:shadow-lg hover:shadow-yellow-electric/10"
             >
-              Return to Home
+              Retry Session
             </button>
           </div>
         </div>

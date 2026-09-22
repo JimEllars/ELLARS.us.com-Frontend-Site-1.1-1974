@@ -34,7 +34,6 @@ export async function onRequest(context) {
 
     // Basic validation
     if (!payload || !Array.isArray(payload)) {
-      // It might be a single payload object from standard fetch
       if(typeof payload === 'object') {
           payload = [payload];
       } else {
@@ -42,10 +41,28 @@ export async function onRequest(context) {
       }
     }
 
+    // Capture edge runtime context
+    const edgeContext = {
+      cf_ray: request.headers.get('cf-ray') || 'unknown',
+      ip_hash: request.headers.get('cf-connecting-ip') ? request.headers.get('cf-connecting-ip').substring(0, 16) + '...' : 'unknown',
+      country: request.headers.get('cf-ipcountry') || 'unknown',
+      user_agent: request.headers.get('user-agent') || 'unknown',
+      edge_timestamp: new Date().toISOString()
+    };
+
+    // Attach edge context to each payload event
+    const enrichedPayload = payload.map(event => {
+       if (event.event_payload) {
+          event.event_payload.edge_context = edgeContext;
+       }
+       return event;
+    });
+
+
     // Verify Cloudflare environment bindings
     if (!env || (!env.TELEMETRY_KV && !env.ANALYTICS)) {
       // Fallback to structured JSON console.log streaming
-      console.log(JSON.stringify({ type: "edge_telemetry_log", count: payload.length, data: payload }));
+      console.log(JSON.stringify({ type: "edge_telemetry_log", count: enrichedPayload.length, edge_context: edgeContext, data: enrichedPayload }));
 
       return new Response(JSON.stringify({ status: "accepted", mode: "edge_log" }), {
         status: 202,
@@ -55,23 +72,6 @@ export async function onRequest(context) {
         }
       });
     }
-
-    // Example: Forwarding to AXiM Core (pseudo-code)
-    /*
-    const aximApiKey = env.AXIM_API_KEY;
-    const aximUrl = env.AXIM_API_URL || 'https://api.axim.us.com/v1/telemetry';
-
-    if (aximApiKey) {
-       await fetch(aximUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${aximApiKey}`
-          },
-          body: JSON.stringify(payload)
-       });
-    }
-    */
 
     return new Response(null, { status: 204, headers: corsHeaders });
 
