@@ -82,7 +82,7 @@ const ProtectedRoute = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-void">
         <div className="flex items-center justify-center animate-pulse">
-          <div className="w-12 h-12 border border-white/5 rounded flex items-center justify-center bg-white/5 skeleton-loader">
+          <div className="w-16 h-16 border border-yellow-electric/20 rounded flex items-center justify-center bg-black/40 skeleton-loader deco-frame">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-yellow-electric/20"/>
               <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" className="text-white/10"/>

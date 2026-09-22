@@ -183,7 +183,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter dispatch title"
-              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
             />
           </div>
           <div className="space-y-2">
@@ -192,7 +192,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+              className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
             >
               <option value="Dispatch">Dispatch</option>
               <option value="Business Briefing">Business Briefing</option>
@@ -210,7 +210,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                 value={formData.readTime}
                 onChange={handleChange}
                 placeholder="e.g. 5"
-                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
               />
             </div>
              <div className="space-y-2">
@@ -221,7 +221,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                 value={formData.excerpt}
                 onChange={handleChange}
                 placeholder="Brief summary..."
-                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+                className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
               />
             </div>
         </div>
@@ -235,7 +235,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               value={formData.coverImage}
               onChange={handleChange}
               placeholder="https://..."
-              className="flex-grow bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
+              className="flex-grow bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-editorial deco-brackets"
             />
             {formData.coverImage && (
               <button type="button" onClick={handleClearCover} className="px-4 py-2 bg-red-900/20 text-red-500 border border-red-500/30 rounded-sm hover:bg-red-900/40 transition-colors uppercase text-xs tracking-widest font-mono">
@@ -258,7 +258,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             onChange={handleChange}
             placeholder="Draft content here..."
             rows={8}
-            className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-electric/50 font-mono deco-brackets custom-scrollbar"
+            className="w-full bg-void border border-white/10 rounded-sm px-3 py-2 text-sm text-white focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none focus:border-yellow-electric/50 font-mono deco-brackets custom-scrollbar"
           ></textarea>
         </div>
 

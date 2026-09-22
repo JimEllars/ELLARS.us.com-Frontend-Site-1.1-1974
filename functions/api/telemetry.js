@@ -2,6 +2,7 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   const corsHeaders = {
+    'Cache-Control': 'no-store, private',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, X-Project-Scope',
@@ -64,7 +65,13 @@ export async function onRequest(context) {
       // Fallback to structured JSON console.log streaming
       console.log(JSON.stringify({ type: "edge_telemetry_log", count: enrichedPayload.length, edge_context: edgeContext, data: enrichedPayload }));
 
-      return new Response(JSON.stringify({ status: "accepted", mode: "edge_log" }), {
+      return new Response(JSON.stringify({
+        status: "accepted",
+        mode: "edge_log",
+        receivedAt: edgeContext.edge_timestamp,
+        edgeRegion: edgeContext.country,
+        batchCount: enrichedPayload.length
+      }), {
         status: 202,
         headers: {
           ...corsHeaders,
@@ -73,7 +80,13 @@ export async function onRequest(context) {
       });
     }
 
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(JSON.stringify({
+        status: "accepted",
+        mode: "production",
+        receivedAt: edgeContext.edge_timestamp,
+        edgeRegion: edgeContext.country,
+        batchCount: enrichedPayload.length
+    }), { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {

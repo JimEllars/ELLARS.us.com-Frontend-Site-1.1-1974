@@ -14,6 +14,15 @@ const GlobalAudioPlayer = () => {
   const audioVolume = useAppStore(state => state.audioVolume);
 
   useEffect(() => {
+    if (audioActiveTrack) {
+        document.body.style.paddingBottom = '80px';
+    } else {
+        document.body.style.paddingBottom = '0px';
+    }
+    return () => { document.body.style.paddingBottom = '0px'; };
+  }, [audioActiveTrack]);
+
+  useEffect(() => {
     if (audioActiveTrack && audioRef.current) {
       if (audioRef.current.src !== audioActiveTrack.url) {
          audioRef.current.src = audioActiveTrack.url;
