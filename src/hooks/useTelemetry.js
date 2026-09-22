@@ -111,12 +111,10 @@ export const useTelemetry = () => {
             // Using fetch with keepalive as a replacement for sendBeacon
             // since sendBeacon doesn't easily support custom headers like Authorization
             const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
-
-            // Note: Since sendBeacon doesn't easily support custom headers, we use fetch with keepalive as primary
-            // and sendBeacon as fallback or we use a query param if backend supports it. For now, try sendBeacon,
-            // if it returns false, we fallback to fetch with keepalive. Or we can just use sendBeacon.
-            const beaconSent = navigator.sendBeacon(apiUrl, JSON.stringify(prunedQueue));
-
+            let beaconSent = false;
+            if (navigator.sendBeacon) {
+                beaconSent = navigator.sendBeacon(apiUrl, blob);
+            }
             if (!beaconSent) {
                 fetch(apiUrl, {
                   method: 'POST',
@@ -149,10 +147,12 @@ export const useTelemetry = () => {
       }
     };
 
+    window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('pagehide', handleUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('pagehide', handleUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -220,7 +220,10 @@ export const useTelemetry = () => {
           });
 
           // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
-          if (response.status === 200 || response.ok) {
+          if (response.status === 429 || response.status >= 500) {
+            throw new Error('Rate limit or server error: ' + response.status);
+          }
+          if (response.status === 200 || response.ok || response.status === 202 || response.status === 204) {
             // Safely clear the local browser persistent array cache upon verified gateway reception
             localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
             if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
@@ -264,7 +267,7 @@ export const useTelemetry = () => {
       if (isOnline && !isFlushing.current) {
         flushQueue();
       }
-    }, 30000);
+    }, 5000);
 
     // Ensure robust auto-flush execution on browser network reconnection
     window.addEventListener('online', flushQueue);

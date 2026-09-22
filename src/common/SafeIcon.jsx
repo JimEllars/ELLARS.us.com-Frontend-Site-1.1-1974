@@ -11,8 +11,8 @@ const SafeIcon = ({ icon, name, ...props }) => {
   }
 
   return IconComponent
-    ? React.createElement(IconComponent, props)
-    : <FiAlertTriangle {...props} />;
+    ? React.createElement(IconComponent, { 'aria-hidden': 'true', ...props })
+    : <FiAlertTriangle aria-hidden="true" {...props} />;
 };
 
 export default SafeIcon;
