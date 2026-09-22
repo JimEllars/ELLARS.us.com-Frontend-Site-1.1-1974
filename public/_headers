@@ -6,7 +6,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /index.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
 
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
@@ -27,7 +27,7 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /api/*
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
 
 /worker.js
   Cache-Control: no-cache, must-revalidate

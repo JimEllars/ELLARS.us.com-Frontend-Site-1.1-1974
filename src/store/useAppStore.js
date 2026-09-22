@@ -45,6 +45,14 @@ export const useAppStore = create(
       isAuthChecking: true,
       _hasHydrated: false,
       isHydrating: true,
+      audioIsPlaying: false,
+      audioActiveTrack: null,
+      audioProgress: 0,
+      audioVolume: 1,
+      setAudioIsPlaying: (status) => set(() => ({ audioIsPlaying: status })),
+      setAudioActiveTrack: (track) => set(() => ({ audioActiveTrack: track })),
+      setAudioProgress: (progress) => set(() => ({ audioProgress: progress })),
+      setAudioVolume: (volume) => set(() => ({ audioVolume: volume })),
       setHasHydrated: (status) => set(() => ({ _hasHydrated: status })),
       setIsHydrating: (status) => set(() => ({ isHydrating: status })),
       setIsLiveStreamActive: (status) => set(() => ({ isLiveStreamActive: status })),
@@ -69,10 +77,9 @@ export const useAppStore = create(
     {
       name: 'ellars_us_com_preferences',
       storage: createJSONStorage(() => safeLocalStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.setHasHydrated(true);
-          state.setIsHydrating(false);
+      onRehydrateStorage: () => (state, error) => {
+        if (!error) {
+          useAppStore.setState({ _hasHydrated: true, isHydrating: false });
         }
       },
       partialize: (state) => ({

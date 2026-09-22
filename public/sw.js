@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ellars-us-com-v1.2-prod';
+const CACHE_NAME = 'ellars-us-com-v1.1';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -38,6 +38,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(event.request.url);
+
+  // Do not cache API routes
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/api/')) {
+    return fetch(event.request);
+  }
 
   // Stale-While-Revalidate for Intelligence Feeds (/wp-json/wp/v2/posts*)
   if (url.pathname.includes('/wp-json/wp/v2/posts')) {

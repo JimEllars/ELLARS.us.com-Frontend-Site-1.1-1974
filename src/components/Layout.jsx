@@ -2,6 +2,7 @@ import PrivacyBanner from "./common/PrivacyBanner";
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import Navbar from './common/Navbar';
 import Footer from './common/Footer';
+import GlobalAudioPlayer from "./common/GlobalAudioPlayer";
 import Toast from './common/Toast';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
@@ -90,6 +91,7 @@ const Layout = ({ children }) => {
         <Footer />
         <PrivacyBanner />
         <Toast />
+        <GlobalAudioPlayer />
       </div>
     </LoaderContext.Provider>
   );

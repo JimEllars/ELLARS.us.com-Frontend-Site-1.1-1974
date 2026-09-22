@@ -249,6 +249,11 @@ export const useTelemetry = () => {
 
   useEffect(() => {
     if (isOnline) {
+      // Trigger a retry when network is recovered
+      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      if (queue.length > 0 && !isFlushing.current) {
+        flushQueue();
+      }
       if (!isFlushing.current) {
         flushQueue();
       }

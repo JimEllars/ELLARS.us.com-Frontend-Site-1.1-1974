@@ -1,6 +1,0 @@
-Sprint 1.4: Telemetry edge handlers, hydration shields, and local-first editor sync
-
-- Implemented `functions/api/telemetry.js` to process offline queue flushing.
-- Updated `ProtectedRoute.jsx` and `useAppStore.js` to rely on explicit `_hasHydrated` boolean rendering protection.
-- Enhanced `DispatchPublisher.jsx` with real-time semantic statuses ("Queuing for AXiM Core...", "Draft Saved Locally", "Published").
-- Refined `AutomationCalculator.jsx` to include direct JSON payload exports.
