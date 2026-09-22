@@ -58,6 +58,11 @@ export const useEngagementScoring = () => {
   // Track scroll depth
   useEffect(() => {
     const handleScroll = () => {
+      // Debounce scroll calculations using requestAnimationFrame to prevent main-thread blocking
+      if (window._scrollTicking) return;
+      window._scrollTicking = true;
+      requestAnimationFrame(() => {
+        window._scrollTicking = false;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrollTop = window.scrollY;
@@ -72,6 +77,7 @@ export const useEngagementScoring = () => {
           return { ...prev, maxScrollDepth: scrollDepth };
         }
         return prev;
+      });
       });
     };
 
