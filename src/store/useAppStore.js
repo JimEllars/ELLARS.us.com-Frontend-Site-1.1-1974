@@ -83,6 +83,7 @@ export const useAppStore = create(
         }
       },
       partialize: (state) => ({
+        audioVolume: state.audioVolume,
         userRole: state.userRole,
         walletConnected: state.walletConnected,
         privacyConsent: state.privacyConsent,

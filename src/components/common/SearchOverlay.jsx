@@ -8,6 +8,7 @@ import { useTelemetry } from '@/hooks/useTelemetry';
 
 
 const SearchOverlay = ({ isOpen, onClose }) => {
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [query, setQuery] = useState('');
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -40,6 +41,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
       setIsDebouncing(false);
+      setActiveIndex(-1);
     }, 300);
     return () => clearTimeout(handler);
   }, [query]);
@@ -65,7 +67,24 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       setTimeout(() => inputRef.current?.focus(), 100);
 
       const handleKeyDown = (e) => {
+        if (!isOpen) return;
         if (e.key === 'Escape' || e.key === 'Esc') {
+          onClose();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setActiveIndex(prev => {
+            const max = filteredArticles.length - 1;
+            return prev < max ? prev + 1 : prev;
+          });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setActiveIndex(prev => (prev > 0 ? prev - 1 : prev));
+        } else if (e.key === 'Enter' && activeIndex >= 0 && filteredArticles[activeIndex]) {
+          e.preventDefault();
+          // The Link handles navigation, we need to manually trigger click or navigation here
+          // This requires us to click the link or use navigate
+          const selected = filteredArticles[activeIndex];
+          window.location.href = '/articles/' + selected.slug;
           onClose();
         } else if (e.key === 'Tab') {
           if (!modalRef.current) return;
@@ -163,7 +182,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                      </div>
                   )}
 
-                  {!isDebouncing && filteredArticles.map(post => (
+                  {!isDebouncing && filteredArticles.map((post, index) => (
                     <motion.div
                       key={post.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -173,7 +192,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                       <Link
                         to={`/articles/${post.slug}`}
                         onClick={onClose}
-                        className="block p-4 border border-white/5 bg-white/5 hover:border-yellow-electric hover:bg-yellow-electric/10 transition-colors"
+                        className={`block p-4 border transition-colors ${activeIndex === index ? 'border-yellow-electric bg-yellow-electric/10' : 'border-white/5 bg-white/5 hover:border-yellow-electric hover:bg-yellow-electric/10'}`}
                       >
                         <h4 className="font-editorial text-xl text-white group-hover:text-yellow-electric transition-colors mb-2">
                           {stripHtml(post.title?.rendered || 'Untitled Transmission')}

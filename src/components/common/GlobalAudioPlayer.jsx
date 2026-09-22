@@ -8,6 +8,7 @@ const GlobalAudioPlayer = () => {
 
   const audioIsPlaying = useAppStore(state => state.audioIsPlaying);
   const setAudioIsPlaying = useAppStore(state => state.setAudioIsPlaying);
+  const showToast = useAppStore(state => state.showToast);
   const audioActiveTrack = useAppStore(state => state.audioActiveTrack);
   const setAudioActiveTrack = useAppStore(state => state.setAudioActiveTrack);
   const audioVolume = useAppStore(state => state.audioVolume);
@@ -17,7 +18,11 @@ const GlobalAudioPlayer = () => {
       if (audioRef.current.src !== audioActiveTrack.url) {
          audioRef.current.src = audioActiveTrack.url;
          if (audioIsPlaying) {
-             audioRef.current.play().catch(e => console.error(e));
+             audioRef.current.play().catch(e => {
+             console.error("Playback failed", e);
+             setAudioIsPlaying(false);
+             showToast("// STREAM_UNAVAILABLE: Check network connection");
+         });
          }
       }
     }
@@ -29,6 +34,7 @@ const GlobalAudioPlayer = () => {
         audioRef.current.play().catch(e => {
             console.error("Playback failed", e);
             setAudioIsPlaying(false);
+            showToast("// STREAM_UNAVAILABLE: Check network connection");
         });
       } else {
         audioRef.current.pause();
