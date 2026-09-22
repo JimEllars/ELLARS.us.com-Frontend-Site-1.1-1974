@@ -38,3 +38,13 @@
 - **Automation Calculator & Micro-Program Refinement**: Augmented the internal `AutomationCalculator` component with one-click JSON exporting and clipboard sharing endpoints, routing metrics cleanly to the custom `ellars_engagement_signal`. All computations occur autonomously inside the browser sandbox.
 
 Status: Ready for deployment cycle.
+
+## Sprint 1.5: Production Hardening, Edge Telemetry Resilience & UI Polish
+- **Telemetry Edge Function Hardening**: Added explicit CORS OPTIONS handling, a JSON parsing try/catch to return 400s instead of crashing, and strict no-cache headers.
+- **Telemetry Hook Fortification**: Added local debouncing for high-frequency events, replaced synchronous sendBeacon behavior to support fallback keepalive fetch during unload, and defensively wrapped calls to prevent unhandled rejections.
+- **ProtectedRoute Hardening**: Integrated `_hasHydrated` check alongside authentication state to prevent temporary login redirects and flashes on hard refreshes.
+- **App Store Persistence**: Added `audioVolume` to Zustand partialized state to persist audio playback preferences across sessions.
+- **Audio Player Error Boundary**: Added `catch` for playback errors, which resets state and displays a user-friendly toast if streams are unavailable.
+- **SearchOverlay Enhancements**: Implemented keyboard navigation (ArrowUp/ArrowDown to select, Enter to route) and automatic input focus.
+- **Automation Calculator Polish**: Integrated Intl.NumberFormat currency wrappers for projected returns.
+- **Edge Caching (`_headers`)**: Strictly defined `Cache-Control: public, max-age=31536000, immutable` for all static assets (`.png`, `.woff2`) and `no-cache` for `/api` and `/functions` routes.
