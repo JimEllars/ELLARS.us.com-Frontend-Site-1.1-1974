@@ -461,15 +461,15 @@ export async function subscribeToNewsletter(email, turnstileToken) {
 export async function verifySession() {
   try {
     const supabaseClient = await import('@supabase/supabase-js').then(module => {
-      const url = import.meta.env.VITE_SUPABASE_URL || 'https://pvbcdndqjguzqeafhwhw.supabase.co';
+      const url = import.meta.env.VITE_SUPABASE_URL || '';
       const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
       if (!url || !key) return null;
       return module.createClient(url, key);
-    });
+    }).catch(() => null);
 
     if (!supabaseClient) {
       console.warn("Supabase client not initialized for verifySession.");
-      return null;
+      return { user: null, session: null, isGuest: true };
     }
 
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -477,18 +477,18 @@ export async function verifySession() {
     if (error) {
        console.error("Session verification error:", error.message);
        if (error.message.includes('fetch') || error.message.includes('Network')) {
-           throw error; // Let the caller handle transient errors
+           return { user: null, session: null, isGuest: true }; // Let the caller handle transient errors safely
        }
        if (error.status === 401 || error.status === 403) {
-           return false; // Explicitly unauthenticated
+           return { user: null, session: null, isGuest: true }; // Explicitly unauthenticated
        }
-       return null;
+       return { user: null, session: null, isGuest: true };
     }
 
-    return session;
+    return session ? session : { user: null, session: null, isGuest: true };
   } catch (error) {
     console.error("Session verification failed:", error);
-    throw error; // Throw so we don't return null and clear auth by mistake
+    return { user: null, session: null, isGuest: true }; // Don't throw, just return guest state gracefully
   }
 }
 

@@ -59,13 +59,24 @@ function App() {
   useEffect(() => {
     const initializeSession = async () => {
       setIsAuthChecking(true);
-      const session = await verifySession();
-      if (session) {
-        setToken(session.access_token);
-      } else {
+      const timeoutId = setTimeout(() => {
+        console.warn("Session verification timed out. Falling back to guest mode.");
+        setIsAuthChecking(false);
+      }, 1500);
+      try {
+        const session = await verifySession();
+        if (session && !session.isGuest) {
+          setToken(session.access_token);
+        } else {
+          clearAuth();
+        }
+      } catch (error) {
+        console.warn("Session initialization failed, falling back to guest mode:", error);
         clearAuth();
+      } finally {
+        clearTimeout(timeoutId);
+        setIsAuthChecking(false);
       }
-      setIsAuthChecking(false);
     };
 
     initializeSession();

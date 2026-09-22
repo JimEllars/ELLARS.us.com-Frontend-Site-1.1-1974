@@ -44,6 +44,35 @@ self.addEventListener('fetch', (event) => {
     return fetch(event.request);
   }
 
+  // Google Fonts caching with synthetic fallback to prevent cross-origin opaque rejections
+  if (url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com') {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return fetch(event.request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+               cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => {
+             // Return a safe synthetic response fallback for fonts if offline
+             return new Response('', {
+               status: 200,
+               statusText: 'OK',
+               headers: new Headers({
+                 'Content-Type': 'text/css'
+               })
+             });
+          });
+        });
+      })
+    );
+    return;
+  }
+
   // Stale-While-Revalidate for Intelligence Feeds (/wp-json/wp/v2/posts*)
   if (url.pathname.includes('/wp-json/wp/v2/posts')) {
     event.respondWith(
