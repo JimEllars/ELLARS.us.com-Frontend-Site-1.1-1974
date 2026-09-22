@@ -1,13 +1,28 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { copyFile } from 'node:fs/promises';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function cloudflarePagesSpaFallback() {
+  return {
+    name: 'cloudflare-pages-spa-fallback',
+    apply: 'build',
+    async closeBundle() {
+      await copyFile(
+        path.resolve(__dirname, 'dist/index.html'),
+        path.resolve(__dirname, 'dist/200.html')
+      );
+    }
+  };
+}
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'James Ellars Official',
@@ -75,8 +90,10 @@ export default defineConfig({
         ]
       }
 
-    })
+    }),
+    cloudflarePagesSpaFallback()
   ],
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
