@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import EmptyState from '@/components/common/EmptyState';
 import { motion } from 'framer-motion';
 import { getPostBySlug, formatDate, stripHtml, publishVaultItem } from '@/lib/api';
 import SafeIcon from '@/common/SafeIcon';
@@ -212,18 +213,18 @@ const ArticleDetail = () => {
   // Error Intercept
   if (fallbackMode || !post) {
     return (
-      <div className="pt-40 min-h-screen flex items-center justify-center p-6 bg-grid">
-        <div className="deco-frame max-w-lg w-full bg-[#050505] border border-red-500/20 p-12 text-center rounded-sm font-mono text-zinc-400">
-          <SafeIcon name="AlertTriangle" className="w-12 h-12 text-red-500/50 mx-auto mb-6" />
-          <h2 className="text-xl uppercase tracking-widest mb-4 text-white">Transmission Error</h2>
-          <p className="mb-8 text-sm leading-relaxed">
-            The requested technical dispatch or strategic insight could not be located in the current database index. The record may have been archived or explicitly redacted.
-          </p>
-          <Link to="/news-media" className="inline-flex items-center space-x-2 border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 font-bold text-xs uppercase tracking-widest px-8 py-4 transition-colors rounded-sm shadow-[0_0_15px_rgba(253,224,71,0.4)]">
-            <SafeIcon name="ArrowLeft" className="w-4 h-4" />
-            <span>Return to Hub</span>
-          </Link>
-        </div>
+      <div className="pt-40 min-h-screen flex flex-col items-center justify-center p-6 bg-grid relative">
+        <Helmet>
+          <title>Transmission Error | James Ellars</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <EmptyState message="Transmission Interrupted - Invalid Intel" />
+        <Link
+          to="/news-media"
+          className="border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 px-6 py-3 text-xs tracking-widest uppercase transition-colors inline-block mt-8 bg-[#050505]"
+        >
+          {'<- Back to Intel'}
+        </Link>
       </div>
     );
   }

@@ -95,10 +95,23 @@ const ProtectedRoute = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    if (!isOnline && userToken) {
+      // Keep dashboard mounted with banner if network is lost while token existed
+    } else {
+      return <Navigate to="/login" replace />;
+    }
   }
 
-  return <Outlet />;
+  return (
+    <>
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-[200] bg-yellow-electric/20 text-yellow-electric text-center py-1 text-xs font-mono uppercase tracking-widest border-b border-yellow-electric/30 backdrop-blur-md">
+          Offline Mode - Limited Functionality
+        </div>
+      )}
+      <Outlet />
+    </>
+  );
 };
 
 export default ProtectedRoute;
