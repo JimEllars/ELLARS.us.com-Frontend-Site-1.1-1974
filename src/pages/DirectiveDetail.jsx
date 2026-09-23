@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import EmptyState from '@/components/common/EmptyState';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import SafeIcon from '@/common/SafeIcon';
@@ -252,27 +253,18 @@ const DirectiveDetail = () => {
 
   if (!directive) {
     return (
-      <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex items-center justify-center bg-grid relative">
+      <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex flex-col items-center justify-center bg-grid relative">
         <Helmet>
           <title>Directive Not Found | James Ellars</title>
           <meta name="robots" content="noindex" />
         </Helmet>
-        <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-md bg-surface">
-          <SafeIcon name="AlertTriangle" className="w-12 h-12 text-yellow-electric mx-auto mb-6" />
-          <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
-            Transmission Interrupted
-          </h1>
-          <p className="diagnostic-text mb-8 flex flex-wrap justify-center items-center gap-1 leading-relaxed min-w-0 break-words">
-            <span className="shrink-0">The requested directive could not be located in our intelligence index.</span>
-            <span className="diagnostic-param min-w-0 break-words leading-relaxed">[{directiveSlug}]</span>
-          </p>
-          <Link
-            to="/platform"
-            className="border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 px-6 py-3 text-xs tracking-widest uppercase transition-colors inline-block"
-          >
-            {'<- Return to Platform Core'}
-          </Link>
-        </div>
+        <EmptyState message="Transmission Interrupted - Invalid Directive" />
+        <Link
+          to="/platform"
+          className="border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 px-6 py-3 text-xs tracking-widest uppercase transition-colors inline-block mt-8 bg-[#050505]"
+        >
+          {'<- Back to Platform'}
+        </Link>
       </div>
     );
   }

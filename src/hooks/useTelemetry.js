@@ -178,7 +178,7 @@ export const useTelemetry = () => {
 
       const now = Date.now();
       const freshQueue = queue.filter(payload => {
-          return (now - (payload.timestamp || 0)) <= 86400000;
+          return (now - (payload.timestamp || 0)) <= 172800000;
       });
 
       if (freshQueue.length !== queue.length) {
@@ -188,6 +188,7 @@ export const useTelemetry = () => {
       if (freshQueue.length === 0) return;
 
       const prunedQueue = prunePayloadArray(freshQueue);
+      if (prunedQueue.length > 50) prunedQueue.splice(0, prunedQueue.length - 50);
 
       let attempt = 0;
       let success = false;
@@ -236,7 +237,9 @@ export const useTelemetry = () => {
           // If a failure occurs, increment attempt and wait exponentially
           attempt++;
           if (attempt < MAX_RETRIES) {
-            await wait(BASE_BACKOFF_MS * Math.pow(2, attempt));
+            const delay = Math.min(30000, BASE_BACKOFF_MS * Math.pow(2, attempt));
+            const jitter = Math.random() * 1000;
+            await wait(delay + jitter);
           }
         } finally {
           clearTimeout(timeoutId);
@@ -300,6 +303,13 @@ export const useTelemetry = () => {
   }, [flushQueue, isOnline]);
 
   const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
+    // Strip sensitive data
+    const safeMetadata = { ...metadata };
+    delete safeMetadata.password;
+    delete safeMetadata.token;
+    delete safeMetadata.authorization;
+    delete safeMetadata.credentials;
+
     const lead_score_payload = { score, tier, signals };
     return {
       telemetry_envelope: {
@@ -318,7 +328,7 @@ export const useTelemetry = () => {
         metadata: {
           current_route: pathname,
           network_status: isOnline ? 'online' : 'offline',
-          ...metadata,
+          ...safeMetadata,
           lead_score_payload
         }
       }
