@@ -30,6 +30,10 @@ export async function onRequest(context) {
     try {
         payload = await request.json();
     } catch(e) {
+        if (!env || (!env.TELEMETRY_KV && !env.ANALYTICS)) {
+            console.log(JSON.stringify({ type: "edge_telemetry_log_error", error: "invalid_json" }));
+            return new Response(JSON.stringify({ status: "queued_locally", timestamp: Date.now() }), { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
         return new Response('Bad Request: Invalid JSON', { status: 400, headers: corsHeaders });
     }
 
@@ -66,11 +70,8 @@ export async function onRequest(context) {
       console.log(JSON.stringify({ type: "edge_telemetry_log", count: enrichedPayload.length, edge_context: edgeContext, data: enrichedPayload }));
 
       return new Response(JSON.stringify({
-        status: "accepted",
-        mode: "edge_log",
-        receivedAt: edgeContext.edge_timestamp,
-        edgeRegion: edgeContext.country,
-        batchCount: enrichedPayload.length
+        status: "queued_locally",
+        timestamp: Date.now()
       }), {
         status: 202,
         headers: {
