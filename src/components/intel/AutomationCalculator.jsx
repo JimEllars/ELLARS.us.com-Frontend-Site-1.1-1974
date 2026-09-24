@@ -178,13 +178,19 @@ const AutomationCalculator = () => {
   // Derived calculations using framer-motion transforms
   const annualDividend = useTransform([springEfficiency, springHours], ([eff, hrs]) => {
     // A conceptual formula: Savings scale with hours to show impact. Baseline is 40 hours = 1x.
-    const hoursMultiplier = hrs / 40;
-    const savingsPool = totalCorporateTaxBase * (eff / 100) * hoursMultiplier;
-    return Math.round(savingsPool / populationEligible);
+    if (populationEligible <= 0) return 0;
+    const effSafe = isNaN(eff) || eff < 0 ? 0 : eff;
+    const hrsSafe = isNaN(hrs) || hrs < 0 ? 0 : hrs;
+    const hoursMultiplier = hrsSafe / 40;
+    const savingsPool = totalCorporateTaxBase * (effSafe / 100) * hoursMultiplier;
+    const result = Math.round(savingsPool / populationEligible);
+    return isNaN(result) || !isFinite(result) ? 0 : result;
   });
 
   const monthlyDividend = useTransform(annualDividend, (annual) => {
-    return Math.round(annual / 12);
+    const annualSafe = isNaN(annual) ? 0 : annual;
+    const result = Math.round(annualSafe / 12);
+    return isNaN(result) || !isFinite(result) ? 0 : result;
   });
 
   // Formatting for display
@@ -355,7 +361,7 @@ const AutomationCalculator = () => {
             </span>
             <motion.div className="text-2xl font-editorial font-bold text-white flex items-center min-w-0 overflow-hidden">
               <span className="text-yellow-electric mr-1 shrink-0">$</span>
-              <span className="truncate">{displayMonthly.toLocaleString()}</span>
+              <span className="truncate">{new Intl.NumberFormat().format(displayMonthly)}</span>
             </motion.div>
           </div>
 
@@ -365,7 +371,7 @@ const AutomationCalculator = () => {
             </span>
             <motion.div className="text-2xl font-editorial font-bold text-white flex items-center min-w-0 overflow-hidden">
               <span className="text-yellow-electric mr-1 shrink-0">$</span>
-              <span className="truncate">{displayAnnual.toLocaleString()}</span>
+              <span className="truncate">{new Intl.NumberFormat().format(displayAnnual)}</span>
             </motion.div>
           </div>
         </div>
@@ -408,7 +414,7 @@ const AutomationCalculator = () => {
 
                 <button
                   onClick={() => {
-                    const text = `Automation Dividend Calculator Summary\nCorporate Tax Base: 2.5 Trillion\nEligible Population: 200 Million\nEfficiency Rate: ${efficiency}%\nHours Multiplier: ${(hours / 40).toFixed(2)}x\nProjected Monthly Return: ${displayMonthly.toLocaleString()}\nProjected Annual Dividend: ${displayAnnual.toLocaleString()}`;
+                    const text = `Automation Dividend Calculator Summary\nCorporate Tax Base: 2.5 Trillion\nEligible Population: 200 Million\nEfficiency Rate: ${efficiency}%\nHours Multiplier: ${(hours / 40).toFixed(2)}x\nProjected Monthly Return: ${new Intl.NumberFormat().format(displayMonthly)}\nProjected Annual Dividend: ${new Intl.NumberFormat().format(displayAnnual)}`;
                     navigator.clipboard.writeText(text);
                     trackEvent('engagement_scoring', { action: 'copy_summary', value: displayAnnual });
                     showToast("Summary copied to clipboard!");

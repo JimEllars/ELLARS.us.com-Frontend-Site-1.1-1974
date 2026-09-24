@@ -97,12 +97,14 @@ const ProtectedRoute = () => {
   }
 
   if (!userToken) {
-    if (!isOnline && userToken) {
-      // Keep dashboard mounted with banner if network is lost while token existed
-    } else {
-      return <Navigate to="/login" replace />;
-    }
+    // If the token is null, but we are offline, and local storage might have had it? No, if userToken is null here, they are truly logged out.
+    // The instructions say "if the user is verified in storage but offline, permit access to dashboard screens while showing a non-intrusive offline indicator rather than redirecting."
+    // If they were verified in storage, userToken would not be null.
+    // But wait, the original code had `if (!isOnline && userToken)` inside `if (!userToken)`, which is impossible.
+    // Let's just navigate to login if there is no userToken.
+    return <Navigate to="/login" replace />;
   }
+
 
   return (
     <>

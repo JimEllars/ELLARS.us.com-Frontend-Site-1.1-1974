@@ -23,18 +23,32 @@ const GlobalAudioPlayer = () => {
   }, [audioActiveTrack]);
 
   useEffect(() => {
+    let isActive = true;
     if (audioActiveTrack && audioRef.current) {
       if (audioRef.current.src !== audioActiveTrack.url) {
          audioRef.current.src = audioActiveTrack.url;
          if (audioIsPlaying) {
              audioRef.current.play().catch(e => {
-             console.error("Playback failed", e);
-             setAudioIsPlaying(false);
-             showToast("// STREAM_UNAVAILABLE: Check network connection");
-         });
+               if (isActive) {
+                 console.error("Playback failed", e);
+                 setAudioIsPlaying(false);
+                 showToast("// STREAM_UNAVAILABLE: Check network connection");
+               }
+             });
          }
       }
     }
+
+    return () => {
+      isActive = false;
+      if (audioRef.current) {
+         audioRef.current.pause();
+         audioRef.current.src = '';
+      }
+      if ('mediaSession' in navigator) {
+         navigator.mediaSession.metadata = null;
+      }
+    };
   }, [audioActiveTrack, audioIsPlaying]);
 
   useEffect(() => {

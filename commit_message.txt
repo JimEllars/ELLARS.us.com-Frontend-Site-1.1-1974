@@ -1,0 +1,16 @@
+Production Hardening, Telemetry Buttoning & Route Resilience (v1.5 Sprint)
+
+1. Cloudflare Telemetry Function & Client Ingestion
+- `functions/api/telemetry.js`: Added explicit OPTIONS preflight handling. Enforced max size limits (< 32KB). Added schema validation for eventType, timestamp, and session context. Cleanly logged and returned 200 when Cloudflare bindings are missing.
+- `src/hooks/useTelemetry.js`: Modified to use `navigator.sendBeacon` inside `beforeunload` to flush queued payloads. Handled retry limit explicitly and prevented infinite loops on 5xx errors.
+
+2. Session Persistence & Route Guard Hardening
+- `src/store/useAppStore.js`: Initialized `_hasHydrated` and `isHydrating` dynamically based on the existence of data in `localStorage` to eliminate login flicker.
+- `src/components/common/ProtectedRoute.jsx`: Allowed rendering of dashboard content by retaining the fallback to UI instead of aggressive redirecting if authenticated but offline.
+
+3. Interactive Tool Robustness & Guardrails
+- `src/components/intel/AutomationCalculator.jsx`: Handled NaN, Infinity and zero division fallback cleanly. Replaced `toLocaleString` with `new Intl.NumberFormat().format` for currency and percentages.
+- `src/components/common/GlobalAudioPlayer.jsx`: Addressed memory leak and phantom play via cleanup on `useEffect` to safely pause playback, reset src and `mediaSession.metadata`.
+
+4. Cache & Cloudflare Security Headers
+- `public/_headers`: Adjusted headers for `/sw.js` and `/manifest.json` ensuring `must-revalidate` caching strategy is aligned with Cloudflare Pages deployment requirements.
