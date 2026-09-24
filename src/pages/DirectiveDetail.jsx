@@ -263,7 +263,7 @@ const DirectiveDetail = () => {
           to="/platform"
           className="border border-yellow-electric/20 text-yellow-electric hover:bg-yellow-electric/10 px-6 py-3 text-xs tracking-widest uppercase transition-colors inline-block mt-8 bg-[#050505]"
         >
-          {'<- Back to Platform'}
+          {'<- Back to Platform Hub'}
         </Link>
       </div>
     );

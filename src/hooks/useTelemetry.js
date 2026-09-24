@@ -91,31 +91,33 @@ export const useTelemetry = () => {
     const handleUnload = () => {
       try {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-        let payloadsToSend = [];
-        if (inFlightPayloads.current.length > 0) {
-          payloadsToSend = [...inFlightPayloads.current];
+        const inFlight = inFlightPayloads.current;
+        const allPending = [...queue];
+
+        for (const item of inFlight) {
+          if (!allPending.find(p => p.telemetry_envelope.idempotency_key === item.telemetry_envelope.idempotency_key)) {
+            allPending.push(item);
+          }
         }
-        if (queue.length > 0) {
-          payloadsToSend = [...queue, ...payloadsToSend];
-        }
 
-        if (payloadsToSend.length > 0) {
-          const limitedQueue = payloadsToSend.slice(-50);
-          const prunedQueue = prunePayloadArray(limitedQueue);
+        if (allPending.length > 0) {
+          const freshQueue = allPending.filter(payload => {
+              const now = Date.now();
+              return (now - (payload.timestamp || 0)) <= 172800000;
+          });
+          const prunedQueue = prunePayloadArray(freshQueue);
+          if (prunedQueue.length > 50) prunedQueue.splice(0, prunedQueue.length - 50);
 
-          const hasConsented = localStorage.getItem('ellars_privacy_consent');
-          const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-          const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
-
-          if (hasConsented === 'true' && apiKey) {
-            // Using fetch with keepalive as a replacement for sendBeacon
-            // since sendBeacon doesn't easily support custom headers like Authorization
-            const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
+          if (prunedQueue.length > 0) {
+            const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
             let beaconSent = false;
             if (navigator.sendBeacon) {
+                const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
                 beaconSent = navigator.sendBeacon(apiUrl, blob);
             }
+
             if (!beaconSent) {
+                const apiKey = import.meta.env.VITE_AXIM_API_KEY;
                 fetch(apiUrl, {
                   method: 'POST',
                   headers: {
@@ -129,10 +131,8 @@ export const useTelemetry = () => {
                 }).catch(() => {});
             }
 
-            // Clear local storage queue since we attempted to send it
             localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
           } else {
-             // Fallback to saving to local storage if can't send
              localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
           }
         }

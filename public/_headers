@@ -33,7 +33,4 @@
   Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
 
 /functions/*
-  Cache-Control: no-store, no-cache, must-revalidate
-
-/api/telemetry
   Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
