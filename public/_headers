@@ -9,7 +9,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /sw.js
-  Cache-Control: public, max-age=0, no-cache, no-store, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
 
 /manifest.json
   Cache-Control: public, max-age=0, must-revalidate

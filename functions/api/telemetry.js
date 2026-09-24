@@ -25,6 +25,12 @@ export async function onRequest(context) {
   }
 
   try {
+    // Enforce payload size limit (< 32KB)
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > 32768) {
+      return new Response(JSON.stringify({ success: false, error: 'Payload too large' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Attempt to read the payload
     let payload;
     try {
@@ -34,7 +40,7 @@ export async function onRequest(context) {
             console.log(JSON.stringify({ type: "edge_telemetry_log_error", error: "invalid_json" }));
             return new Response(JSON.stringify({ status: "queued_locally", timestamp: Date.now() }), { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
-        return new Response('Bad Request: Invalid JSON', { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid JSON' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Basic validation
@@ -42,7 +48,7 @@ export async function onRequest(context) {
       if(typeof payload === 'object') {
           payload = [payload];
       } else {
-        return new Response('Bad Request: Expected array of events', { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: 'Expected array of events' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
@@ -63,6 +69,19 @@ export async function onRequest(context) {
        return event;
     });
 
+    // Schema validation
+    const isValidSchema = enrichedPayload.every(event =>
+       event.event_payload &&
+       event.event_payload.event_type &&
+       event.telemetry_envelope &&
+       event.telemetry_envelope.timestamp &&
+       event.telemetry_envelope.session
+    );
+
+    if (!isValidSchema) {
+        return new Response(JSON.stringify({ success: false, error: 'Invalid payload schema: expected eventType, timestamp, and session data' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
 
     // Verify Cloudflare environment bindings
     if (!env || (!env.TELEMETRY_KV && !env.ANALYTICS)) {
@@ -70,10 +89,12 @@ export async function onRequest(context) {
       console.log(JSON.stringify({ type: "edge_telemetry_log", count: enrichedPayload.length, edge_context: edgeContext, data: enrichedPayload }));
 
       return new Response(JSON.stringify({
+        success: true,
+        count: enrichedPayload.length,
         status: "queued_locally",
         timestamp: Date.now()
       }), {
-        status: 202,
+        status: 200,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json'
@@ -82,15 +103,16 @@ export async function onRequest(context) {
     }
 
     return new Response(JSON.stringify({
+        success: true,
+        count: enrichedPayload.length,
         status: "accepted",
         mode: "production",
         receivedAt: edgeContext.edge_timestamp,
         edgeRegion: edgeContext.country,
-        batchCount: enrichedPayload.length
-    }), { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'Internal Server Error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
