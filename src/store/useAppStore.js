@@ -27,6 +27,9 @@ const safeLocalStorage = {
   },
 };
 
+const initialToken = typeof window !== 'undefined' ? safeLocalStorage.getItem('ellars_auth_token') : null;
+const isInitiallyAuthenticated = !!initialToken;
+
 export const useAppStore = create(
   persist(
     (set) => ({
@@ -40,9 +43,10 @@ export const useAppStore = create(
       toastMessage: null,
       updateAvailable: false,
       privacyConsent: false, // Added privacy banner consent flag
-      userToken: null,
-      isAuthenticated: false,
+      userToken: initialToken,
+      isAuthenticated: isInitiallyAuthenticated,
       isAuthChecking: true,
+      isInitialized: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') !== null) : false,
       _hasHydrated: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') !== null) : false,
       isHydrating: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') === null) : true,
       audioIsPlaying: false,
@@ -79,7 +83,7 @@ export const useAppStore = create(
       storage: createJSONStorage(() => safeLocalStorage),
       onRehydrateStorage: () => (state, error) => {
         if (!error) {
-          useAppStore.setState({ _hasHydrated: true, isHydrating: false });
+          useAppStore.setState({ _hasHydrated: true, isHydrating: false, isInitialized: true });
         }
       },
       partialize: (state) => ({
