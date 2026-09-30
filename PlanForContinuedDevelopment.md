@@ -66,3 +66,11 @@ Status: Ready for deployment cycle.
 - **ProtectedRoute State Guard**: Updated `ProtectedRoute.jsx` and `useAppStore.js` to synchronously hydrate authentication state (`ellars_auth_token`) via a custom `safeLocalStorage` wrapper on initialization, establishing an `isInitialized` flag that completes before rendering redirects to definitively eliminate unauthenticated screen flashes.
 - **Publisher Draft Auto-Save**: Implemented client-side debounce caching (1000ms) in `DispatchPublisher.jsx`, persisting in-progress fields to `ellars_dispatch_draft`. Integrated mount hydration, discard controls, and visual time indicators, clearing the cache natively upon successful publication.
 - **Cloudflare Edge Rules**: Enforced aggressive `no-cache, no-store, must-revalidate` policies for `/sw.js` and `/api/*` in `public/_headers` to guarantee instant delivery of edge telemetry and logic updates.
+
+### Sprint 1.6 Accomplishments
+
+1. **Edge Telemetry Resilience**: Hardened `/functions/api/telemetry.js` edge binding writes with safe try/catch guards. It now inserts directly into D1 `env.DB` (via batch updates) and Workers Analytics Engine (`env.ANALYTICS`), and includes asynchronous upstream forwarding using `context.waitUntil`.
+2. **Dashboard Virtualization**: Migrated `LazyVaultCard` in `Dashboard.jsx` to natively toggle visibility tracking on `entry.isIntersecting` while providing a fallback `minHeight: '400px'` skeleton structure, improving React rendering throughput for robust datasets.
+3. **WordPress Resilience & Telemetry Isolation**: Modified `api.js` to trigger a custom telemetry payload (`wp_feed_fallback_served`) when CMS systems time out. Explicitly locked the 401 unauthenticated redirect logic strictly to the Supabase endpoint to prevent public WP API errors from accidentally invalidating users.
+4. **Live Stream Exponential Backoff**: Validated the `currentDelay = Math.min(currentDelay * 1.5, 60000)` polling implementation in `LiveBroadcast.jsx`.
+5. **Metadata Optimization**: Aligned static SEO metadata parameters within `index.html` to reflect global production branding for James Ellars.
