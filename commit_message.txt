@@ -14,3 +14,6 @@ Production Hardening, Telemetry Buttoning & Route Resilience (v1.5 Sprint)
 
 4. Cache & Cloudflare Security Headers
 - `public/_headers`: Adjusted headers for `/sw.js` and `/manifest.json` ensuring `must-revalidate` caching strategy is aligned with Cloudflare Pages deployment requirements.
+
+5. Publisher Draft Caching (Phase 2 Hardening)
+- `src/components/dashboard/DispatchPublisher.jsx`: Added client-side debounce (1000ms) persisting in-progress article fields to localStorage. Added UI indicators and clear controls.

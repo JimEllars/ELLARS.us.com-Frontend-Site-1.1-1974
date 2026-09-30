@@ -11,6 +11,39 @@ const DispatchPublisher = ({ editingItem, onCancel, onSuccess }) => {
   const showToast = useAppStore(state => state.showToast);
 
     const [botValue, setBotValue] = useState('');
+  const [lastSaved, setLastSaved] = useState(null);
+  const DRAFT_KEY = "ellars_dispatch_draft";
+
+  // Hydrate draft on mount if empty
+  useEffect(() => {
+    const cached = localStorage.getItem(DRAFT_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && !formData.title && !formData.content) {
+          setFormData((prev) => ({ ...prev, ...parsed.data }));
+          setLastSaved(parsed.savedAt);
+        }
+      } catch (e) {
+        console.error("Failed to parse cached draft", e);
+      }
+    }
+  }, []); // Run only on mount
+
+  // Debounce save form changes
+  useEffect(() => {
+    if (!formData.title && !formData.content) return;
+    const timer = setTimeout(() => {
+      const payload = {
+        data: formData,
+        savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      setLastSaved(payload.savedAt);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData]);
   const isOnline = useNetworkStatus();
 const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(uuidv4());
@@ -83,8 +116,27 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   };
 
   const handleSaveDraft = () => {
-    localStorage.setItem('ellars_draft_dispatch', JSON.stringify(formData));
+    const payload = {
+      data: formData,
+      savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+    setLastSaved(payload.savedAt);
     showToast('Draft Saved Locally.');
+  };
+
+  const handleClearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setLastSaved(null);
+    setFormData({
+      title: '',
+      category: 'Dispatch',
+      readTime: '',
+      excerpt: '',
+      content: '',
+      coverImage: ''
+    });
+    showToast('Draft Discarded.');
   };
 
 
@@ -146,7 +198,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                    coverImage: ''
                });
                sessionStorage.removeItem('ellars_draft_cover_image');
-               localStorage.removeItem('ellars_draft_dispatch');
+               localStorage.removeItem(DRAFT_KEY);
+               setLastSaved(null);
                if (onSuccess) onSuccess();
            } else {
                 showToast('// ERROR: UNABLE TO PUBLISH DISPATCH');
@@ -166,6 +219,12 @@ const [isSubmitting, setIsSubmitting] = useState(false);
          </h2>
          <SafeIcon name={editingItem ? "Edit" : "FileText"} className="w-6 h-6 text-yellow-electric" />
       </div>
+      {lastSaved && !editingItem && (
+        <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-sm flex items-center justify-between">
+          <span className="font-mono text-xs uppercase tracking-widest text-gray-400">Draft saved locally at {lastSaved}</span>
+          <button type="button" onClick={handleClearDraft} className="text-xs font-mono uppercase tracking-widest text-red-500 hover:text-red-400">Discard Draft</button>
+        </div>
+      )}
       {editingItem && (
         <div className="mb-6 p-4 bg-yellow-electric/10 border border-yellow-electric/30 rounded-sm flex items-center justify-between">
           <span className="font-mono text-xs uppercase tracking-widest text-yellow-electric">Currently Editing Existing Record</span>

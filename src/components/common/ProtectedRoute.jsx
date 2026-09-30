@@ -9,6 +9,7 @@ const ProtectedRoute = () => {
   const isOnline = useNetworkStatus();
   const _hasHydrated = useAppStore(state => state._hasHydrated);
   const isHydrating = useAppStore(state => state.isHydrating);
+  const isInitialized = useAppStore(state => state.isInitialized);
   const userToken = useAppStore(state => state.userToken);
   const clearAuth = useAppStore(state => state.clearAuth);
 
@@ -78,7 +79,7 @@ const ProtectedRoute = () => {
   }, [_hasHydrated, isHydrating, userToken, clearAuth, isOnline]);
 
   // Non-blocking fallback: only show loader if we have NO token and are validating, otherwise trust token and render Outlet silently.
-  if (!_hasHydrated || isHydrating || isValidating) {
+  if (!_hasHydrated || isHydrating || isValidating || !isInitialized) {
     // Show a lightweight skeleton during active background hydration/validation
     // so we don't blink to /login during a browser refresh of a valid session
     return (
