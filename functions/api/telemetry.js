@@ -71,7 +71,7 @@ export async function onRequestPost(context) {
         });
         await env.DB.batch(batch);
       } catch (dbError) {
-        console.error("D1 Insert Error:", dbError);
+        console.warn("D1 Insert Error:", dbError);
       }
     }
 
