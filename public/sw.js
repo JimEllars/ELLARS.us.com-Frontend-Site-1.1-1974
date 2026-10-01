@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ellars-us-com-v1.1';
+const CACHE_NAME = 'ellars-us-com-v1.7';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -94,6 +94,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
   // Try network first, then cache for other requests
   event.respondWith(
     fetch(event.request).then((response) => {
@@ -109,15 +125,7 @@ self.addEventListener('fetch', (event) => {
 
       return response;
     }).catch(() => {
-      return caches.match(event.request).then((response) => {
-        if (response) {
-          return response;
-        }
-        // Fallback for navigation requests (HTML pages)
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      });
+      return caches.match(event.request);
     })
   );
 });

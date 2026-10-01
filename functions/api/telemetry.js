@@ -115,7 +115,7 @@ export async function onRequestPost(context) {
              console.error("Upstream telemetry dispatch failed:", res.status);
           }
         }).catch(err => {
-          console.error("Upstream telemetry dispatch error:", err);
+          console.warn('Telemetry upstream unreachable:', err);
         })
       );
     }
