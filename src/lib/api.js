@@ -72,6 +72,26 @@ export async function fetchLatestNews(page = 1, perPage = 9) {
     });
 
     if (response.isError) {
+      if (typeof window !== 'undefined') { enqueuePayload({
+        telemetry_envelope: {
+          project_id: 'ELLARS_FRONTEND',
+          environment: 'production',
+          timestamp: new Date().toISOString(),
+          idempotency_key: generateUUID(),
+          session: { context_scope: 'public_facing_umbrella' }
+        },
+        event_payload: {
+          event_type: 'wp_feed_fallback_served',
+          severity: 'LOW',
+          component_origin: 'API_UTILITY',
+          error_message: 'WordPress API degraded or timed out',
+          stack_trace: '',
+          metadata: {
+            source: 'fetchLatestNews',
+            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
+          }
+        }
+      }); }
       return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
     }
 
@@ -80,6 +100,26 @@ export async function fetchLatestNews(page = 1, perPage = 9) {
 
     const data = await response.json();
     if (data.isError) {
+      if (typeof window !== 'undefined') { enqueuePayload({
+        telemetry_envelope: {
+          project_id: 'ELLARS_FRONTEND',
+          environment: 'production',
+          timestamp: new Date().toISOString(),
+          idempotency_key: generateUUID(),
+          session: { context_scope: 'public_facing_umbrella' }
+        },
+        event_payload: {
+          event_type: 'wp_feed_fallback_served',
+          severity: 'LOW',
+          component_origin: 'API_UTILITY',
+          error_message: 'WordPress API degraded or timed out',
+          stack_trace: '',
+          metadata: {
+            source: 'fetchLatestNews_data',
+            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
+          }
+        }
+      }); }
       return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
     }
 
@@ -153,9 +193,12 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          useAppStore.getState().clearAuth();
-          window.location.href = '/login';
+        // Only redirect on 401 for authenticated endpoints (Supabase), NOT WordPress.
+        if (url.includes(SUPABASE_URL)) {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            useAppStore.getState().clearAuth();
+            window.location.href = '/login';
+          }
         }
       }
       if (response.status === 429 && retries > 0) {
@@ -202,9 +245,47 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
       }
     });
 
-    if (response.isError) return FALLBACK_POSTS.slice(0, limit);
+    if (response.isError) { if (typeof window !== 'undefined') { enqueuePayload({
+        telemetry_envelope: {
+          project_id: 'ELLARS_FRONTEND',
+          environment: 'production',
+          timestamp: new Date().toISOString(),
+          idempotency_key: generateUUID(),
+          session: { context_scope: 'public_facing_umbrella' }
+        },
+        event_payload: {
+          event_type: 'wp_feed_fallback_served',
+          severity: 'LOW',
+          component_origin: 'API_UTILITY',
+          error_message: 'WordPress API degraded or timed out',
+          stack_trace: '',
+          metadata: {
+            source: 'getLatestPosts',
+            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
+          }
+        }
+      }); } return FALLBACK_POSTS.slice(0, limit); }
     const data = await response.json();
-    if (data.isError) return FALLBACK_POSTS.slice(0, limit);
+    if (data.isError) { if (typeof window !== 'undefined') { enqueuePayload({
+        telemetry_envelope: {
+          project_id: 'ELLARS_FRONTEND',
+          environment: 'production',
+          timestamp: new Date().toISOString(),
+          idempotency_key: generateUUID(),
+          session: { context_scope: 'public_facing_umbrella' }
+        },
+        event_payload: {
+          event_type: 'wp_feed_fallback_served',
+          severity: 'LOW',
+          component_origin: 'API_UTILITY',
+          error_message: 'WordPress API degraded or timed out',
+          stack_trace: '',
+          metadata: {
+            source: 'getLatestPosts_data',
+            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
+          }
+        }
+      }); } return FALLBACK_POSTS.slice(0, limit); }
 
     return data;
   } catch (error) {
