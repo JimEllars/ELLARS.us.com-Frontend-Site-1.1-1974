@@ -74,3 +74,12 @@ Status: Ready for deployment cycle.
 3. **WordPress Resilience & Telemetry Isolation**: Modified `api.js` to trigger a custom telemetry payload (`wp_feed_fallback_served`) when CMS systems time out. Explicitly locked the 401 unauthenticated redirect logic strictly to the Supabase endpoint to prevent public WP API errors from accidentally invalidating users.
 4. **Live Stream Exponential Backoff**: Validated the `currentDelay = Math.min(currentDelay * 1.5, 60000)` polling implementation in `LiveBroadcast.jsx`.
 5. **Metadata Optimization**: Aligned static SEO metadata parameters within `index.html` to reflect global production branding for James Ellars.
+
+## Sprint 1.7: Cloudflare Pages SPA Routing & Service Worker Optimization
+
+### Sprint 1.7 Accomplishments
+
+1. **SPA Routing Fallback**: Implemented native Cloudflare Pages fallback rule by adding `/* /index.html 200` to `public/_redirects` to resolve direct sub-route navigation and page refresh blank screen issues.
+2. **Build Process Synchronization**: Updated `package.json` build command to `vite build && cp dist/index.html dist/200.html` ensuring the custom 200 fallback correctly matches the Vite-compiled payload.
+3. **Service Worker Hardening**: Modified `public/sw.js` (version incremented to `ellars-us-com-v1.7`) to enforce cache purging on activation and correctly support a Stale-While-Revalidate pattern. Added robust network-first SPA fallback for navigation requests (`event.request.mode === 'navigate'`) falling back to `/index.html` cache.
+4. **Telemetry Edge Resiliency**: Added missing `.catch()` logic to the upstream fetch `context.waitUntil` queue in `functions/api/telemetry.js` to suppress unhandled promise rejections during edge timeouts.

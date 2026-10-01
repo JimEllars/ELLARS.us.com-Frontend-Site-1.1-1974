@@ -1,8 +1,0 @@
-feat(telemetry): harden edge bindings, virtualize vault grid, and isolate wp api fallbacks
-
-- Hardened `/functions/api/telemetry.js` edge binding writes with safe try/catch guards (D1/Analytics)
-- Created `migrations/0001_create_telemetry_table.sql` for telemetry schema
-- Implemented DOM intersection visibility for `LazyVaultCard` in `Dashboard.jsx` to manage memory
-- Added telemetry payloads (`wp_feed_fallback_served`) and isolated 401 unauthenticated redirect logic strictly to the Supabase endpoint in `src/lib/api.js`
-- Validated LiveBroadcast.jsx polling backoff
-- Updated index.html with James Ellars brand tags
