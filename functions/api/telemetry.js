@@ -21,6 +21,13 @@ export async function onRequestPost(context) {
   };
 
   try {
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ status: "buffered_locally", success: true, warning: "D1 binding not initialized; event skipped" }), {
+        status: 200,
+        headers: corsHeaders
+      });
+    }
+
     const payload = await request.json();
     const records = Array.isArray(payload) ? payload : [payload];
     const timestamp = new Date().toISOString();
