@@ -34,11 +34,11 @@ const LazyVaultCard = ({ item, onDelete, onArchive, onRestore, onEdit }) => {
   }, []);
 
   return (
-    <div ref={cardRef} className="h-full" style={{ minHeight: '400px', contentVisibility: 'auto', containIntrinsicSize: '400px' }}>
+    <div ref={cardRef} className="h-full" style={{ minHeight: '400px', contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
       {isVisible ? (
         <VaultArticleCard post={item} onDelete={onDelete} onArchive={onArchive} onRestore={onRestore} onEdit={onEdit} />
       ) : (
-        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-[400px] animate-pulse rounded-sm flex items-center justify-center">
+        <div className="deco-frame p-6 bg-black/40 border border-white/10 h-full min-h-[400px] animate-pulse rounded-sm flex items-center justify-center">
            <span className="font-mono text-xs text-gray-500 uppercase tracking-widest">Loading Record...</span>
         </div>
       )}
