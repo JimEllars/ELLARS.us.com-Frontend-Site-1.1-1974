@@ -83,3 +83,9 @@ Status: Ready for deployment cycle.
 2. **Build Process Synchronization**: Updated `package.json` build command to `vite build && cp dist/index.html dist/200.html` ensuring the custom 200 fallback correctly matches the Vite-compiled payload.
 3. **Service Worker Hardening**: Modified `public/sw.js` (version incremented to `ellars-us-com-v1.7`) to enforce cache purging on activation and correctly support a Stale-While-Revalidate pattern. Added robust network-first SPA fallback for navigation requests (`event.request.mode === 'navigate'`) falling back to `/index.html` cache.
 4. **Telemetry Edge Resiliency**: Added missing `.catch()` logic to the upstream fetch `context.waitUntil` queue in `functions/api/telemetry.js` to suppress unhandled promise rejections during edge timeouts.
+
+### Sprint 1.8: Edge Caching & SEO Hardening
+- **Cloudflare Edge Integration**: Implemented `/api/stream/status` as a Cloudflare page function with defensive fetching and edge caching. Updated `LiveBroadcast` hook to use the edge endpoint.
+- **Database Telemetry Resilience**: Wrapped `functions/api/telemetry.js` D1 insertion logic in a structured try/catch block so transient D1 errors silently proceed rather than failing HTTP 500.
+- **Vault Render Optimization**: Confirmed intersection-based lazy windowing functionality on the `/dashboard` intel feed (`LazyVaultCard`) by implementing CSS optimizations `contentVisibility` and `containIntrinsicSize`.
+- **SEO Enhancements**: Added canonical URLs, detailed OpenGraph/Twitter card markup, and semantic `<noscript>` fallbacks directly in `index.html` to address Screpy audit alerts.

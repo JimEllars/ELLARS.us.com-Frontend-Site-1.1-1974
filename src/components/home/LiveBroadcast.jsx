@@ -35,7 +35,7 @@ const LiveBroadcast = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       try {
-        const response = await fetch('/api/v1/stream/status', { signal: controller.signal });
+        const response = await fetch('/api/stream/status', { signal: controller.signal });
         clearTimeout(timeoutId);
         if (response.ok) {
           const data = await response.json();
