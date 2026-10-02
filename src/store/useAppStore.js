@@ -81,9 +81,10 @@ export const useAppStore = create(
     {
       name: 'ellars_us_com_preferences',
       storage: createJSONStorage(() => safeLocalStorage),
-      onRehydrateStorage: () => (state, error) => {
-        if (!error) {
-          useAppStore.setState({ _hasHydrated: true, isHydrating: false, isInitialized: true });
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hasHydrated = true;
+          state.isHydrating = false;
         }
       },
       partialize: (state) => ({

@@ -89,3 +89,15 @@ Status: Ready for deployment cycle.
 - **Database Telemetry Resilience**: Wrapped `functions/api/telemetry.js` D1 insertion logic in a structured try/catch block so transient D1 errors silently proceed rather than failing HTTP 500.
 - **Vault Render Optimization**: Confirmed intersection-based lazy windowing functionality on the `/dashboard` intel feed (`LazyVaultCard`) by implementing CSS optimizations `contentVisibility` and `containIntrinsicSize`.
 - **SEO Enhancements**: Added canonical URLs, detailed OpenGraph/Twitter card markup, and semantic `<noscript>` fallbacks directly in `index.html` to address Screpy audit alerts.
+
+
+## Sprint 1.9: P0 Loading Resolution & Hydration Hardening (Current)
+
+### Sprint 1.9 Accomplishments
+
+1. **Strict Singleton Initialization**: Consolidated the Supabase `createClient` into a dedicated strict singleton at `src/lib/supabase.js`. This resolves the `Multiple GoTrueClient instances detected` warning and prevents Web Locks API deadlocks across concurrent module loads.
+2. **Fail-Safe Session Verification**: Re-engineered `verifySession()` in `src/lib/api.js` to execute the Supabase session request within a `Promise.race` bounded by a strict 1500ms timeout.
+3. **Decoupled Public Routing**: Removed the global hydration and authentication blocking spinner from `src/App.jsx`. Public routes (`/`, `/about`, `/platform`, `/news-media`) now render instantly, delegating strict session validation exclusively to the `ProtectedRoute` wrapper around the `/dashboard`.
+4. **Zustand Rehydration Tuning**: Cleaned up the `useAppStore` `onRehydrateStorage` logic to ensure the `_hasHydrated` and `isHydrating` booleans definitively toggle once persistence restoration finishes, unblocking subsequent logic.
+
+Status: Ready for deployment cycle.
