@@ -101,3 +101,12 @@ Status: Ready for deployment cycle.
 4. **Zustand Rehydration Tuning**: Cleaned up the `useAppStore` `onRehydrateStorage` logic to ensure the `_hasHydrated` and `isHydrating` booleans definitively toggle once persistence restoration finishes, unblocking subsequent logic.
 
 Status: Ready for deployment cycle.
+
+## Sprint 2.0: Core Directives & Implementation Tasks (Current)
+
+### Remote Cloudflare D1 Provisioning & Telemetry Write Verification
+*   **Schema Provisioning Command**: `npx wrangler d1 execute <DATABASE_NAME> --remote --file=./migrations/0001_create_telemetry_table.sql`
+*   **Edge Insert Verification**: `functions/api/telemetry.js` correctly maps all fields (`id`, `event_type`, `timestamp`, `session_id`, `payload`, `client_ip`, `country`, `user_agent`, `received_at`) for the D1 batch inserts. The database execution is already safely wrapped in a `try/catch` block that logs a warning (`D1 Insert Error:`) but permits subsequent Analytics Engine writes and returns HTTP 200, fulfilling the resilience requirements.
+*   **Dashboard DOM Virtualization**: Verified `LazyVaultCard` in `src/pages/Dashboard.jsx` implements the memory-specified `contentVisibility: 'auto'` and `containIntrinsicSize: 'auto 400px'` inline CSS style to defer rendering of off-screen vault cards and reserve layout space, improving browser paint performance on large lists.
+*   **Live Broadcast Edge Stream Polling**: Refactored `src/components/home/LiveBroadcast.jsx` to strictly implement a recursive `setTimeout` loop with an exponential backoff strategy (5s up to 60s cap) for the `/api/stream/status` polling, replacing the external scope mutable variable with a pure recursive function argument. Added an `isSubscribed` flag to prevent state updates after unmount.
+*   **Screpy SEO & Meta Tag Alignment**: Verified the presence of the exact canonical `<link>` tag, the production OpenGraph meta tags, and the semantic `<noscript>` fallback structure inside `index.html`. Updated `<title>` to exactly match the requested phrase: "James Ellars | Official Hub & Policy Platform".

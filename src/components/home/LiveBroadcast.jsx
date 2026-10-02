@@ -26,42 +26,52 @@ const LiveBroadcast = () => {
     }
   }, []);
 
-  // Polling for live status with exponential backoff
+  // Polling for live status with strictly enforced recursive setTimeout and exponential backoff
   useEffect(() => {
     let pollTimeout;
-    let currentDelay = 5000;
+    let isSubscribed = true;
 
-    const checkLiveStatus = async () => {
+    const checkLiveStatus = async (currentDelay = 5000) => {
+      if (!isSubscribed) return;
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
+      let nextDelay = currentDelay;
+
       try {
         const response = await fetch('/api/stream/status', { signal: controller.signal });
         clearTimeout(timeoutId);
         if (response.ok) {
           const data = await response.json();
-          setIsLiveStreamActive(data.isLiveStreamActive);
+          if (isSubscribed) {
+             setIsLiveStreamActive(data.isLiveStreamActive);
+          }
           if (data.isLiveStreamActive) {
-            currentDelay = 5000;
+            nextDelay = 5000; // Reset to 5s if live
           } else {
-            currentDelay = Math.min(currentDelay * 1.5, 60000);
+            nextDelay = Math.min(currentDelay * 1.5, 60000); // Cap at 60s
           }
         } else {
-          setIsLiveStreamActive(false);
-          currentDelay = Math.min(currentDelay * 1.5, 60000);
+          if (isSubscribed) setIsLiveStreamActive(false);
+          nextDelay = Math.min(currentDelay * 1.5, 60000);
         }
       } catch (err) {
         clearTimeout(timeoutId);
         console.warn('[LiveBroadcast] Edge status polling failed:', err);
-        setIsLiveStreamActive(false);
-        currentDelay = Math.min(currentDelay * 1.5, 60000);
+        if (isSubscribed) setIsLiveStreamActive(false);
+        nextDelay = Math.min(currentDelay * 1.5, 60000);
       }
-      pollTimeout = setTimeout(checkLiveStatus, currentDelay);
+
+      if (isSubscribed) {
+         pollTimeout = setTimeout(() => checkLiveStatus(nextDelay), nextDelay);
+      }
     };
 
     // Check immediately
-    checkLiveStatus();
+    checkLiveStatus(5000);
 
     return () => {
+      isSubscribed = false;
       if (pollTimeout) {
         clearTimeout(pollTimeout);
       }
