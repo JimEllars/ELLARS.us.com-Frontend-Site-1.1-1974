@@ -41,11 +41,10 @@ const GlobalAudioPlayer = () => {
 
     return () => {
       isActive = false;
-      if (audioRef.current) {
-         audioRef.current.pause();
-         audioRef.current.src = '';
-      }
-      if ('mediaSession' in navigator) {
+      // Do not clear audioRef.current.src or pause on unmount to maintain state continuity
+      // across React Router virtual DOM transitions. Let the browser handle cleanup
+      // on hard navigation.
+      if ('mediaSession' in navigator && !audioIsPlaying) {
          navigator.mediaSession.metadata = null;
       }
     };
