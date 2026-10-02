@@ -1,3 +1,4 @@
+import { supabase as supabaseClient } from './supabase.js';
 import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
@@ -541,19 +542,18 @@ export async function subscribeToNewsletter(email, turnstileToken) {
 
 export async function verifySession() {
   try {
-    const supabaseClient = await import('@supabase/supabase-js').then(module => {
-      const url = import.meta.env.VITE_SUPABASE_URL || '';
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-      if (!url || !key) return null;
-      return module.createClient(url, key);
-    }).catch(() => null);
-
     if (!supabaseClient) {
       console.warn("Supabase client not initialized for verifySession.");
       return { user: null, session: null, isGuest: true };
     }
 
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Session verification timeout')), 1500)
+    );
+
+    const sessionPromise = supabaseClient.auth.getSession();
+    const result = await Promise.race([sessionPromise, timeoutPromise]);
+    const { data: { session } = {}, error } = result || {};
 
     if (error) {
        console.error("Session verification error:", error.message);

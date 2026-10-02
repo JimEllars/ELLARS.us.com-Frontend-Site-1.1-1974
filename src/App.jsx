@@ -21,18 +21,11 @@ import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
 import { useAppStore } from './store/useAppStore';
 import { verifySession } from './lib/api';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Supabase environment variables (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY) are missing. Supabase client will not be initialized correctly.");
-}
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 
 
@@ -101,13 +94,7 @@ function App() {
   }, [setToken, clearAuth, setIsAuthChecking]);
 
 
-  if (!hasHydrated || isAuthChecking) {
-    return (
-      <div className="fixed inset-0 bg-void flex items-center justify-center z-[9999]">
-        <div className="w-12 h-12 border-2 border-yellow-electric/20 border-t-yellow-electric rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+
 
   return (
     <HelmetProvider>
