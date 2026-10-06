@@ -44,7 +44,7 @@ function App() {
   const isOnline = useNetworkStatus();
   const setToken = useAppStore(state => state.setUserToken);
   const isAuthChecking = useAppStore(state => state.isAuthChecking);
-  const hasHydrated = useAppStore(state => state._hasHydrated);
+
   const setIsAuthChecking = useAppStore(state => state.setIsAuthChecking);
   const clearAuth = useAppStore(state => state.clearAuth);
 
