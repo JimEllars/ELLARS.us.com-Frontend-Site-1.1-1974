@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp dist/index.html dist/200.html",
+    "build": "vite build && node scripts/copy-spa-fallback.mjs",
     "lint": "eslint .",
     "lint:error": "eslint . --quiet",
     "preview": "vite preview"
