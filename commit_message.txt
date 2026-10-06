@@ -1,1 +1,8 @@
-fix(initialization): unblock public route rendering, fix zustand hydration zero-state, consolidate supabase singleton, add edge stream endpoint, and update metadata
+fix(initialization): unblock public route rendering, update AXiM Development venture, fix zustand hydration zero-state, and consolidate supabase singleton
+
+- Replaced "AXiM Systems" with "AXiM Development" in Ventures.jsx.
+- Removed global blocking check on un-hydrated stores in App.jsx.
+- Corrected useAppStore zero-state by explicitly initializing `_hasHydrated` and `isInitialized` to `true`.
+- Consolidated the singleton instantiation of the Supabase client into src/lib/supabase.js, resolving "Multiple GoTrueClient instances" errors and avoiding duplicated sessions.
+- Provided a dummy stream status API route in functions/api/v1/stream/status.js to satisfy Home.jsx's polling feature.
+- Generated dist/200.html alongside dist/index.html to satisfy Cloudflare Pages native SPA fallbacks, and updated index.html's descriptive metadata tags.
