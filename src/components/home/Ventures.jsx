@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const Ventures = () => {
   const ventures = [
     {
-      title: "AXiM Systems",
+      title: "AXiM Development",
       link: "https://axim.us.com",
       description: "Enterprise automation and civic infrastructure solutions.",
       icon: "Cpu",
