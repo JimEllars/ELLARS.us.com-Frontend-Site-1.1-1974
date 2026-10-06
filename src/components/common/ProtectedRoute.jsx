@@ -21,6 +21,7 @@ const ProtectedRoute = () => {
 
     // Silent validation polling
     const validateToken = async () => {
+       const fallbackTimeout = setTimeout(() => { setIsValidating(false) }, 1500);
        if (!userToken) {
          setIsValidating(false);
          return;
@@ -50,6 +51,7 @@ const ProtectedRoute = () => {
          // Removed clearAuth on transient network failure
          if (e?.message?.includes("401") || e?.status === 401) { clearAuth(); } else { /* transient error, keep auth */ }
        } finally {
+         clearTimeout(fallbackTimeout);
          setIsValidating(false);
        }
     };

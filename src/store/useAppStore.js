@@ -46,9 +46,9 @@ export const useAppStore = create(
       userToken: initialToken,
       isAuthenticated: isInitiallyAuthenticated,
       isAuthChecking: true,
-      isInitialized: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') !== null) : false,
-      _hasHydrated: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') !== null) : false,
-      isHydrating: typeof window !== 'undefined' ? (safeLocalStorage.getItem('ellars_us_com_preferences') === null) : true,
+      isInitialized: true,
+      _hasHydrated: true,
+      isHydrating: false,
       audioIsPlaying: false,
       audioActiveTrack: null,
       audioProgress: 0,
@@ -81,11 +81,8 @@ export const useAppStore = create(
     {
       name: 'ellars_us_com_preferences',
       storage: createJSONStorage(() => safeLocalStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state._hasHydrated = true;
-          state.isHydrating = false;
-        }
+      onRehydrateStorage: () => (state, error) => {
+        useAppStore.setState({ _hasHydrated: true, isHydrating: false, isInitialized: true });
       },
       partialize: (state) => ({
         audioVolume: state.audioVolume,
@@ -98,3 +95,7 @@ export const useAppStore = create(
     }
   )
 );
+
+if (typeof window !== 'undefined') {
+  useAppStore.setState({ _hasHydrated: true, isHydrating: false, isInitialized: true });
+}
