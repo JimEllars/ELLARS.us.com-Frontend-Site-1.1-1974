@@ -1,7 +1,1 @@
-fix(initialization): unblock public route rendering, fix zustand hydration zero-state, and consolidate supabase singleton
-
-- Removed `hasHydrated` gating condition from `App.jsx` blocking public visitors.
-- Fixed Zustand store default hydration states for correct initialization handling in `useAppStore.js`.
-- Consolidated Supabase client into a singleton located in `src/lib/supabase.js`.
-- Updated package.json script to output a Cloudflare 200 SPA fallback page.
-- Adjusted ProtectedRoute verification to utilize a strict 1500ms fallback timeout mechanism.
+fix(initialization): unblock public route rendering, fix zustand hydration zero-state, consolidate supabase singleton, add edge stream endpoint, and update metadata
