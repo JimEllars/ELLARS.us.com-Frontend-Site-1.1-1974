@@ -7,3 +7,10 @@
 - Created edge stream status endpoint at functions/api/v1/stream/status.js
 - Updated production metadata tags in index.html for James Ellars official hub
 - Replaced "AXiM Systems" with "AXiM Development" in Ventures.jsx.
+- Updated "AXiM Systems" to "AXiM Development" in `Ventures.jsx`.
+- Replaced the global initialization spinner with seamless public route loading in `App.jsx`.
+- Fixed the Zustand store hydration zero-state issue by setting default hydration flags on initialization.
+- Consolidated `createClient()` into a single `src/lib/supabase.js` export.
+- Configured Cloudflare native SPA fallback (`public/_redirects` & `dist/200.html`).
+- Created an edge status function at `functions/api/v1/stream/status.js`.
+- Cleaned up production metadata in `index.html`.
