@@ -91,8 +91,17 @@ const DonateModal = () => {
   };
 
   const handleCustomAmountChange = (e) => {
-    setCustomAmount(e.target.value);
-    setSelectedTier(null);
+    const val = e.target.value;
+    if (val === '') {
+      setCustomAmount('');
+      setSelectedTier(null);
+      return;
+    }
+    const num = Number(val);
+    if (!isNaN(num) && num > 0) {
+      setCustomAmount(val);
+      setSelectedTier(null);
+    }
   };
 
   const handleConfirm = () => {
@@ -100,11 +109,11 @@ const DonateModal = () => {
       setDonateModalOpen(false);
       return;
     }
-    const amount = selectedTier || customAmount;
-    if (!amount) return;
+    const amount = selectedTier || Number(customAmount);
+    if (!amount || isNaN(amount) || amount <= 0) return;
 
     console.log(`[DonateModal] Processing contribution: $${amount}`);
-    trackEvent('thirdweb_checkout_initiated', { amount });
+    trackEvent('donation_initiated', { amount: Number(amount) });
 
     const donationLink = import.meta.env.VITE_DONATION_LINK || 'https://example.com/donate';
 

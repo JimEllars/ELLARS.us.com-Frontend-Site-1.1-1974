@@ -130,7 +130,15 @@ const NewsletterModal = () => {
     setHasError(false);
 
     try {
-      const turnstileToken = window.turnstile && widgetIdRef.current ? window.turnstile.getResponse(widgetIdRef.current) : null;
+      let turnstileToken = window.turnstile && widgetIdRef.current ? window.turnstile.getResponse(widgetIdRef.current) : null;
+      if (!turnstileToken && window.turnstile && widgetIdRef.current) {
+        // Wait a bit if Turnstile hasn't finished
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        turnstileToken = window.turnstile.getResponse(widgetIdRef.current);
+      }
+      if (window.turnstile && widgetIdRef.current && !turnstileToken) {
+        throw new Error('Verification Failed');
+      }
 
       const payload = { email: sanitizedEmail, turnstileToken, source: 'navbar_modal' };
       const timeoutPromise = new Promise((_, reject) =>
@@ -148,12 +156,14 @@ const NewsletterModal = () => {
 
       setTimeout(() => {
         setNewsletterModalOpen(false);
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
       console.error("Newsletter modal subscription error:", error);
       setHasError(true);
-      if (error.message === 'Submission timed out') {
+      if (error.message === 'Verification Failed') {
+        showToast("Verification Failed");
+      } else if (error.message === 'Submission timed out') {
          showToast("[NETWORK_TIMEOUT_RETRY]");
       } else {
          showToast("Failed to subscribe. Please try again.");
@@ -252,7 +262,7 @@ const NewsletterModal = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                     >
-                      VERIFIED
+                      TRANSMISSION ACCEPTED
                     </motion.span>
                   ) : (
                     <motion.span
