@@ -233,6 +233,7 @@ const Navbar = () => {
             className="lg:hidden text-white hover:text-yellow-electric transition-colors"
             onClick={() => setIsOpen(!isOpen)}
             aria-expanded={isOpen}
+            aria-controls="mobile-menu"
             aria-label="Toggle navigation menu"
           >
             <SafeIcon name={isOpen ? "X" : "Menu"} className="w-6 h-6" />
@@ -243,6 +244,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="mobile-menu"
             ref={modalRef}
             role="dialog"
             aria-modal="true"

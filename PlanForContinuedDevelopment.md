@@ -21,3 +21,11 @@
 - Refined form error handling to gracefully display context-specific errors.
 - Improved the Donate Modal custom amount input clamping and fixed preset state conflicts.
 - Addressed development blockers by returning mock success states when `VITE_CF_FORM_ENDPOINT` is missing.
+
+## Sprint 2.2: Vault Pagination & Rich Media Support
+- Added explicit page and perPage tracking variables (20 items per page) for Intel Vault.
+- Wired explicit limit parameters onto `fetchSavedVaultItems` within `api.js` for remote API execution.
+- Added a "Load More" pagination state bottom-drawer inside the Vault tab component.
+- Implemented robust rich media tracking utilizing `DOMPurify` to allow cross-origin `iframe` embed injection for podcast endpoints and safe content rendering (`ArticleDetail.jsx`).
+- Hooked the PWA service worker updater logic to trigger a hard window reload (`location.reload(true)`) bypassing local cache on fresh installs.
+- Completed accessibility fixes for Navbar by introducing proper focus traps and ARIA attributes for mobile menu elements.

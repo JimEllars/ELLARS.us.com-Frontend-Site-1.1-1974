@@ -12,10 +12,10 @@ const UpdatePrompt = () => {
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
-        window.location.reload();
+        window.location.reload(true);
       });
     } else {
-      window.location.reload();
+      window.location.reload(true);
     }
   };
 
