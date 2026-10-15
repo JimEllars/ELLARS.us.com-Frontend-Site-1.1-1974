@@ -1,1 +1,7 @@
-feat(acquisition): harden newsletter validation, turnstile integration, and donate form state
+feat(ui): implement vault pagination, harden rich media parsing, and activate PWA update prompt
+
+- Added explicit `page` and `perPage` tracking for the Intel Vault.
+- Enabled pagination loading by passing dynamic arguments to API utilities.
+- Implemented `DOMPurify` hooks allowing verified Cloudflare, Pod.co, and YouTube `iframe` rendering within dispatches.
+- Configured native PWA prompt interactions to trigger hard reload caches upon activation.
+- Applied responsive focus locks and aria constraints on mobile side-navigation panels.

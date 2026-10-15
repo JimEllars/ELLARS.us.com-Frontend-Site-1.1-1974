@@ -455,7 +455,7 @@ export async function loginUser(email, password) {
   }
 }
 
-export async function fetchSavedVaultItems(page = 1, limit = 12) {
+export async function fetchSavedVaultItems(page = 1, limit = 20) {
   const token = useAppStore.getState().userToken;
   if (!token) {
     return { data: [], isError: true, message: 'No active session' };

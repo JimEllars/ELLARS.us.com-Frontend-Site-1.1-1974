@@ -175,7 +175,7 @@ useEffect(() => {
 
 
   const fetcher = async ([key, page]) => {
-    return fetchSavedVaultItems(page, 12);
+    return fetchSavedVaultItems(page, 20);
   };
   const { data: response, error, isLoading } = useSWR(
     token ? ['saved_vault_items', vaultPage] : null,
@@ -201,7 +201,7 @@ useEffect(() => {
             return [...prev, ...newItems];
          });
       }
-      if (response.data.length < 12) {
+      if (response.data.length < 20) {
          setHasMoreVaultItems(false);
       } else {
          setHasMoreVaultItems(true);
