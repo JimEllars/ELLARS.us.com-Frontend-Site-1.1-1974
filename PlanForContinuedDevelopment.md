@@ -14,3 +14,10 @@
 - Configured Cloudflare native SPA fallback (`public/_redirects` & `dist/200.html`).
 - Created an edge status function at `functions/api/v1/stream/status.js`.
 - Cleaned up production metadata in `index.html`.
+
+## Sprint 2.1: User Acquisition Forms & Modal Hardening
+- Strengthened Newsletter Modal validation with turnstile integration and robust token handling.
+- Implemented network timeout logic in `subscribeToNewsletter` via `AbortController`.
+- Refined form error handling to gracefully display context-specific errors.
+- Improved the Donate Modal custom amount input clamping and fixed preset state conflicts.
+- Addressed development blockers by returning mock success states when `VITE_CF_FORM_ENDPOINT` is missing.

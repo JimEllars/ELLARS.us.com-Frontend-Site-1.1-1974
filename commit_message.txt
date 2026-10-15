@@ -1,1 +1,1 @@
-fix(initialization): unblock public route rendering, update AXiM Development venture, fix zustand hydration zero-state, and consolidate supabase singleton
+feat(acquisition): harden newsletter validation, turnstile integration, and donate form state

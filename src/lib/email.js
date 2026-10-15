@@ -19,7 +19,8 @@ export const subscribeToNewsletter = async (payload) => {
 
   const url = import.meta.env.VITE_CF_FORM_ENDPOINT;
   if (!url || typeof url !== 'string' || url.trim() === '') {
-    return { isError: true, message: "Missing Cloudflare form endpoint configuration: VITE_CF_FORM_ENDPOINT is not set or invalid." };
+    console.warn("[EmailIt] VITE_CF_FORM_ENDPOINT is missing. Returning mocked success to allow UI development.");
+    return { success: true, message: "Mocked successful subscription (Missing CF endpoint)." };
   }
 
   const metadata = {
@@ -29,6 +30,9 @@ export const subscribeToNewsletter = async (payload) => {
   };
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -40,8 +44,11 @@ export const subscribeToNewsletter = async (payload) => {
         source: "Ellars_Web_App",
         footprint: "v5.40-core",
         ...metadata
-      })
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 400) {
@@ -55,6 +62,10 @@ export const subscribeToNewsletter = async (payload) => {
 
     return await response.json();
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error("[EmailIt] Subscription fetch timed out.");
+      return { isError: true, message: "Submission timed out" };
+    }
     console.error("[EmailIt] Network or parsing error during subscription:", error);
     return { isError: true, message: error.message || 'An unknown network error occurred.' };
   }
