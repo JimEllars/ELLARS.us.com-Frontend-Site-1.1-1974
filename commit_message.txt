@@ -1,7 +1,6 @@
-feat(ui): implement vault pagination, harden rich media parsing, and activate PWA update prompt
+feat(telemetry): verify d1 batch writes, wire wp fallback telemetry, and harden seo tags
 
-- Added explicit `page` and `perPage` tracking for the Intel Vault.
-- Enabled pagination loading by passing dynamic arguments to API utilities.
-- Implemented `DOMPurify` hooks allowing verified Cloudflare, Pod.co, and YouTube `iframe` rendering within dispatches.
-- Configured native PWA prompt interactions to trigger hard reload caches upon activation.
-- Applied responsive focus locks and aria constraints on mobile side-navigation panels.
+- Verified Cloudflare D1 batch writes within the edge telemetry API.
+- Assessed that WP fallback functions appropriately trigger the wp_feed_fallback_served event and properly guard session routing on 401 response status codes.
+- Added Vault Draft Export functionality within the Automation Calculator layout.
+- Verified SEO metadata hardening on root document markup.

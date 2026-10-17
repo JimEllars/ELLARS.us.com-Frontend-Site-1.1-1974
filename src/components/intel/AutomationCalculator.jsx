@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useTelemetry } from '@/hooks/useTelemetry';
 import { useAppStore } from "@/store/useAppStore";
@@ -16,6 +17,7 @@ const generateUUID = () => {
 };
 
 const AutomationCalculator = () => {
+  const navigate = useNavigate();
   const showToast = useAppStore(state => state.showToast);
   const { trackEvent } = useTelemetry();
 
@@ -436,6 +438,35 @@ const AutomationCalculator = () => {
                 >
                   <span className="shrink-0">[⬇️]</span>
                   <span className="truncate">Export Analysis</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const draftContent = `# Automation Dividend Projection
+
+**Corporate Tax Base:** 2.5 Trillion
+**Eligible Population:** 200 Million
+**Efficiency Rate:** ${efficiency}%
+**Hours Multiplier:** ${(hours / 40).toFixed(2)}x
+
+### Projected Monthly Return
+**${new Intl.NumberFormat().format(displayMonthly)}**
+
+### Projected Annual Dividend
+**${new Intl.NumberFormat().format(displayAnnual)}**
+`;
+                    localStorage.setItem('ellars_dispatch_draft', JSON.stringify({
+                      title: "Automation Dividend Projection",
+                      content: draftContent,
+                      excerpt: "Projected economic dividends based on current automation efficiency and hours multiplier."
+                    }));
+                    trackEvent("engagement_scoring", { action: "send_to_vault", value: displayAnnual });
+                    navigate('/dashboard?tab=tools&tool=publisher');
+                  }}
+                  className="text-yellow-electric/70 hover:text-yellow-electric transition-colors flex items-center gap-1 focus:ring-2 focus:ring-yellow-electric/80 focus:ring-offset-2 focus:outline-none mr-4"
+                >
+                  <span className="shrink-0">[📤]</span>
+                  <span className="truncate">Send to Vault Draft</span>
                 </button>
                 <button
                   onClick={() => window.print()}
