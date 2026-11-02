@@ -16,25 +16,52 @@ const sanitizeConfig = {
   ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
 };
 
+/**
+ * Exact-origin allow-list for embedded media.
+ *
+ * The previous check used src.startsWith('https://www.youtube.com'), which
+ * happily matched https://www.youtube.com.attacker.tld/x — a string prefix is
+ * not an origin. Parse the URL and compare origins.
+ *
+ * These origins must stay in sync with frame-src in public/_headers, or the
+ * browser blocks an embed that the sanitizer has already approved.
+ */
+const ALLOWED_IFRAME_ORIGINS = new Set([
+  'https://challenges.cloudflare.com',
+  'https://play.pod.co',
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
+]);
+
+// Cloudflare Stream serves each customer from customer-<id>.cloudflarestream.com.
+const CLOUDFLARE_STREAM_ORIGIN = /^https:\/\/customer-[a-z0-9]+\.cloudflarestream\.com$/;
+
+const IFRAME_SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox';
+
+const isAllowedIframeSrc = (rawSrc) => {
+  if (!rawSrc) return false;
+  let parsed;
+  try {
+    parsed = new URL(rawSrc);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+  return ALLOWED_IFRAME_ORIGINS.has(parsed.origin) || CLOUDFLARE_STREAM_ORIGIN.test(parsed.origin);
+};
+
 DOMPurify.addHook('uponSanitizeElement', (node, data) => {
   if (data.tagName === 'iframe') {
     const src = node.getAttribute('src') || '';
-    if (!src.startsWith('https://')) {
-      node.parentNode.removeChild(node);
+    if (!isAllowedIframeSrc(src) || !node.parentNode) {
+      node.parentNode?.removeChild(node);
       return;
     }
-    const allowedOrigins = [
-      'https://challenges.cloudflare.com',
-      'https://play.pod.co',
-      'https://www.youtube.com',
-    ];
-    // Check if starts with any of the exact origins OR matches cloudflare stream regex
-    const isAllowed = allowedOrigins.some(origin => src.startsWith(origin)) ||
-                      /^https:\/\/customer-[a-zA-Z0-9]+\.cloudflarestream\.com/.test(src);
-
-    if (!isAllowed) {
-      node.parentNode.removeChild(node);
-    }
+    // Defence in depth: even an allow-listed origin is sandboxed, so a
+    // compromised or misconfigured embed cannot reach into the parent document.
+    node.setAttribute('sandbox', IFRAME_SANDBOX);
+    node.setAttribute('loading', 'lazy');
+    node.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
   }
 });
 
