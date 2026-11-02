@@ -4,7 +4,6 @@ import Navbar from './common/Navbar';
 import Footer from './common/Footer';
 import GlobalAudioPlayer from "./common/GlobalAudioPlayer";
 import Toast from './common/Toast';
-import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
@@ -77,13 +76,15 @@ const Layout = ({ children }) => {
 
   return (
     <LoaderContext.Provider value={{ isLoading, setIsLoading }}>
-      <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">
-        <a href="#main-content" className="-translate-y-full absolute focus:translate-y-0 focus:relative focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">Skip to main content</a>
+      <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">        <a href="#main-content" className="-translate-y-full absolute focus:translate-y-0 focus:relative focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">Skip to main content</a>
         <TopLoader />
         <ScrollProgress />
-        <Helmet>
-          <title>James Ellars | Business Development & Community Leader</title>
-          </Helmet>
+        {/* The layout used to emit <title>James Ellars | Business Development &
+            Community Leader</title> on every route. Helmet's child instances mount
+            before the parent's, so the layout title won the dedupe and every page
+            shipped the same generic title in the tab, in search results and in
+            bookmarks. Pages own their titles; the static <title> in index.html is
+            the fallback for the initial paint. */}
         <Navbar />
         <main id="main-content" className="flex-grow relative z-10 min-h-screen">
           {children}
