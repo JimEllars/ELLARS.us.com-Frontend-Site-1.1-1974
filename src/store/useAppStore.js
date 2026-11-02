@@ -27,8 +27,15 @@ const safeLocalStorage = {
   },
 };
 
-const initialToken = typeof window !== 'undefined' ? safeLocalStorage.getItem('ellars_auth_token') : null;
-const isInitiallyAuthenticated = !!initialToken;
+/**
+ * The store no longer seeds the token from a bare 'ellars_auth_token' key.
+ * Nothing ever wrote that key: supabase-js persists under
+ * 'ellars_us_com_auth_token' and zustand persists this slice under
+ * 'ellars_us_com_preferences'. The read was dead weight that made the auth path
+ * look like it had two sources of truth.
+ */
+const initialToken = null;
+const isInitiallyAuthenticated = false;
 
 export const useAppStore = create(
   persist(

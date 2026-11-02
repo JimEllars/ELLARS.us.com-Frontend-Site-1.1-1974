@@ -195,12 +195,14 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Only redirect on 401 for authenticated endpoints (Supabase), NOT WordPress.
-        if (url.includes(SUPABASE_URL)) {
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-            useAppStore.getState().clearAuth();
-            window.location.href = '/login';
-          }
+        // Only requests that actually carried a session token can indicate an
+        // expired session. This used to fire for ANY Supabase 401 — including a
+        // newsletter subscribe — and did a full 'window.location.href' reload,
+        // discarding SPA state. The store is cleared instead and ProtectedRoute
+        // performs the router-native <Navigate to="/login">.
+        const carriedSession = Boolean(options?.headers?.Authorization);
+        if (carriedSession && url.includes(SUPABASE_URL) && typeof window !== 'undefined') {
+          useAppStore.getState().clearAuth();
         }
       }
       if (response.status === 429 && retries > 0) {
@@ -429,6 +431,14 @@ export async function publishVaultItem(payload) {
   }
 }
 
+/**
+ * Session states are deliberately distinguishable. A 'transient' failure means we
+ * could not reach the auth server (timeout, offline, 5xx) and MUST NOT be read as
+ * "the user is logged out" — clearing auth on a slow network was one of the three
+ * defects that made a refresh log the user out.
+ */
+const guestState = (transient = false) => ({ user: null, session: null, isGuest: true, transient });
+
 export async function loginUser(email, password) {
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
@@ -448,6 +458,22 @@ export async function loginUser(email, password) {
     }
 
     const data = await response.json();
+
+    // Hand the tokens to supabase-js. Login used to bypass the SDK entirely, so
+    // supabase.auth.getSession() was always null, onAuthStateChange never fired
+    // and verifySession() reported a guest on every hard refresh. setSession also
+    // persists the refresh token, which is what keeps a tab alive past the ~1h
+    // access-token lifetime.
+    if (supabaseClient && data?.access_token) {
+      const { error: adoptError } = await supabaseClient.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || '',
+      });
+      if (adoptError) {
+        console.warn('[AXiM Core: Auth] supabase-js did not adopt the session:', adoptError.message);
+      }
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error("[AXiM Core: Auth Error]", error);
@@ -545,11 +571,11 @@ export async function verifySession() {
   try {
     if (!supabaseClient) {
       console.warn("Supabase client not initialized for verifySession.");
-      return { user: null, session: null, isGuest: true };
+      return guestState(true);
     }
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Session verification timeout')), 1500)
+      setTimeout(() => reject(new Error('Session verification timeout')), 3000)
     );
 
     const sessionPromise = supabaseClient.auth.getSession();
@@ -558,19 +584,19 @@ export async function verifySession() {
 
     if (error) {
        console.error("Session verification error:", error.message);
-       if (error.message.includes('fetch') || error.message.includes('Network')) {
-           return { user: null, session: null, isGuest: true }; // Let the caller handle transient errors safely
-       }
        if (error.status === 401 || error.status === 403) {
-           return { user: null, session: null, isGuest: true }; // Explicitly unauthenticated
+           return guestState(false); // Explicitly unauthenticated
        }
-       return { user: null, session: null, isGuest: true };
+       return guestState(true); // Network/transport failure: unknown, not "logged out"
     }
 
-    return session ? session : { user: null, session: null, isGuest: true };
+    return session ? session : guestState(false);
   } catch (error) {
-    console.error("Session verification failed:", error);
-    return { user: null, session: null, isGuest: true }; // Don't throw, just return guest state gracefully
+    // A rejected race is a timeout, which is a transport problem, not a verdict
+    // on the token. Reporting it as a hard guest state is what made a slow
+    // network look like an expired session.
+    console.warn("Session verification did not resolve in time:", error?.message);
+    return guestState(true);
   }
 }
 
