@@ -1,0 +1,76 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint / build / guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Lint (zero warnings tolerated)
+        run: npx eslint . --max-warnings=0
+
+      - name: Build (Vite + Cloudflare SPA fallback)
+        run: npm run build
+
+      - name: Assert build artifacts
+        run: |
+          set -euo pipefail
+          missing=0
+          for artifact in dist/index.html dist/200.html dist/sw.js dist/_headers dist/_redirects; do
+            if [ -f "$artifact" ]; then
+              echo "ok    $artifact"
+            else
+              echo "MISSING $artifact"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Assert no legacy infrastructure references in the bundle
+        run: |
+          set -euo pipefail
+          # Guardrail: the deployed app must never call legacy/Bluehost infrastructure.
+          # api.axim.us.com 302s to a Bluehost 404 and is permanently dead.
+          if grep -rIl "api\.axim\.us\.com" dist/ ; then
+            echo "::error::Legacy host api.axim.us.com found in dist/. Remove it from source before merging."
+            exit 1
+          fi
+          if grep -rIl "w3schools\.com" dist/ ; then
+            echo "::error::Template residue (w3schools.com) found in dist/."
+            exit 1
+          fi
+          echo "ok    no legacy hosts in bundle"
+
+      - name: Assert single PWA manifest identity
+        run: |
+          set -euo pipefail
+          count=$(grep -c 'rel="manifest"' dist/index.html || true)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::dist/index.html links $count manifests; exactly one is required."
+            exit 1
+          fi
+          echo "ok    exactly one manifest link"
