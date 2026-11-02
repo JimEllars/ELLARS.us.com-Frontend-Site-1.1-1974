@@ -128,16 +128,49 @@ Bind **`SUPABASE_ANON_KEY`** (the publishable/anon key, never `service_role`) in
 
 ---
 
+## Sprint 2.9 — A missing chunk hash was answered with the HTML shell, and the project URL was the REST endpoint
+
+**Branch:** `fix/edge-asset-404-and-config-url` · **Base:** `95bfbf1`
+
+### Why this cycle
+
+Two defects found while verifying the production deploy of 2.8. Both are the same shape as everything else this month: nothing throws, nothing looks wrong, and the damage is invisible until someone loads the site at the wrong moment.
+
+**1. A missing hashed asset returned `index.html` with a 200**
+- `public/_redirects` is a single `/* /index.html 200`. That is right for SPA routes and wrong for `/assets/*`. Request `https://ellars.us.com/assets/index-doesnotexist123.js` and the response is **200 `text/html`** with the app shell — because a hashed asset that 404s is not a typo, it is a stale reference.
+- Concretely observed: after the 2.8 merge, a document served from the service-worker cache referenced the previous release's entry chunk. The browser fetched that hash, received `<!doctype html>` where a module was expected, refused to execute it, and rendered a **white page** with a MIME-type error in a console nobody opens. Two releases were live on different colos at the same time; every client in that window is exposed.
+- `functions/assets/[[path]].js` (new) proxies real assets through untouched — content type and the `immutable` cache rule are the asset's own — and turns a miss into a real **404 `text/plain`, `no-store`**, which a module loader fails cleanly and a recovery path can recognise. Static assets still win the fast path; only misses reach the Worker.
+
+**2. The bound Supabase project URL is the PostgREST endpoint, not the origin**
+- The Pages project binds `SUPABASE_URL` as `https://pvbcdndqjguzqeafhwhw.supabase.co/rest/v1/`, and `VITE_SUPABASE_URL` is inlined at build time with the same value. supabase-js appends its own paths, so the client inside the shipped bundle asks for `…/rest/v1/auth/v1/token`. Measured: that URL answers **404**; the correct base answers **400** ("invalid credentials", i.e. alive). **Login is broken in production for this reason**, independently of the missing-key defect fixed in 2.8.
+- Both resolvers now normalise to the project origin, stripping `/rest/v1`, `/auth/v1`, `/storage/v1`, `/realtime/v1` and `/functions/v1`, trailing slashes and any query/fragment. `functions/api/config.js` and `src/lib/supabase.js` carry the same guard, because a plausible-looking wrong binding must not be able to break the client.
+- Unparseable values fall back to the default project rather than shipping a broken base URL.
+
+### Tests
+
+- `scripts/smoke-functions.mjs` → **33 assertions** (was 22). New: asset handler passthrough keeps content type and `immutable`; a miss returns 404/`no-store`/`nosniff`; no `ASSETS` binding degrades to 404 rather than throwing; `/api/config` strips `rest/v1`, `auth/v1` and trailing slashes, and falls back on an unparseable URL.
+
+### Verified
+
+- `wrangler pages dev`: a real hashed asset is served with `application/javascript` and its immutable cache header; `/api/config` returns a normalised origin.
+- Production probe recorded above: 404 on the malformed auth path, 400 on the correct one.
+
+### Note for the next engineer
+
+`_redirects` cannot express "serve index.html only when no file exists". If a future route under `/assets/`, `/images/` or any other static directory must behave like an asset, it needs the same Function treatment — otherwise it silently inherits the SPA shell.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
 |---|---|---|---|
-| 1 | **`SUPABASE_ANON_KEY` binding** | Cloudflare dashboard | **P0, blocks all authentication.** The site currently deploys with no Supabase credential, so login/`/dashboard`/Vault/media are dead and `/api/config` answers 503. Set the publishable key as a runtime variable in Production and Preview. See Sprint 2.8. |
+| 1 | **Supabase env values in the Pages project** | Cloudflare dashboard | The anon key *is* bound (verified: `/api/config` → `configured:true`), but `SUPABASE_URL` **and** `VITE_SUPABASE_URL` are set to `https://<ref>.supabase.co/rest/v1/`. Sprint 2.9 normalises it client- and edge-side; the binding should still be corrected to the bare origin so the guard becomes belt-and-braces. |
 | 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. **Verify before any further Vault work.** |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |
 | 4 | **Raw-HTML metadata for non-JS crawlers** | This branch's successor | Canonical, `og:*` and `<title>` are now correct only after hydration. A crawler-facing rewrite in a Pages Function middleware (inject per-URL og/twitter/canonical for known UA strings) closes it. Note the trade-off: Cloudflare caches by URL and ignores `Vary: User-Agent` on cached HTML, so a crawler-triggered render can briefly be served to a browser. |
-| 5 | **`<UpdatePrompt />` unmounted + competing service workers** | This branch's successor | The prompt component is rendered nowhere, and the shipped workbox SW calls `skipWaiting()` in `install`, so it never enters the `waiting` state the prompt detects. Separately, `public/sw.js` (the hand-written SW with feed SWR strategies) is never deployed — the plugin overwrites it. One design has to win: pick `injectManifest` with the hand-written worker, or drop it and mount the prompt. |
+| 5 | **`<UpdatePrompt />` unmounted + competing service workers** | Next prioritised | Now with a symptom on record: a post-deploy client held a document from the SW cache, requested the previous release's chunk hash, and got the HTML shell back — a white page. Sprint 2.9 makes that failure clean (404) but not absent; the update handshake is what removes it. Currently: The prompt component is rendered nowhere, and the shipped workbox SW calls `skipWaiting()` in `install`, so it never enters the `waiting` state the prompt detects. Separately, `public/sw.js` (the hand-written SW with feed SWR strategies) is never deployed — the plugin overwrites it. One design has to win: pick `injectManifest` with the hand-written worker, or drop it and mount the prompt. |
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |

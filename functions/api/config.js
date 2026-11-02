@@ -34,6 +34,37 @@ const URL_NAMES = ['SUPABASE_URL', 'VITE_SUPABASE_URL'];
 
 const DEFAULT_SUPABASE_URL = 'https://pvbcdndqjguzqeafhwhw.supabase.co';
 
+/**
+ * Normalises the bound project URL to the *base* origin.
+ *
+ * The production binding is currently `https://<ref>.supabase.co/rest/v1/`, i.e.
+ * the PostgREST endpoint rather than the project root. supabase-js appends its own
+ * paths, so that value produces `.../rest/v1//auth/v1/token` and every call 404s.
+ * A wrong-but-plausible binding must not be able to break the client, so the
+ * service suffixes are stripped and anything unparseable falls back to the
+ * default project.
+ */
+const SUPABASE_PATH_SUFFIXES = ['/rest/v1', '/auth/v1', '/storage/v1', '/realtime/v1', '/functions/v1'];
+
+const normalizeSupabaseUrl = (raw) => {
+  const value = String(raw || '').trim();
+  if (!value) return DEFAULT_SUPABASE_URL;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return DEFAULT_SUPABASE_URL;
+    let path = url.pathname.replace(/\/+$/, '');
+    for (const suffix of SUPABASE_PATH_SUFFIXES) {
+      if (path.endsWith(suffix)) path = path.slice(0, -suffix.length);
+    }
+    url.pathname = path || '/';
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/+$/, '');
+  } catch {
+    return DEFAULT_SUPABASE_URL;
+  }
+};
+
 const firstDefined = (env, names) => {
   for (const name of names) {
     const value = env?.[name];
@@ -75,7 +106,7 @@ const respond = (body, status) =>
   });
 
 export async function onRequestGet({ env }) {
-  const supabaseUrl = firstDefined(env, URL_NAMES) || DEFAULT_SUPABASE_URL;
+  const supabaseUrl = normalizeSupabaseUrl(firstDefined(env, URL_NAMES));
   const anonKey = firstDefined(env, ANON_KEY_NAMES);
 
   if (!anonKey) {
