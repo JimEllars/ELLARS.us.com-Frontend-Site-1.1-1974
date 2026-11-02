@@ -161,6 +161,41 @@ Two defects found while verifying the production deploy of 2.8. Both are the sam
 
 ---
 
+## Sprint 2.10 — The PWA had no update handshake, so clients stayed on deleted builds
+
+**Branch:** `fix/pwa-update-handshake` · **Base:** `3301f3d`
+
+### Why this cycle
+
+Reproduced live while verifying 2.9. This browser had visited the site earlier; after two further production deploys it was **still running a three-release-old document**, whose entry chunk (`index-X9zi6rQC.js`) no longer existed. The page was blank and the console held a MIME-type error. Root cause chain, all four links real:
+
+1. `registerType: 'autoUpdate'` plus workbox's `NavigationRoute` bound to a **precached `index.html`** means navigation is served from the worker cache, not the network.
+2. `src/main.jsx` registered the worker and then never asked it to check for an update again.
+3. The `updatefound` handler set `updateAvailable` in the store — and `<UpdatePrompt />` was **mounted nowhere**, so the user was told nothing.
+4. `public/sw.js` (a hand-written worker with feed/font strategies) looked editable but was overwritten by the plugin at build time. It never shipped.
+
+### Shipped
+
+**`src/lib/swPolicy.js` (new)** — the decisions, pure and testable: `decideOnControllerChange({ hadController, audioPlaying, alreadyReloaded })` returns `ignore` (first install — nothing stale to replace), `reload` (update, no audio), or `prompt` (audio playing, or this tab already reloaded once — a reload loop is worse than a stale page). `isRegistrationCurrent()` reports whether a registration is already on the current build.
+
+**`src/lib/serviceWorker.js` (new)** — registration with `updateViaCache: 'none'` (the worker script itself was cacheable), an update check on load, on `visibilitychange` and on `online` (throttled to 5 minutes), and the `controllerchange` handshake that acts on the policy. Skipped entirely outside `PROD`, so a dev session never registers a worker.
+
+**`<UpdatePrompt />` is mounted** — it existed, styled, in the brand palette, and unreachable. It now appears when the policy chooses `prompt`, which is the audio-safe path: the station is a flagship surface and a new version can wait for a click.
+
+**`index.html` bootstrap guard** — the last line of defence for a document that is *already* stale: if the entry module fails to load, the inline script (runs before the module) clears the caches, unregisters the workers and reloads **once per session**. Without it the user sits on a blank page forever, because the recovery lives in the bundle that failed to load.
+
+**One worker design wins** — `public/sw.js` deleted. Its intent was not lost: `workbox.runtimeCaching` now carries the intelligence-feed `StaleWhileRevalidate` (`intel-feed`, 40 entries / 24 h) and Google Fonts `CacheFirst` (`google-fonts`, 20 entries / 1 year) routes, verified present in the generated `dist/sw.js`.
+
+### Tests
+
+`scripts/smoke-client.mjs` (new, `npm run test:client`) — 10 assertions over the policy: no reload on first install, reload on update, audio downgrades to prompt, second update prompts instead of looping, current/installing/waiting registration states. `npm test` runs client + functions (45 assertions total) and CI now calls `npm test`.
+
+### Note
+
+The 2.9 asset 404 and this handshake are complementary and both are required: the 404 makes the failure legible, the handshake makes it rare. Neither removes the need for the bootstrap guard, which is the only thing that can rescue a client already stuck.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -170,7 +205,7 @@ Two defects found while verifying the production deploy of 2.8. Both are the sam
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. **Verify before any further Vault work.** |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |
 | 4 | **Raw-HTML metadata for non-JS crawlers** | This branch's successor | Canonical, `og:*` and `<title>` are now correct only after hydration. A crawler-facing rewrite in a Pages Function middleware (inject per-URL og/twitter/canonical for known UA strings) closes it. Note the trade-off: Cloudflare caches by URL and ignores `Vary: User-Agent` on cached HTML, so a crawler-triggered render can briefly be served to a browser. |
-| 5 | **`<UpdatePrompt />` unmounted + competing service workers** | Next prioritised | Now with a symptom on record: a post-deploy client held a document from the SW cache, requested the previous release's chunk hash, and got the HTML shell back — a white page. Sprint 2.9 makes that failure clean (404) but not absent; the update handshake is what removes it. Currently: The prompt component is rendered nowhere, and the shipped workbox SW calls `skipWaiting()` in `install`, so it never enters the `waiting` state the prompt detects. Separately, `public/sw.js` (the hand-written SW with feed SWR strategies) is never deployed — the plugin overwrites it. One design has to win: pick `injectManifest` with the hand-written worker, or drop it and mount the prompt. |
+| 5 | ~~`<UpdatePrompt />` unmounted + competing service workers~~ | **Closed in 2.10** | Prompt mounted, `public/sw.js` deleted, feed/font strategies moved into `workbox.runtimeCaching`, `controllerchange` handshake with an audio-safe prompt. Remaining nicety: a "Reload" affordance in `PrivacyBanner`-style chrome for users who dismiss the toast. |
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
@@ -186,7 +221,7 @@ Two defects found while verifying the production deploy of 2.8. Both are the sam
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.9+)
+## Roadmap Milestones (Sprint 2.11+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.

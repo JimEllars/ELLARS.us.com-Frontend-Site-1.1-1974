@@ -33,11 +33,11 @@ jobs:
       - name: Lint (zero warnings tolerated)
         run: npx eslint . --max-warnings=0
 
-      - name: Edge function smoke tests
-        # Protects the two Pages Functions whose failure is silent in production:
-        # /api/config (auth credential resolution) and /sitemap.xml (entities,
-        # lastmod zones).
-        run: npm run test:functions
+      - name: Unit tests
+        # Edge functions (auth credential resolution, sitemap entities and zones,
+        # asset 404s) plus the PWA update policy. The failure surfaces covered here
+        # are the ones that are silent in production.
+        run: npm test
 
       - name: Build (Vite + Cloudflare SPA fallback)
         run: npm run build

@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "lint:error": "eslint . --quiet",
     "preview": "vite preview",
-    "test:functions": "node scripts/smoke-functions.mjs"
+    "test:functions": "node scripts/smoke-functions.mjs",
+    "test:client": "node scripts/smoke-client.mjs",
+    "test": "npm run test:client && npm run test:functions"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
