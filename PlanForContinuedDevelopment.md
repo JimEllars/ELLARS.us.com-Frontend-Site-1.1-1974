@@ -196,6 +196,46 @@ The 2.9 asset 404 and this handshake are complementary and both are required: th
 
 ---
 
+## Sprint 2.11 — Metadata in the bytes that arrive first
+
+**Branch:** `feature/edge-metadata` · **Base:** `1f745a2`
+
+### Why this cycle
+
+Open item 4: canonical, `og:*` and `<title>` were correct only after hydration, so a crawler that does not execute JavaScript saw the site title on every URL and no canonical at all. Sprint 2.7 deliberately chose absent over wrong; this closes the absence.
+
+The recorded hazard was `Vary: User-Agent` — Cloudflare caches HTML by URL, so a crawler-only render can be served to a browser. The answer here is not a UA sniff: **the same document is generated for everyone**, which removes the variance entirely and gives browsers the right title on first paint as a side effect.
+
+### Shipped
+
+**`lib/edge/meta.js` (new)** — the route table and the rewrite, pure and testable.
+- Mirrors the router: 4 static routes, 6 directive slugs, `/login` and `/dashboard` (noindex), `/articles/:slug` (own canonical, generic title until WordPress supplies the real one).
+- Titles are copied **verbatim from each page's own `<Helmet>`**, so hydration is a no-op rather than a visible flicker. Asserted in CI for all five static routes.
+- Canonical normalisation matches the client: trailing slash stripped, query and hash dropped.
+- `canonicalOriginFor()` pins production to `https://ellars.us.com` so a `*.pages.dev` deployment never advertises itself as the canonical home of a page; `isPreviewHost()` marks any non-production host `noindex` — preview URLs are public.
+- Escaping is applied once, in attribute context; idempotence is asserted (running the rewrite twice produces identical bytes, so an edge cache cannot compound it).
+
+**`functions/_middleware.js` (new)** — only for `GET` requests that asked for a document (`Accept: text/html`) and only for paths the table knows; everything else calls `next()` untouched.
+- Fetches the shell through `env.ASSETS` and rewrites the head: title, description, `og:title/description/url`, `twitter:title/description`, `canonical`, `robots`.
+
+### The near-miss worth recording
+
+The first version returned a hand-written header list — `Content-Type`, `Cache-Control`, `nosniff` — and therefore **silently dropped the Content-Security-Policy, HSTS, COOP, frame-options and Permissions-Policy** from every page, because a Functions response does not inherit `public/_headers`. Caught by diffing headers against the static asset before shipping. The handler now passes the shell's headers through wholesale, dropping only `Content-Length`, `Content-Encoding` and `ETag` (the body was rewritten; a stale validator would be a lie). CI asserts the CSP and HSTS survive.
+
+### Tests
+
+`npm run test:functions` → **79 assertions** (12 new): per-route resolution, trailing-slash and query normalisation, noindex on private routes, per-article canonicals, preview-host handling, escaping without double-escaping, idempotence, single canonical/robots/title tags, middleware passthrough for assets and unmapped paths, and the CSP/HSTS/ETag header contract.
+
+### Verified
+
+`wrangler pages dev`, Accept: text/html: every route returns its own title, canonical and robots; `/login` and `/dashboard` are `noindex, nofollow`; `/api/config` and a missing asset are untouched; security headers match the static asset.
+
+### Known limit
+
+`/articles/:slug` gets a per-article canonical but a generic title, because the real one lives in WordPress and a fetch on the navigation path is a latency and availability risk. The client replaces it after hydration, and Google renders. Closing it properly means caching WP titles at the edge — a later increment, not a rewrite here.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -204,7 +244,7 @@ The 2.9 asset 404 and this handshake are complementary and both are required: th
 | 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. **Verify before any further Vault work.** |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |
-| 4 | **Raw-HTML metadata for non-JS crawlers** | This branch's successor | Canonical, `og:*` and `<title>` are now correct only after hydration. A crawler-facing rewrite in a Pages Function middleware (inject per-URL og/twitter/canonical for known UA strings) closes it. Note the trade-off: Cloudflare caches by URL and ignores `Vary: User-Agent` on cached HTML, so a crawler-triggered render can briefly be served to a browser. |
+| 4 | ~~Raw-HTML metadata for non-JS crawlers~~ | **Closed in 2.11** | `functions/_middleware.js` + `lib/edge/meta.js` rewrite title/description/canonical/og for every HTML navigation, for every user agent. Remaining: article titles still come from WordPress after hydration (see the limit recorded above). |
 | 5 | ~~`<UpdatePrompt />` unmounted + competing service workers~~ | **Closed in 2.10** | Prompt mounted, `public/sw.js` deleted, feed/font strategies moved into `workbox.runtimeCaching`, `controllerchange` handshake with an audio-safe prompt. Remaining nicety: a "Reload" affordance in `PrivacyBanner`-style chrome for users who dismiss the toast. |
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
@@ -221,7 +261,7 @@ The 2.9 asset 404 and this handshake are complementary and both are required: th
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.11+)
+## Roadmap Milestones (Sprint 2.12+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.
