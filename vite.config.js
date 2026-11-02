@@ -23,30 +23,47 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.svg', 'favicon-32x32.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'James Ellars Official',
+        id: '/',
+        name: 'James Ellars',
         short_name: 'Ellars',
-        description: 'Official Platform of James Ellars',
+        description: 'Official platform and civic command hub for James Ellars.',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        lang: 'en-US',
+        categories: ['news', 'politics', 'education'],
         theme_color: '#050505',
         background_color: '#050505',
-        display: 'standalone',
+        // Every icon referenced here must exist in public/. The previous config
+        // pointed at four files that were never committed, so installs showed a
+        // blank icon and Chrome's installability audit failed.
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'masked-icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any'
           }
         ]
       },
