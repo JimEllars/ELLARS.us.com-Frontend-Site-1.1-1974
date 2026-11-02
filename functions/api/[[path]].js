@@ -8,7 +8,8 @@
  *
  * This handler is mounted at /api/[[path]] so it catches every API path that no
  * more specific Function claims. Pages Functions take precedence over
- * `_redirects`, so mounted routes (e.g. /api/telemetry) are unaffected.
+ * `_redirects` and static segments beat the splat, so mounted routes
+ * (/api/telemetry, /api/config, /api/v1/*, /api/stream/*) are unaffected.
  */
 
 const json = (body, status) =>

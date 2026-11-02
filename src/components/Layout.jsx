@@ -76,7 +76,17 @@ const Layout = ({ children }) => {
 
   return (
     <LoaderContext.Provider value={{ isLoading, setIsLoading }}>
-      <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">        <a href="#main-content" className="-translate-y-full absolute focus:translate-y-0 focus:relative focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">Skip to main content</a>
+      <div className="relative min-h-screen flex flex-col text-text-main bg-[radial-gradient(circle_at_top,_#001a13_0%,_#050505_100%)]">
+        {/* The single skip link for the app. It targets #main-content, which is the
+            <main> below. App.jsx used to declare a second one pointing at #content,
+            an id no element ever carried, so keyboard users got two tab stops and
+            the first one went nowhere. */}
+        <a
+          href="#main-content"
+          className="-translate-y-full absolute focus:translate-y-0 focus:relative focus:z-50 focus:px-4 focus:py-3 focus:bg-void focus:text-yellow-electric focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest focus:border focus:border-yellow-electric"
+        >
+          Skip to main content
+        </a>
         <TopLoader />
         <ScrollProgress />
         {/* The layout used to emit <title>James Ellars | Business Development &
