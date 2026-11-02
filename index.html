@@ -37,6 +37,42 @@
       </div>
     </noscript>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+        <!-- Recovery for a stale document: if the entry module cannot load — a cached
+         shell referencing a chunk hash this release deleted — recover once instead
+         of leaving the user on a blank page with a console error nobody sees.
+         Runs before the module, clears the caches it was served from, reloads once
+         per session. -->
+    <script>
+      (function () {
+        var MARKER = 'ellars_asset_recovery';
+        function alreadyTried() {
+          try { return sessionStorage.getItem(MARKER) === 'true'; } catch (e) { return true; }
+        }
+        function markTried() {
+          try { sessionStorage.setItem(MARKER, 'true'); } catch (e) {}
+        }
+        function recover() {
+          if (alreadyTried()) return;
+          markTried();
+          var done = function () { window.location.reload(); };
+          if (!('caches' in window)) { done(); return; }
+          caches.keys()
+            .then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); })
+            .then(function () {
+              if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return null;
+              return navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+              });
+            })
+            .then(done)
+            .catch(done);
+        }
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) recover();
+        }, true);
+      })();
+    </script>
+<script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

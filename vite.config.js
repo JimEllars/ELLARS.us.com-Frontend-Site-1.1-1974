@@ -21,6 +21,15 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // One worker, one design: generateSW is authoritative and the hand-written
+      // public/sw.js is gone. It was never deployed (the plugin overwrites it) but
+      // it looked editable, so its feed/font strategies were carried into
+      // workbox.runtimeCaching above instead.
+      //
+      // autoUpdate activates a new worker immediately (skipWaiting + clientsClaim).
+      // src/lib/serviceWorker.js then reloads the tab once when it takes control —
+      // or offers the prompt when audio is playing — which is what stops a client
+      // being pinned to a build whose chunk hashes no longer exist.
       registerType: 'autoUpdate',
       injectRegister: false,
       includeAssets: ['favicon.svg', 'favicon-32x32.png', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -91,6 +100,27 @@ export default defineConfig({
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'static-resources',
+            }
+          },
+          {
+            // Carried over from the hand-written public/sw.js this config
+            // replaced: the intelligence feed is stale-while-revalidate so a
+            // returning visitor sees dispatches instantly and the refresh lands
+            // in the background.
+            urlPattern: /\/wp-json\/wp\/v2\/posts.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'intel-feed',
+              expiration: { maxEntries: 40, maxAgeSeconds: 24 * 60 * 60 }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] }
             }
           },
           {

@@ -4,6 +4,7 @@ import Navbar from './common/Navbar';
 import Footer from './common/Footer';
 import GlobalAudioPlayer from "./common/GlobalAudioPlayer";
 import Toast from './common/Toast';
+import UpdatePrompt from './common/UpdatePrompt';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
@@ -101,6 +102,11 @@ const Layout = ({ children }) => {
         </main>
         <Footer />
         <PrivacyBanner />
+        {/* Mounted for the first time. The store flag it reads was set by
+            src/main.jsx and rendered nowhere, so a user running an old build had
+            no way to know a new one existed — the component existed, styled and
+            unreachable. */}
+        <UpdatePrompt />
         <Toast />
         <GlobalAudioPlayer />
       </div>
