@@ -1,13 +1,36 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://pvbcdndqjguzqeafhwhw.supabase.co';
-import { supabase as supabaseClient } from './supabase.js';
+import { getSupabase, getSupabaseConfig } from './supabase.js';
 import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
 const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/wp-json/wp/v2';
 
-if (!SUPABASE_URL) {
-  console.warn('VITE_SUPABASE_URL is missing in environment variables.');
-}
+/**
+ * Supabase base URL and publishable key, resolved at runtime.
+ *
+ * Both used to be read straight out of `import.meta.env` at build time. When the
+ * Pages project shipped without `VITE_SUPABASE_ANON_KEY` the key became the
+ * literal `undefined`, every request here was sent with a literal "undefined"
+ * apikey header, and Supabase answered `UNAUTHORIZED_MISSING_API_KEY` for login,
+ * the Vault and every storage call. The config now comes from ./supabase.js,
+ * which resolves it from the build env or from /api/config (runtime binding) and
+ * memoises the result for the life of the page.
+ */
+const supabaseUrl = async () => (await getSupabaseConfig()).url;
+const supabaseApiKey = async () => (await getSupabaseConfig()).anonKey;
+
+// Used to decide whether a 401 is Supabase's own (session expired) rather than
+// some third party's. It replaces a comparison against the removed build-time
+// constant; the resolved base URL is not available synchronously here.
+const SUPABASE_API_HOST_HINT = '.supabase.co';
+
+/**
+ * Guards a call that cannot work without a key. Callers return an honest error
+ * to the user instead of surfacing a bare 401 from upstream.
+ */
+const requireSupabaseApiKey = async () => {
+  const key = await supabaseApiKey();
+  return key || null;
+};
 
 const FALLBACK_POSTS = [
   {
@@ -201,7 +224,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
         // discarding SPA state. The store is cleared instead and ProtectedRoute
         // performs the router-native <Navigate to="/login">.
         const carriedSession = Boolean(options?.headers?.Authorization);
-        if (carriedSession && url.includes(SUPABASE_URL) && typeof window !== 'undefined') {
+        if (carriedSession && url.includes(SUPABASE_API_HOST_HINT) && typeof window !== 'undefined') {
           useAppStore.getState().clearAuth();
         }
       }
@@ -397,11 +420,11 @@ export async function publishVaultItem(payload) {
       app_id: "ellars.us.com",
       client_idempotency_key: payload.client_idempotency_key || generateUUID()
     };
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault`, {
+    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Prefer': 'return=minimal',
@@ -441,11 +464,22 @@ const guestState = (transient = false) => ({ user: null, session: null, isGuest:
 
 export async function loginUser(email, password) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    const apiKey = await requireSupabaseApiKey();
+    if (!apiKey) {
+      // No key means no deployment credential: say so, instead of forwarding a
+      // literal "undefined" apikey and reporting Supabase's 401 as bad
+      // credentials.
+      return {
+        success: false,
+        message: 'Sign-in is unavailable on this deployment. The site is missing its Supabase configuration.',
+      };
+    }
+
+    const response = await fetch(`${await supabaseUrl()}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': apiKey,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'X-Client-Telemetry': 'AXiM-Frontend-v1'
       },
@@ -464,14 +498,17 @@ export async function loginUser(email, password) {
     // and verifySession() reported a guest on every hard refresh. setSession also
     // persists the refresh token, which is what keeps a tab alive past the ~1h
     // access-token lifetime.
-    if (supabaseClient && data?.access_token) {
-      const { error: adoptError } = await supabaseClient.auth.setSession({
+    const client = await getSupabase();
+    if (client && data?.access_token) {
+      const { error: adoptError } = await client.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token || '',
       });
       if (adoptError) {
         console.warn('[AXiM Core: Auth] supabase-js did not adopt the session:', adoptError.message);
       }
+    } else if (!client) {
+      console.warn('[AXiM Core: Auth] No Supabase client; the session will not survive a refresh.');
     }
 
     return { success: true, data };
@@ -493,11 +530,11 @@ export async function fetchSavedVaultItems(page = 1, limit = 20) {
     // Postgres does not guarantee row order across range requests, so paginating
     // without ORDER BY duplicates and skips records at page boundaries. The
     // order column must match the pagination cursor.
-    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com&order=created_at.desc`;
+    const url = `${await supabaseUrl()}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com&order=created_at.desc`;
 
     const response = await fetchWithRetry(url, {
       headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Content-Type': 'application/json',
@@ -579,7 +616,10 @@ export async function subscribeToNewsletter(email, turnstileToken) {
 
 export async function verifySession() {
   try {
-    if (!supabaseClient) {
+    // An unconfigured deployment is a transient condition, not proof that the
+    // user is logged out: it must never clear a persisted session.
+    const client = await getSupabase();
+    if (!client) {
       console.warn("Supabase client not initialized for verifySession.");
       return guestState(true);
     }
@@ -588,7 +628,7 @@ export async function verifySession() {
       setTimeout(() => reject(new Error('Session verification timeout')), 3000)
     );
 
-    const sessionPromise = supabaseClient.auth.getSession();
+    const sessionPromise = client.auth.getSession();
     const result = await Promise.race([sessionPromise, timeoutPromise]);
     const { data: { session } = {}, error } = result || {};
 
@@ -617,12 +657,12 @@ export async function uploadMediaAsset(file) {
 
   try {
     const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const url = `${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`;
+    const url = `${await supabaseUrl()}/storage/v1/object/ellars-media/${filename}`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Content-Type': file.type || 'application/octet-stream'
@@ -649,10 +689,10 @@ export async function fetchUploadedMedia() {
   }
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/ellars-media`, {
+    const response = await fetch(`${await supabaseUrl()}/storage/v1/object/list/ellars-media`, {
       method: 'POST',
       headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Content-Type': 'application/json'
@@ -671,10 +711,12 @@ export async function fetchUploadedMedia() {
 
     const data = await response.json();
 
-    // Map data to include public URLs
+    // Resolve the base URL once, outside the map: `supabaseUrl()` is async and a
+    // map callback is not.
+    const baseUrl = await supabaseUrl();
     const mappedData = data.map(item => ({
       ...item,
-      url: `${SUPABASE_URL}/storage/v1/object/public/ellars-media/${item.name}`
+      url: `${baseUrl}/storage/v1/object/public/ellars-media/${item.name}`
     }));
 
     return { data: mappedData, isError: false };
@@ -689,10 +731,10 @@ export async function deleteUploadedMedia(filename) {
   if (!token) return false;
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/ellars-media/${filename}`, {
+    const response = await fetch(`${await supabaseUrl()}/storage/v1/object/ellars-media/${filename}`, {
       method: 'DELETE',
       headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL'
       }
@@ -714,11 +756,11 @@ export async function updateVaultItem(itemId, payload) {
 
   try {
     const finalPayload = { ...payload, app_id: 'ellars.us.com' };
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Prefer': 'return=representation',
@@ -744,10 +786,10 @@ export async function deleteVaultItem(itemId) {
   if (!token) return { isError: true, message: 'No active session' };
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
       method: 'DELETE',
       headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'X-Client-Telemetry': 'AXiM-Frontend-v1'
@@ -771,11 +813,11 @@ export async function archiveVaultItem(itemId) {
   if (!token) return { isError: true, message: 'No active session' };
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Prefer': 'return=minimal',
@@ -801,11 +843,11 @@ export async function restoreVaultItem(itemId) {
   if (!token) return { isError: true, message: 'No active session' };
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
+    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'apikey': await supabaseApiKey(),
         'Authorization': `Bearer ${token}`,
         'X-AXiM-Tenant': 'ELLARS_PERSONAL',
         'Prefer': 'return=minimal',

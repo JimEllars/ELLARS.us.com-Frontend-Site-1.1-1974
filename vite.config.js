@@ -128,9 +128,14 @@ export default defineConfig({
         // change invalidated the entry for every returning visitor. Splitting the
         // long-lived libraries out means the app chunk can change without
         // re-downloading React or the Supabase client.
+        //
+        // @supabase/supabase-js is deliberately NOT listed here. It is imported
+        // dynamically in src/lib/supabase.js, so Rollup emits it as its own
+        // async chunk. Naming it as a manual chunk produced an empty 0.05 kB
+        // `vendor-supabase` file and left the SDK wherever it happened to land —
+        // which was nowhere at all once the anon key was missing at build time.
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-motion': ['framer-motion'],
           'vendor-sanitize': ['dompurify'],
           'vendor-data': ['swr', 'zustand', 'jwt-decode'],

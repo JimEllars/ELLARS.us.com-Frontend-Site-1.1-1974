@@ -33,6 +33,12 @@ jobs:
       - name: Lint (zero warnings tolerated)
         run: npx eslint . --max-warnings=0
 
+      - name: Edge function smoke tests
+        # Protects the two Pages Functions whose failure is silent in production:
+        # /api/config (auth credential resolution) and /sitemap.xml (entities,
+        # lastmod zones).
+        run: npm run test:functions
+
       - name: Build (Vite + Cloudflare SPA fallback)
         run: npm run build
 
@@ -78,6 +84,20 @@ jobs:
 
           [ "$fail" -eq 0 ] || exit 1
           echo "ok    no legacy hosts in bundle"
+
+      - name: Assert the Supabase client actually ships
+        run: |
+          set -euo pipefail
+          # A build made without the anon key once tree-shook @supabase/supabase-js
+          # out of the artifact completely, which silently disabled login,
+          # /dashboard, the Vault and every media upload while the public pages
+          # kept working. The SDK is dynamically imported and config is resolved
+          # at runtime, so a client chunk must exist in every build — key or no key.
+          if ! find dist/assets -name '*.js' -print0 | xargs -0 grep -l 'GoTrueClient' | grep -q .; then
+            echo "::error::No Supabase SDK code in dist/assets — auth would be dead in production."
+            exit 1
+          fi
+          echo "ok    supabase client present in the build"
 
       - name: Assert single PWA manifest identity
         run: |

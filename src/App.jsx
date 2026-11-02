@@ -22,7 +22,7 @@ import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
 
-import { supabase } from './lib/supabase';
+import { getSupabase } from './lib/supabase';
 import { useAppStore } from './store/useAppStore';
 import { verifySession } from './lib/api';
 
@@ -79,9 +79,15 @@ function App() {
 
     initializeSession();
 
+    // The client resolves asynchronously now (build env, then /api/config), so
+    // the auth subscription is attached when it lands. `disposed` stops an
+    // unmounted effect from leaking a subscription that would call setToken.
     let subscription = null;
-    if (supabase) {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    let disposed = false;
+
+    getSupabase().then((client) => {
+      if (!client || disposed) return;
+      const { data } = client.auth.onAuthStateChange((_event, session) => {
         if (session) {
           setToken(session.access_token);
         } else {
@@ -89,9 +95,11 @@ function App() {
         }
       });
       subscription = data.subscription;
-    }
+      if (disposed) subscription.unsubscribe();
+    });
 
     return () => {
+      disposed = true;
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -106,9 +114,9 @@ function App() {
       <Router>
         <ScrollToTop />
         <CanonicalUrl />
-        <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[9999] focus:p-4 focus:bg-void focus:text-yellow-electric focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest">
-          Skip to Main Content
-        </a>
+        {/* No skip link here: Layout owns the single one, and it targets the
+            #main-content id that actually exists. The duplicate that lived here
+            pointed at #content, which no element carried. */}
 
         <AnimatePresence>
           {!isOnline && (

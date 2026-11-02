@@ -7,9 +7,11 @@ export default [
   { ignores: ['dist', 'public/**', '.wrangler/**', '*.patch', 'test-results/**'] },
   js.configs.recommended,
   {
-    files: ['**/*.{js,jsx}'],
+    // .mjs too: scripts/smoke-functions.mjs is a Node ESM script and uses
+    // top-level await, which needs a modern ecmaVersion.
+    files: ['**/*.{js,jsx,mjs}'],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       globals: {
         ...globals.browser,
         ...globals.node,
