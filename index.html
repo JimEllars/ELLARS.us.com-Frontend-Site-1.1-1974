@@ -67,9 +67,17 @@
             .then(done)
             .catch(done);
         }
+        function isBuildAsset(el) {
+          var url = el.src || el.href || '';
+          // Only our own hashed build output. A third-party script that fails
+          // (Turnstile, the analytics beacon, a font stylesheet) is not evidence
+          // that this document is stale — treating it as such wiped the caches and
+          // reloaded the page for an unrelated network block.
+          return url.indexOf(window.location.origin + '/assets/') === 0;
+        }
         window.addEventListener('error', function (event) {
           var target = event.target;
-          if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) recover();
+          if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK') && isBuildAsset(target)) recover();
         }, true);
       })();
     </script>
