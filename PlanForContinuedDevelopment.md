@@ -55,6 +55,34 @@ Main was deployed but three of the four P0 defects from the code audit were stil
 
 ---
 
+## Sprint 2.7 — Discoverability, edge correctness, and payload weight
+
+**Branch:** `feature/discoverability-and-edge-404` · **Base:** `1e64040`
+
+### Shipped
+
+**Titles were being overwritten on every route** — `src/components/Layout.jsx`
+- The layout emitted its own `<title>` for the whole app. React Helmet mounts child instances before the parent's, so the layout won the dedupe: every page shipped "James Ellars | Business Development & Community Leader" in the tab, in search results and in bookmarks even though each page had a correct title. Removed.
+
+**One static canonical declared the entire site a duplicate of the homepage** — `src/components/common/CanonicalUrl.jsx`, `index.html`
+- `index.html` hard-coded `https://ellars.us.com` as the canonical on every URL, so `/platform`, `/about` and every dispatch were duplicates of `/`. A single `<CanonicalUrl />` inside the Router now emits canonical + `og:url` per route, normalising trailing slashes and dropping query strings and fragments.
+- Trade-off recorded: the canonical is now emitted by JS, so a crawler that does not execute JS sees no canonical at all. Absent is better than wrong, and Google renders. If raw-HTML canonicals are needed, the fix is a crawler-facing rewrite in a Pages Function middleware.
+
+**No `robots.txt`, no sitemap** — `public/robots.txt`, `functions/sitemap.xml.js`
+- `robots.txt` now disallows `/dashboard`, `/login`, `/api/` and `/200.html`, allows the preview crawlers explicitly and points at the sitemap. Dispatch URLs are deliberately *not* disallowed, because a disallowed URL cannot pass its signals to its canonical target.
+- `/sitemap.xml` is a Pages Function: 4 static routes, 6 directive slugs, every published dispatch, `s-maxage=3600`.
+- WordPress timestamps are naive and are pinned to UTC (otherwise the same post yields a different `lastmod` per colo). Entities are decoded before re-escaping — WordPress sends `Siphon Economy &amp; You`, and escaping that verbatim produces `&amp;amp;`, which renders literally in a preview. Both verified against real WordPress values.
+
+**Unknown `/api/*` paths returned the SPA shell with a 200** — `functions/api/[[path]].js`
+- The `/* /index.html 200` catch-all is correct for the SPA but meant a misspelled API path looked like a healthy HTML response, so client error handling could never see a 404. The catch-all is now a JSON 404 with `no-store`. Pages Functions take precedence over `_redirects`, so `/api/telemetry` is unaffected.
+
+**The entry bundle was 599 kB because of one import** — `src/common/SafeIcon.jsx`, `vite.config.js`, `package.json`
+- `import * as FiIcons from 'react-icons/fi'` bundled the whole feather set for a string lookup. Replaced with an explicit registry of the 40 icons in use. Entry chunk 599 kB → 175 kB raw (171 kB → 48.5 kB gzip); vendor chunks split so returning visitors keep React and Supabase in cache.
+- `Vote` had no `FiVote` export and had always rendered the fallback warning triangle; it now maps to `FiTarget`.
+- Removed 6 unused packages (`ethers`, `echarts`, `echarts-for-react`, `date-fns`, `playwright`, `@questlabs/react-sdk`) — 156 transitive packages out of the install — and moved `eslint-plugin-react` to devDependencies. `package.json` is no longer named `quest-react-starter`.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -62,13 +90,13 @@ Main was deployed but three of the four P0 defects from the code audit were stil
 | 1 | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. **Verify before any further Vault work.** |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |
-| 4 | **Per-route canonical** | This branch's successor | `index.html` carries one static `<link rel="canonical" href="https://ellars.us.com">`, so every deep link declares itself a duplicate of the homepage and the dispatches are suppressed from indexing. Needs a per-route canonical emitted from the layout. |
+| 4 | **Raw-HTML metadata for non-JS crawlers** | This branch's successor | Canonical, `og:*` and `<title>` are now correct only after hydration. A crawler-facing rewrite in a Pages Function middleware (inject per-URL og/twitter/canonical for known UA strings) closes it. Note the trade-off: Cloudflare caches by URL and ignores `Vary: User-Agent` on cached HTML, so a crawler-triggered render can briefly be served to a browser. |
 | 5 | **`<UpdatePrompt />` unmounted + competing service workers** | This branch's successor | The prompt component is rendered nowhere, and the shipped workbox SW calls `skipWaiting()` in `install`, so it never enters the `waiting` state the prompt detects. Separately, `public/sw.js` (the hand-written SW with feed SWR strategies) is never deployed — the plugin overwrites it. One design has to win: pick `injectManifest` with the hand-written worker, or drop it and mount the prompt. |
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **Dead dependencies and bundle** | This branch's successor | `ethers`, `echarts`, `echarts-for-react`, `date-fns`, `playwright` (in production deps), `react-icons`, `@questlabs/react-sdk` have zero imports. `dist/assets/index-*.js` is 599 kB / 171 kB gzip in a single chunk; needs `manualChunks`. |
-| 10 | **Repo hygiene** | This branch's successor | 2.4 MB of PNG screenshots at the repo root, `test-results/`, `commit_message.txt`, `package.json` still named `quest-react-starter`, and `build.sourcemap: true` shipping a 2.3 MB map. |
+| 9 | **No unit-test floor** | This branch's successor | CI now enforces lint, build and bundle guards, but there is no test runner: `vitest` is not a dependency and no `*.test.*` exists. The four places where failure is silent are telemetry sink independence, vault row shape mapping, sitemap rendering and the crawl/404 rules. Add `vitest` with a handful of assertions protecting the decisions recorded in this file. |
+| 10 | **Repo hygiene and sourcemaps** | This branch's successor | 2.4 MB of PNG screenshots at the repo root, `test-results/`, `commit_message.txt`, and `build.sourcemap: true` shipping a 2.3 MB map per chunk to the CDN. Also `og:image` points at a 559 kB asset. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 
 ---
@@ -79,10 +107,9 @@ Main was deployed but three of the four P0 defects from the code audit were stil
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.7+)
-- Per-route canonical + `robots.txt` + `/sitemap.xml` Pages Function; crawler-only og/twitter rewrite so shared dispatches preview correctly.
+## Roadmap Milestones (Sprint 2.8+)
+- Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.
-- Real JSON 404s for unmatched `/api/*` (the `/* /index.html 200` catch-all currently returns the SPA shell with a 200 for unknown API paths).
-- `manualChunks` split and removal of the seven unused dependencies.
+- Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
 - Expand D1 querying components on the frontend to visualise site telemetry (now that events actually arrive).
 - Optimise caching and payload sizes for Vault and WP API requests.
