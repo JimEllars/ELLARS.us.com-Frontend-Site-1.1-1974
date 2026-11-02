@@ -12,6 +12,7 @@ import Home from './pages/Home';
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 import ProtectedRoute from './components/common/ProtectedRoute';
+import CanonicalUrl from './components/common/CanonicalUrl';
 const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./components/intel/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
@@ -104,6 +105,7 @@ function App() {
     <HelmetProvider>
       <Router>
         <ScrollToTop />
+        <CanonicalUrl />
         <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[9999] focus:p-4 focus:bg-void focus:text-yellow-electric focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest">
           Skip to Main Content
         </a>

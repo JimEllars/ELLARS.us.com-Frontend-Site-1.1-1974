@@ -1,0 +1,25 @@
+# robots.txt — ellars.us.com
+#
+# Member surfaces and the edge API are not content. Dispatch and directive detail
+# pages are published through WordPress and are intended to be indexed, so they
+# are not disallowed here (a disallowed URL cannot pass its signals through to its
+# canonical target).
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /login
+Disallow: /api/
+Disallow: /200.html
+
+# Link preview crawlers don't execute JavaScript, so they are allowed everywhere
+# the HTML shell is served; og/twitter tags are populated server-side.
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+Sitemap: https://ellars.us.com/sitemap.xml
