@@ -7,6 +7,16 @@ const QUEUE_KEY = 'ellars_telemetry_queue';
 const MAX_RETRIES = 3;
 const BASE_BACKOFF_MS = 1000;
 
+/**
+ * Telemetry is same-origin only. There is deliberately no environment override:
+ * a build-time VITE_AXIM_API_URL previously shipped requests to
+ * api.axim.us.com, which is a dead Bluehost host, and a client-side
+ * 'VITE_AXIM_API_KEY' was used as a bearer token — a secret that could never be
+ * secret, and whose absence silently disabled the entire pipeline. All edge
+ * traffic belongs to the Pages Function at this path.
+ */
+const TELEMETRY_ENDPOINT = '/api/telemetry';
+
 export const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -109,20 +119,17 @@ export const useTelemetry = () => {
           if (prunedQueue.length > 50) prunedQueue.splice(0, prunedQueue.length - 50);
 
           if (prunedQueue.length > 0) {
-            const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
             let beaconSent = false;
             if (navigator.sendBeacon) {
                 const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
-                beaconSent = navigator.sendBeacon(apiUrl, blob);
+                beaconSent = navigator.sendBeacon(TELEMETRY_ENDPOINT, blob);
             }
 
             if (!beaconSent) {
-                const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-                fetch(apiUrl, {
+                fetch(TELEMETRY_ENDPOINT, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
                     'Accept': 'application/json',
                     'X-Project-Scope': 'ELLARS_FRONTEND'
                   },
@@ -169,10 +176,6 @@ export const useTelemetry = () => {
       const hasConsented = localStorage.getItem('ellars_privacy_consent');
       if (hasConsented !== 'true') return;
 
-      const apiKey = import.meta.env.VITE_AXIM_API_KEY;
-      const apiUrl = import.meta.env.VITE_AXIM_API_URL || '/api/telemetry';
-      if (!apiKey) return;
-
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
       if (queue.length === 0) return;
 
@@ -201,17 +204,10 @@ export const useTelemetry = () => {
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         try {
-          let currentApiUrl = apiUrl;
-          // Fallback logic for subsequent attempts if primary is not the edge route
-          if (attempt > 0 && apiUrl !== '/api/telemetry') {
-             currentApiUrl = '/api/telemetry';
-          }
-
-          const response = await fetch(currentApiUrl, {
+          const response = await fetch(TELEMETRY_ENDPOINT, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
               'Accept': 'application/json',
               'X-Project-Scope': 'ELLARS_FRONTEND'
             },

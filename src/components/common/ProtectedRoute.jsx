@@ -39,9 +39,15 @@ const ProtectedRoute = () => {
 
          // Verify token validity against the backend silently
          const session = await verifySession();
-         if (!session) {
-            if (import.meta.env.DEV) console.log("[ProtectedRoute] Validation failed. Clearing auth state.");
-            clearAuth();
+         if (!session || session.isGuest) {
+            if (session?.transient) {
+              // Could not reach the auth server. Keep the persisted token and let
+              // the next heartbeat decide; a timeout is not a logout.
+              if (import.meta.env.DEV) console.log("[ProtectedRoute] Validation inconclusive (transient). Preserving session.");
+            } else {
+              if (import.meta.env.DEV) console.log("[ProtectedRoute] Validation failed. Clearing auth state.");
+              clearAuth();
+            }
          } else {
             if (import.meta.env.DEV) console.log("[ProtectedRoute] Validation succeeded. Session verified.");
          }
@@ -64,9 +70,13 @@ const ProtectedRoute = () => {
             try {
                 if (import.meta.env.DEV) console.log("[ProtectedRoute] Running session heartbeat...");
                 const session = await verifySession();
-                if (!session) {
-                    if (import.meta.env.DEV) console.log("[ProtectedRoute] Heartbeat failed. Clearing auth state.");
-                    clearAuth();
+                if (!session || session.isGuest) {
+                    if (session?.transient) {
+                        if (import.meta.env.DEV) console.log("[ProtectedRoute] Heartbeat inconclusive (transient). Preserving session.");
+                    } else {
+                        if (import.meta.env.DEV) console.log("[ProtectedRoute] Heartbeat failed. Clearing auth state.");
+                        clearAuth();
+                    }
                 } else {
                     if (import.meta.env.DEV) console.log("[ProtectedRoute] Heartbeat verified.");
                 }

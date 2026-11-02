@@ -60,6 +60,10 @@ function App() {
         const session = await verifySession();
         if (session && !session.isGuest) {
           setToken(session.access_token);
+        } else if (session?.transient) {
+          // Auth server unreachable: trust whatever the persisted session gave us
+          // rather than logging the user out on a cold start with poor signal.
+          console.warn("Session verification inconclusive. Preserving persisted session.");
         } else {
           clearAuth();
         }
