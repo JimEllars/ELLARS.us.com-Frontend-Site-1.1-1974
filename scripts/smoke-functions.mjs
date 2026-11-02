@@ -16,6 +16,7 @@
  */
 
 import { onRequestGet as configHandler } from '../functions/api/config.js';
+import { onRequest as assetsHandler } from '../functions/assets/[[path]].js';
 import {
   DIRECTIVE_SLUGS,
   STATIC_ROUTES,
@@ -84,6 +85,65 @@ describe('functions/api/config.js');
 {
   const response = await configHandler({ env: { SUPABASE_ANON_KEY: 'opaque-key-without-claims' } });
   check('non-JWT publishable key tolerated', response.status === 200, String(response.status));
+}
+{
+  // The production binding is the PostgREST endpoint, not the project root.
+  const response = await configHandler({
+    env: { SUPABASE_ANON_KEY: fakeJwt('anon'), SUPABASE_URL: 'https://abc.supabase.co/rest/v1/' },
+  });
+  const body = await response.json();
+  check('service path stripped from the project url', body.supabaseUrl === 'https://abc.supabase.co', body.supabaseUrl);
+}
+{
+  const response = await configHandler({
+    env: { SUPABASE_ANON_KEY: fakeJwt('anon'), SUPABASE_URL: 'https://abc.supabase.co/auth/v1' },
+  });
+  const body = await response.json();
+  check('auth path stripped from the project url', body.supabaseUrl === 'https://abc.supabase.co', body.supabaseUrl);
+}
+{
+  const response = await configHandler({
+    env: { SUPABASE_ANON_KEY: fakeJwt('anon'), SUPABASE_URL: 'https://abc.supabase.co//' },
+  });
+  const body = await response.json();
+  check('trailing slashes stripped', body.supabaseUrl === 'https://abc.supabase.co', body.supabaseUrl);
+}
+{
+  const response = await configHandler({ env: { SUPABASE_ANON_KEY: fakeJwt('anon'), SUPABASE_URL: 'not a url' } });
+  const body = await response.json();
+  check(
+    'unparseable url falls back to the default project',
+    body.supabaseUrl === 'https://pvbcdndqjguzqeafhwhw.supabase.co',
+    body.supabaseUrl
+  );
+}
+
+describe('functions/assets/[[path]].js');
+{
+  const request = new Request('https://ellars.us.com/assets/index-abc123.js');
+  const upstream = new Response('console.log(1)', {
+    status: 200,
+    headers: { 'Content-Type': 'application/javascript', 'Cache-Control': 'public, max-age=31536000, immutable' },
+  });
+  const response = await assetsHandler({ request, env: { ASSETS: { fetch: async () => upstream } } });
+  check('existing asset passed through untouched', response.status === 200);
+  check('existing asset keeps its content type', response.headers.get('Content-Type') === 'application/javascript');
+  check('existing asset keeps its immutable cache rule', /immutable/.test(response.headers.get('Cache-Control') || ''));
+}
+{
+  const request = new Request('https://ellars.us.com/assets/gone-abc123.js');
+  const response = await assetsHandler({
+    request,
+    env: { ASSETS: { fetch: async () => new Response('not found', { status: 404 }) } },
+  });
+  check('missing asset -> 404, not the SPA shell', response.status === 404, String(response.status));
+  check('missing asset -> never cached', response.headers.get('Cache-Control') === 'no-store');
+  check('missing asset -> nosniff', response.headers.get('X-Content-Type-Options') === 'nosniff');
+}
+{
+  const request = new Request('https://ellars.us.com/assets/gone-abc123.js');
+  const response = await assetsHandler({ request, env: {} });
+  check('no assets binding degrades to 404, not a crash', response.status === 404, String(response.status));
 }
 
 describe('functions/sitemap.xml.js');
