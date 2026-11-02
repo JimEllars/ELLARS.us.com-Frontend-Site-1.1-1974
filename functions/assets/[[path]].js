@@ -22,7 +22,14 @@
 export async function onRequest({ request, env }) {
   if (env?.ASSETS?.fetch) {
     const asset = await env.ASSETS.fetch(request);
-    if (asset.status !== 404) return asset;
+    // `env.ASSETS.fetch` runs the request back through the Pages asset pipeline,
+    // which includes the `_redirects` catch-all — so a miss does not come back as
+    // a 404, it comes back as index.html with a 200. Measured on a live preview
+    // deployment. An HTML response for a /assets/* path is therefore the SPA
+    // shell, never a file (Vite emits only js, css, fonts, images and maps here).
+    const contentType = asset.headers.get('Content-Type') || '';
+    const isSpaShell = /text\/html/i.test(contentType);
+    if (asset.status !== 404 && !isSpaShell) return asset;
   }
 
   return new Response('Asset not found. This build no longer contains that file; reload the page.\n', {

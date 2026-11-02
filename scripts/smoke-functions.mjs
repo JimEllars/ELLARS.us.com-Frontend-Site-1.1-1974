@@ -141,6 +141,18 @@ describe('functions/assets/[[path]].js');
   check('missing asset -> nosniff', response.headers.get('X-Content-Type-Options') === 'nosniff');
 }
 {
+  // The real failure mode: env.ASSETS.fetch routes through _redirects, so a miss
+  // comes back as index.html with a 200 rather than a 404.
+  const request = new Request('https://ellars.us.com/assets/gone-abc123.js');
+  const shell = new Response('<!doctype html><html></html>', {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+  const response = await assetsHandler({ request, env: { ASSETS: { fetch: async () => shell } } });
+  check('SPA shell returned for an asset -> 404', response.status === 404, String(response.status));
+  check('SPA shell is not passed through', !/doctype/i.test(await response.text()));
+}
+{
   const request = new Request('https://ellars.us.com/assets/gone-abc123.js');
   const response = await assetsHandler({ request, env: {} });
   check('no assets binding degrades to 404, not a crash', response.status === 404, String(response.status));
