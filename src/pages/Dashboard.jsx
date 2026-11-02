@@ -201,7 +201,11 @@ useEffect(() => {
             return [...prev, ...newItems];
          });
       }
-      if (response.data.length < 20) {
+      if (typeof response.hasMore === 'boolean') {
+         // Authoritative: the API derived this from Content-Range, so a final page
+         // containing exactly 20 rows no longer produces a dead "Load More" click.
+         setHasMoreVaultItems(response.hasMore);
+      } else if (response.data.length < 20) {
          setHasMoreVaultItems(false);
       } else {
          setHasMoreVaultItems(true);
@@ -442,7 +446,10 @@ useEffect(() => {
                   </>
 
                 )}
-                {hasMoreVaultItems && items.length > 0 && !loading && (
+                {/* Pagination must not depend on the client-filtered list. Filtering
+                    to a status with no rows on page 1 used to hide this button and
+                    make every later page unreachable. */}
+                {hasMoreVaultItems && !loading && (
                    <div className="mt-8 flex justify-center">
                      <button
                        onClick={() => setVaultPage(prev => prev + 1)}

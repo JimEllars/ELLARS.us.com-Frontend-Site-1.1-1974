@@ -490,7 +490,10 @@ export async function fetchSavedVaultItems(page = 1, limit = 20) {
   try {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com`;
+    // Postgres does not guarantee row order across range requests, so paginating
+    // without ORDER BY duplicates and skips records at page boundaries. The
+    // order column must match the pagination cursor.
+    const url = `${SUPABASE_URL}/rest/v1/axim_vault?select=*&app_id=eq.ellars.us.com&order=created_at.desc`;
 
     const response = await fetchWithRetry(url, {
       headers: {
@@ -511,18 +514,25 @@ export async function fetchSavedVaultItems(page = 1, limit = 20) {
     let total = 0;
     const contentRange = response.headers.get('Content-Range');
     if (contentRange) {
+      // Content-Range is either '0-19/57' or '*/0' when nothing matches.
       const rangeParts = contentRange.split('/');
       if (rangeParts.length > 1) {
-        total = parseInt(rangeParts[1], 10);
+        const parsedTotal = Number.parseInt(rangeParts[1], 10);
+        total = Number.isFinite(parsedTotal) ? parsedTotal : 0;
       }
     }
 
     const data = await response.json();
     if (data.isError) {
-      return { data: [], isError: true, message: data.message };
+      return { data: [], total, hasMore: false, isError: true, message: data.message };
     }
 
-    return { data, total, isError: false };
+    const rows = Array.isArray(data) ? data : [];
+    // Trust the server count when we have one; fall back to "a full page means
+    // there may be another" only when Content-Range was absent.
+    const hasMore = total > 0 ? (from + rows.length) < total : rows.length === limit;
+
+    return { data: rows, total, hasMore, isError: false };
   } catch (error) {
     console.error("[AXiM Core: Vault Error] Failed to fetch saved items:", error);
     return { data: [], isError: true, message: error.message };
