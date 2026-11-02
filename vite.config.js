@@ -121,6 +121,21 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        // The whole vendor graph used to be one 599 kB chunk, so any dependency
+        // change invalidated the entry for every returning visitor. Splitting the
+        // long-lived libraries out means the app chunk can change without
+        // re-downloading React or the Supabase client.
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-sanitize': ['dompurify'],
+          'vendor-data': ['swr', 'zustand', 'jwt-decode'],
+        },
+      },
+    },
   },
 });
