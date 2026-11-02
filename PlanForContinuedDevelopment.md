@@ -154,7 +154,7 @@ Bind **`SUPABASE_ANON_KEY`** (the publishable/anon key, never `service_role`) in
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
 ## Roadmap Milestones (Sprint 2.9+)
-- Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #215 follow-up).
+- Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
