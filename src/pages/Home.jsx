@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import React, { useEffect } from 'react';
+import React from 'react';
 import Hero from '@/components/home/Hero';
 import Ventures from '@/components/home/Ventures';
 import Expertise from '@/components/home/Expertise';
@@ -10,19 +10,16 @@ import Newsletter from '@/components/home/Newsletter';
 import LiveBroadcast from '@/components/home/LiveBroadcast';
 
 const Home = () => {
-  useEffect(() => {
-    document.title = "Ellars for Congress | Home";
-    window.scrollTo(0, 0);
-
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta');
-      metaDescription.name = "description";
-      document.head.appendChild(metaDescription);
-    }
-    metaDescription.content = "Leading American Innovation through Sustainable Systems, Forward-Thinking Ideas, and a Blue-Collar Work Ethic. Join James Ellars for a new future.";
-  }, []);
-
+  // The document title and description belong to <Helmet> below, which the edge
+  // middleware mirrors in the raw shell (lib/edge/meta.js). This component used to
+  // also assign document.title and overwrite <meta name="description"> in an
+  // effect, which runs *after* Helmet commits — so the tab said "Ellars for
+  // Congress | Home" while the crawler, the canonical <title> and every share card
+  // said "Home | James Ellars | Official", and the description a reader's DOM
+  // ended up with was not the one the edge wrote. Whichever won depended on effect
+  // ordering. One owner, one value.
+  //
+  // Scroll reset is handled by <ScrollToTop /> in App.jsx for every route.
   return (
     <div className="w-full">
       <Helmet>

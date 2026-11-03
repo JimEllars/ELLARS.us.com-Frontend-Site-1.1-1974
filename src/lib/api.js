@@ -438,14 +438,14 @@ export async function publishVaultItem(payload) {
       return false;
     }
 
-    // Fire-and-forget edge cache invalidation
-    fetch('/api/v1/cache/purge-tag', {
-      method: 'POST',
-      headers: {
-        'X-Purge-Tag': 'ellars-intel-feed',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      }
-    }).catch(err => console.warn('Cache purge signal failed:', err));
+    // No cache purge is attempted here. This used to POST /api/v1/cache/purge-tag
+    // fire-and-forget; the endpoint does not exist (the /api/[[path]] catch-all
+    // answered {"error":"not_found"}), so every publish produced one guaranteed
+    // 404 in the network panel and in telemetry, and a poisoned edge entry still
+    // had no eviction route. Restoring tag invalidation means building the Function
+    // and binding CF_ZONE_ID/CF_PURGE_TOKEN first — see open item 12 in
+    // PlanForContinuedDevelopment.md. A failing request that nobody reads is not a
+    // purge strategy.
 
     return true;
   } catch (error) {

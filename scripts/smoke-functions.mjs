@@ -29,7 +29,7 @@ import {
   wantsDocument,
 } from '../lib/edge/meta.js';
 import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   DIRECTIVE_SLUGS,
   STATIC_ROUTES,
@@ -470,6 +470,34 @@ describe('router ↔ edge table drift');
     const probe = path === '/articles/:slug' ? '/articles/some-dispatch' : path.replace(':directiveSlug', 'working-class-foundation');
     check(`router path ${path} has edge metadata`, resolveMeta(probe, SITE_ORIGIN) !== null, probe);
   }
+}
+
+describe('document metadata has one owner');
+{
+  // Three pages assigned document.title in an effect and two of them also rewrote
+  // <meta name="description"> by hand. Effects run after <Helmet> commits, so the
+  // imperative value won: the tab read "Ellars for Congress | News & Media" for a
+  // page whose canonical title (edge shell + Helmet) was "News & Media Hub | James
+  // Ellars | Official", and the description a reader's DOM ended up with was not
+  // the one the edge had written. The losing tag changed with effect ordering,
+  // which is why this is a mechanical guard and not a convention.
+  const pagesDir = new URL('../src/pages/', import.meta.url);
+  const pageFiles = readdirSync(pagesDir).filter((name) => name.endsWith('.jsx'));
+  check('page components were found', pageFiles.length >= 5, String(pageFiles.length));
+
+  const offenders = pageFiles.filter((name) =>
+    /document\.title\s*=/.test(readFileSync(new URL(name, pagesDir), 'utf8'))
+  );
+  check('no page assigns document.title outside <Helmet>', offenders.length === 0, offenders.join(', '));
+
+  const descriptionWriters = pageFiles.filter((name) =>
+    /querySelector\(\s*['"]meta\[name="description"\]/i.test(readFileSync(new URL(name, pagesDir), 'utf8'))
+  );
+  check(
+    'no page rewrites the description meta tag by hand',
+    descriptionWriters.length === 0,
+    descriptionWriters.join(', ')
+  );
 }
 
 describe('public/_headers');

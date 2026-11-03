@@ -56,6 +56,22 @@ jobs:
           done
           exit "$missing"
 
+      - name: Assert no sourcemaps ship
+        run: |
+          set -euo pipefail
+          # build.sourcemap was true until Sprint 2.15, so ~4.0 MB of
+          # /assets/<chunk>.js.map was served from the public origin next to a
+          # 900 kB bundle: the full application source, readable by anyone, and
+          # consumed by nothing (no error reporter receives an upload). The
+          # setting is one line and easy to restore "for debugging", so the
+          # invariant is asserted here rather than trusted.
+          maps=$(find dist -name '*.map' -print)
+          if [ -n "$maps" ]; then
+            echo "::error::Sourcemaps are shipping to the CDN: $maps"
+            exit 1
+          fi
+          echo "ok    no sourcemaps in dist"
+
       - name: Assert no legacy infrastructure references in the bundle
         run: |
           set -euo pipefail
