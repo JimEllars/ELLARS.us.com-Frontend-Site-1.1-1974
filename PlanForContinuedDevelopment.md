@@ -416,6 +416,72 @@ for crawlers — was the one that broke. The lesson is now encoded rather than
 remembered: the smoke suite asserts the classification of every root static file
 type, not just the ones a sprint happened to touch.
 
+---
+
+## Sprint 2.15 — The dependency queue, and three writers for one `<title>`
+
+**Branches:** `chore/build-toolchain-and-hygiene` (#225), `fix/router-advisory` (#228), `fix/metadata-single-source` · **Base:** `428463d` (main)
+
+### Why this cycle
+
+No new features. Three things were already broken or waiting:
+
+1. Four Dependabot PRs were open — two green, one that had **never run a check at all**, and one red.
+2. `npm audit` reported two advisories against code that ships in the bundle.
+3. A browser pass over the built site (not curl) showed every page reporting **two different titles**.
+
+### Shipped
+
+**The red Dependabot PR could not have built, for three independent reasons** — `vite.config.js`, `package.json`
+- #212 (`vite 5.4.21 → 8.3.5`) failed at `npm ci`: `@vitejs/plugin-react@4.7.0` peers `vite ^4.2 || ^5 || ^6 || ^7`. The peer range, not the code, was the first wall. `@vitejs/plugin-react@5.2.0` is the smallest release that admits `^8` without requiring 6.x's optional `oxc-transform-react` / `@rolldown/plugin-babel` peers.
+- With that cleared, Vite 8 (Rolldown) rejected three config shapes that Rollup accepted:
+  - `manualChunks` as an **object** → *Invalid type: Expected Function but received Object*, which silently collapses the vendor split. Rewritten as a function over the resolved module id; the four groups survive (`vendor-react` 172 kB, `vendor-motion` 121 kB, `vendor-sanitize` 29 kB, `vendor-data` 21 kB).
+  - `closeBundle` copying `dist/index.html` → **ENOENT**, because Rolldown closes before the write lands. `dist/200.html` — the entire Pages SPA fallback — was never produced. Moved to `writeBundle` (verified with an `existsSync` probe that the shell is on disk there). `generateBundle` is not an alternative: Rolldown's bundle object carries only the JS/CSS graph, so there is no HTML asset to clone.
+  - `__dirname` → undefined under Vite 8's native config loader; the project root now comes from `import.meta.url`.
+- #212 is closed as superseded by #225. Measured after: precache **35 entries / 988 KiB** (was 33 / 1004 KiB), total JS 897 kB (was 910 kB), build time 9.1 s → 1.5 s.
+
+**A shipped high-severity advisory, lost by a stale Dependabot PR** — `package.json`, `package-lock.json`
+- `react-router` (high, `6.0.0–7.18.1`: open redirect via backslash in `<Link>`/`useNavigate`, RSC error-handler XSS, SSR-hydration constructor injection, route-matching DoS) and `react-router-dom` (moderate, `6.0.0-alpha.0–7.17.0`).
+- The manifest already said `^7.1.0`; the **lockfile** resolved 7.17.0. #171 (`6.30.4 → 7.18.3`) was closed unmerged when 7.x was adopted by hand, which is how the fix evaporated. Floor raised to `^7.18.5`; `npm audit` → **0 vulnerabilities**.
+
+**Every page had two `<title>`s, and the wrong one won** — `src/pages/Home.jsx`, `Platform.jsx`, `NewsMedia.jsx`, `About.jsx`
+- Three pages assigned `document.title` in a `useEffect` ("Ellars for Congress | Home"), and two of those plus `About` also rewrote `<meta name="description">` by hand with a `querySelector`.
+- Effects run **after** `<Helmet>` commits, so the imperative value won. Measured in `vite preview` before the fix: `/news-media` had the canonical title `News & Media Hub | James Ellars | Official` in the raw shell and in Helmet, while the tab read `Ellars for Congress | News & Media`; `/about` carried two different descriptions in one document. Which tag won depended on effect ordering — the same class of defect 2.7 fixed when the Layout owned the title.
+- All four effects deleted. Helmet + `lib/edge/meta.js` are the only writers; `<ScrollToTop />` in `App.jsx` already handles the scroll reset they also duplicated (it runs on every pathname change, so the per-page `window.scrollTo` was redundant too).
+- Measured after: `/` → `Home | James Ellars | Official`, `/about` → `About James Ellars | Bridging Main Street`, `/news-media` → `News & Media Hub | James Ellars | Official` — each identical to the edge table and to the page's own Helmet.
+
+**~4.0 MB of source was published alongside a 900 kB bundle** — `vite.config.js`
+- `build.sourcemap: true` wrote a `.map` for every chunk and served it from the public origin: the full source of the app, readable by anyone. Nothing consumes them (no error reporter receives an upload, and a browser only fetches a map with devtools open). `hidden` would still write the files; only `false` stops the exposure. `dist/` is now **1.2 MB, zero `.map` files** (was 5.2 MB).
+- Open item 10 also covered the dead `scripts/copy-spa-fallback.mjs`; that file does not exist on main and the loose root PNGs remain (editorial decision, unchanged).
+
+**A purge call that never had an endpoint** — `src/lib/api.js`
+- `saveVaultDraft()` POSTed `/api/v1/cache/purge-tag` fire-and-forget and swallowed the result. The route has never existed (`functions/` has no such handler; the `/api/[[path]]` catch-all answers `{"error":"not_found"}`), so every publish earned one guaranteed 404 and no invalidation. Removed, with the condition for restoring it written in the comment. Open item 12 stays open: the purge *path* still does not exist, only the lie about it is gone.
+
+**Two Dependabot PRs merged, one recovered from a silent no-run**
+- #211 `dompurify 3.4.14 → 3.4.17`, #216 `serialize-javascript 7.0.5 → 7.1.4` — lockfile-only, green, merged.
+- #213 `fast-uri 3.1.2 → 3.1.9` had **no `verify` run at all** — not queued, not cancelled, not skipped: the `pull_request` event never produced a workflow run, while Cloudflare Pages and GitGuardian both reported for the same SHA. Closing and reopening the PR re-triggered it; it passed and merged. Worth knowing: a Dependabot PR can look mergeable with the gate simply absent, which is worse than red.
+
+### Tests
+
+`npm test` → **147 assertions** (was 144), all in `scripts/smoke-functions.mjs`:
+- no page component assigns `document.title` (parsed across `src/pages/*.jsx`)
+- no page rewrites the `description` meta tag with `querySelector`
+- the page-file set is non-empty, so the two guards cannot pass vacuously
+
+### Verified
+
+- `eslint --max-warnings=0` clean on every branch; `npm test` 147/147; `npm run build` clean; `dist/index.html`, `200.html` (byte-identical), `sw.js`, `_headers`, `_redirects` all present; no legacy hosts; Supabase chunk present; `og:image` resolves.
+- Real-browser pass in `vite preview` (Camoufox, not curl): `/`, `/platform`, `/about`, `/news-media` render their own H1 and title; a client-side `<Link>` click moves to `/about` and updates the title; `/dashboard` redirects an unauthenticated visitor to `/login` and the Auth Gateway title.
+- Production sweep of `ellars.us.com` before any change: all **66** sitemap URLs `200 text/html`; `/robots.txt` `200 text/plain`; `/sitemap.xml` `200 application/xml`; `/manifest.webmanifest` `200 application/manifest+json`; `/og-card.png` `200 image/png`; `/assets/nope.js` and `/screenshot_home.png` `404 text/plain`; `/platform/not-a-directive` `404`; `/api/nope` `404 application/json`; one `Cache-Control` value on every surface.
+
+### Known limits
+
+- **`/about`, `/news-media`, `/platform` and every dispatch still carry two `og:title` tags and two `description` tags** after hydration: `index.html` declares them (and the middleware rewrites them per route, so the *first* is always right for a scraper) and Helmet appends a second. First-wins means no crawler is misled, but the document contradicts itself. The clean fix is either a head-dedupe that keeps Helmet's copy on mount, or removing the page-level `og:*` for routes the edge already covers — a deliberate decision for next cycle, not a drive-by edit across six components. Logged as open item 13.
+- Rolldown names the Supabase async chunk after the directory it came from (`dist-BS6064DF.js`). Cosmetic; the chunk is present and CI asserts it.
+- Vite 8 requires Node `^20.19 || >=22.12`. CI and Cloudflare Pages both build on Node 22; nothing pins it in the repo, so a future image downgrade would break the build rather than the site.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -430,10 +496,11 @@ type, not just the ones a sprint happened to touch.
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **144 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
-| 10 | **Repo hygiene and sourcemaps** | Next cycle | 556 kB of loose PNGs at the repo root, `commit_message.txt`, the unreferenced `scripts/copy-spa-fallback.mjs`, and `build.sourcemap: true` shipping ~3.7 MB of maps to the CDN. The `og:image` half of this item is **closed** (2.12/2.13): the card is 79 kB and exists. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **147 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
+| 10 | **Repo hygiene (sourcemaps closed in 2.15)** | Next cycle | `build.sourcemap` is now `false`: **0** `.map` files in `dist/`, 5.2 MB → 1.2 MB (2.15). Remaining: 556 kB of loose PNGs at the repo root and `commit_message.txt`. (`scripts/copy-spa-fallback.mjs` no longer exists on main.) |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
-| 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all, although Sprint 2.5 records it as shipped and `src/lib/api.js` still calls it fire-and-forget on publish. Until it exists (or the dead call is removed), a bad edge cache entry cannot be evicted. |
+| 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
+| 13 | **`og:title` and `description` are declared twice per document** | Design decision | `index.html` declares both (and `functions/_middleware.js` rewrites them per route, so the first — and correct — value is what a crawler sees), then each page's `<Helmet>` appends a second. Measured in 2.15: `/news-media` carries `og:title` ×2 and `description` ×2. No crawler is misled, but the DOM contradicts itself. Two candidate fixes: a mount-time head-dedupe that keeps Helmet's copy, or removing page-level `og:*`/`description` from the four static routes the edge already covers. Deliberately not decided mid-sweep. |
 
 ---
 
@@ -443,12 +510,11 @@ type, not just the ones a sprint happened to touch.
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.15+)
+## Roadmap Milestones (Sprint 2.16+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
-- Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
-- Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.
+- Decide the double-metadata question: head-dedupe on mount, or drop page-level `og:*` for edge-covered routes (open item 13, found in 2.15).
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
 - Expand D1 querying components on the frontend to visualise site telemetry (now that events actually arrive).
 - Optimise caching and payload sizes for Vault and WP API requests.
 - Per-article `og:image` from the WordPress featured image (the 2.12 card is site-wide).
-- Repo hygiene: 556 kB of loose screenshots at the root, `commit_message.txt`, the unreferenced `scripts/copy-spa-fallback.mjs`, and `build.sourcemap: true` shipping ~3.7 MB of maps to the CDN (open item 10).
+- Repo hygiene: 556 kB of loose screenshots at the root and `commit_message.txt`. (`build.sourcemap` was turned off in 2.15 — 0 `.map` files, `dist/` 5.2 MB → 1.2 MB.)

@@ -171,7 +171,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Was `true`, which shipped ~4.0 MB of sourcemaps to the CDN for a ~900 kB
+    // JS payload — the whole TypeScript/JSX source of every module, publicly
+    // readable at /assets/<chunk>.js.map. Nothing consumes them: there is no
+    // error-reporting service that uploads them, and the browser only fetches a
+    // map when devtools is open. `hidden` would still write the files, so the only
+    // value that stops the exposure is the one that emits nothing. If symbolicated
+    // stack traces are ever wanted, upload maps to the error reporter at build
+    // time — do not serve them from the public origin.
+    sourcemap: false,
     rollupOptions: {
       output: {
         // The whole vendor graph used to be one 599 kB chunk, so any dependency

@@ -10,19 +10,11 @@ import { useAppStore } from '@/store/useAppStore';
 
 
 const Platform = () => {
-  useEffect(() => {
-    document.title = "Ellars for Congress | Platform";
-    window.scrollTo(0, 0);
-
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta');
-      metaDescription.name = "description";
-      document.head.appendChild(metaDescription);
-    }
-    metaDescription.content = "Explore The Platform: A strategic blueprint for human-centric systems, economic sovereignty, the American Tax Credit, and the Automation Dividend.";
-  }, []);
-
+  // Title, description and crawler signals are owned by <Helmet> below and mirrored
+  // into the raw shell by lib/edge/meta.js. The effect that used to assign
+  // document.title and rewrite <meta name="description"> here has been removed:
+  // it ran after Helmet and silently won, so the tab disagreed with the canonical
+  // title. Scroll reset lives in <ScrollToTop /> (App.jsx).
   const [showAll, setShowAll] = useState(false);
 
   const [articles, setArticles] = useState([]);

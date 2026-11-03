@@ -75,11 +75,10 @@ const SocialSkeleton = () => (
 );
 
 const NewsMedia = () => {
-  useEffect(() => {
-    document.title = "Ellars for Congress | News & Media";
-    window.scrollTo(0, 0);
-  }, []);
-
+  // Title and description are declared in <Helmet> below (and mirrored in the raw
+  // shell by lib/edge/meta.js). The effect that assigned document.title here won
+  // over Helmet and produced "Ellars for Congress | News & Media" in the tab for a
+  // page whose crawler title was "News & Media Hub | James Ellars | Official".
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);

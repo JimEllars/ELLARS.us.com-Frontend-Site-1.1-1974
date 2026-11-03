@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -76,19 +76,10 @@ const About = () => {
     setBookingForm(prev => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
-    document.title = "About James Ellars | Bridging Main Street";
-    window.scrollTo(0, 0);
-
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta');
-      metaDescription.name = "description";
-      document.head.appendChild(metaDescription);
-    }
-    metaDescription.content = "Discover James Ellars: From a working class foundation to an 18-year career in business development. Bridging Main Street through healthcare reform and overturning Citizens United for a People-First Economy.";
-  }, []);
-
+  // <Helmet> below is the only writer of the title and description for this page;
+  // the edge middleware mirrors them into the raw shell. The effect that also set
+  // document.title and overwrote the description here ran after Helmet and won,
+  // leaving two different descriptions in the same document.
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
