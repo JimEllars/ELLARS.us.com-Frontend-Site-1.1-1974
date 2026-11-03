@@ -482,6 +482,46 @@ No new features. Three things were already broken or waiting:
 
 ---
 
+## Sprint 2.16 — The update handshake never promoted a worker
+
+**Branch:** `fix/pwa-worker-activation` · **Base:** `1e45284` (main)
+
+### Why this cycle
+
+Found by loading production in a browser at the end of 2.15. A tab that had visited the site in an earlier session was still running a three-deploy-old shell (`/assets/index-C-R-RC9A.js`) while the edge served the new one. 2.10's handshake was supposed to make that rare; it was not making it rare.
+
+### Root cause, in two halves
+
+**The generated worker could never activate itself** — `vite.config.js`
+- `vite-plugin-pwa` sets `workbox.skipWaiting` and `workbox.clientsClaim` for `registerType: 'autoUpdate'` **only when `injectRegister` is `'auto'` or unset** (`if ((injectRegister === "auto" || injectRegister == null) && registerType === "autoUpdate")` in `dist/index.js`). This project sets `injectRegister: false` because registration is handled in `src/lib/serviceWorker.js` — so the implication never fired, and the shipped `sw.js` had no install-time `skipWaiting()` and no `clientsClaim()`. The comment in the config asserting "autoUpdate activates a new worker immediately (skipWaiting + clientsClaim)" was describing behaviour the artifact did not have.
+- Observed on the deployed worker: `registration.update()` fetched the new script, it installed, and it sat in `waiting` with `active: "activated"` — indefinitely. `controllerchange` therefore never fired, so the `reload` branch of the update policy was unreachable. The **Refresh Now** prompt still worked, because it posts `SKIP_WAITING`; but it only appeared if `updatefound` fired and the user noticed.
+- Fixed by declaring `skipWaiting: true` and `clientsClaim: true` explicitly. `dist/sw.js` now begins `self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute(...)`.
+
+**The client forgot it had been claimed** — `src/lib/serviceWorker.js`
+- With activation fixed, `hadController` was still captured **once**, at registration. On a first load the page is uncontrolled (`hadController === false`), the first worker then claims it — correct, policy says `ignore`. But every *later* controllerchange was judged against that stale `false`, so every real update was also classified as a first install: the new worker took control, the old document stayed, and nothing reloaded.
+- `hadController` is now `let`, and the handler sets it to `true` after the first controllerchange. The pure policy in `swPolicy.js` is unchanged; the bug was in what it was told.
+
+### Tests
+
+- `npm test` unchanged at **147 assertions** — the policy was never wrong, so a policy assertion would have passed while the product was broken. The regression is an artifact invariant instead.
+- CI gains **`Assert the service worker promotes and claims`**: red build if `dist/sw.js` lacks `clientsClaim` or an install-time `self.skipWaiting()`.
+
+### Verified (real browser, real worker)
+
+`vite preview` on a fresh origin, then the script changed on disk to simulate a deploy:
+
+1. First load → worker installs, activates, claims; `sessionStorage` reload marker stays `null` (policy: `ignore`) — no unexplained flash.
+2. `dist/sw.js` amended → `registration.update()` → new worker installs, **activates immediately**, claims the open tab, `controllerchange` fires, policy returns `reload`, marker is written, the page reloads **once**, and the reloaded document is served by the new worker with an empty `waiting` list and correct titles.
+
+Before the fix the same probe left the new worker `waiting` forever and the marker `null`.
+
+### Known limits
+
+- An update now activates immediately even mid-session, which means the *old* document keeps running against caches it no longer owns until the reload lands. The reload is immediate in the no-audio case; when audio is playing the policy still prompts, and the prompt is now honest — the worker is already active, so clicking reloads onto it. The station is a flagship surface and never gets cut.
+- `UpdatePrompt.handleRefresh()` still posts `SKIP_WAITING`, which the generated worker no longer listens for (workbox omits that handler when `skipWaiting` is true). Harmless, but it is dead code of exactly the kind open item 12 was about; left in place for now rather than churned in a hotfix.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -510,7 +550,7 @@ No new features. Three things were already broken or waiting:
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.16+)
+## Roadmap Milestones (Sprint 2.17+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Decide the double-metadata question: head-dedupe on mount, or drop page-level `og:*` for edge-covered routes (open item 13, found in 2.15).
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.

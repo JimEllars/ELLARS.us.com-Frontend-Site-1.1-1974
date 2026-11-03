@@ -72,6 +72,27 @@ jobs:
           fi
           echo "ok    no sourcemaps in dist"
 
+      - name: Assert the service worker promotes and claims
+        run: |
+          set -euo pipefail
+          # vite-plugin-pwa only implies workbox.skipWaiting/clientsClaim for
+          # registerType 'autoUpdate' when injectRegister is 'auto' or unset
+          # (dist/index.js). This project sets injectRegister: false and registers
+          # by hand, so the implication never fired and the deployed worker shipped
+          # without either: a new worker installed and then sat in `waiting`
+          # forever, no controllerchange was emitted, and the reload branch of the
+          # update policy could never run. A stale client is the failure the whole
+          # PWA handshake exists to prevent, so it is asserted here.
+          if ! grep -q 'clientsClaim' dist/sw.js; then
+            echo "::error::dist/sw.js never calls clientsClaim — a new worker cannot take control of open pages."
+            exit 1
+          fi
+          if ! grep -q 'self.skipWaiting()' dist/sw.js; then
+            echo "::error::dist/sw.js has no install-time skipWaiting — updates wait for every tab to close."
+            exit 1
+          fi
+          echo "ok    service worker skips waiting and claims clients"
+
       - name: Assert no legacy infrastructure references in the bundle
         run: |
           set -euo pipefail

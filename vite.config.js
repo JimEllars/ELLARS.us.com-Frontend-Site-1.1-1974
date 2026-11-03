@@ -95,6 +95,23 @@ export default defineConfig({
       },
 
       workbox: {
+        // Declared explicitly, and that is load-bearing. vite-plugin-pwa only
+        // implies these two flags for `registerType: 'autoUpdate'` when
+        // `injectRegister` is 'auto' or unset (dist/index.js: `if ((injectRegister
+        // === 'auto' || injectRegister == null) && registerType === 'autoUpdate')`).
+        // This project sets `injectRegister: false` because registration is ours
+        // (src/lib/serviceWorker.js), so the implication never fired and the
+        // generated worker shipped **without** install-time skipWaiting and without
+        // clientsClaim.
+        //
+        // Consequence, reproduced on the deployed worker in 2.16: update() finds
+        // the new script, it installs, and it sits in `waiting` forever. No
+        // controllerchange, so the reload branch of the update policy is dead
+        // code and a visitor stays on the old build until every tab is closed —
+        // the exact failure 2.10 set out to end. The Refresh prompt still worked
+        // (it posts SKIP_WAITING), but only if the user noticed and clicked it.
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // The social card is fetched by scrapers, never by the app, so caching it
         // in every visitor's service worker only costs install bandwidth.
