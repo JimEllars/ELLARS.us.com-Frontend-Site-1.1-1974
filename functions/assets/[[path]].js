@@ -17,28 +17,14 @@
  * `immutable` cache rule, are the asset's own — and turns a miss into a real 404
  * with `no-store`, which a module loader can fail cleanly and a recovery path can
  * recognise.
+ *
+ * The rule itself lives in lib/edge/assets.js, shared with the root middleware
+ * that applies it to every other file extension (`/screenshot_home.png` had the
+ * same defect and was live for a month).
  */
 
-export async function onRequest({ request, env }) {
-  if (env?.ASSETS?.fetch) {
-    const asset = await env.ASSETS.fetch(request);
-    // `env.ASSETS.fetch` runs the request back through the Pages asset pipeline,
-    // which includes the `_redirects` catch-all — so a miss does not come back as
-    // a 404, it comes back as index.html with a 200. Measured on a live preview
-    // deployment. An HTML response for a /assets/* path is therefore the SPA
-    // shell, never a file (Vite emits only js, css, fonts, images and maps here).
-    const contentType = asset.headers.get('Content-Type') || '';
-    const isSpaShell = /text\/html/i.test(contentType);
-    if (asset.status !== 404 && !isSpaShell) return asset;
-  }
+import { serveFileOr404 } from '../../lib/edge/assets.js';
 
-  return new Response('Asset not found. This build no longer contains that file; reload the page.\n', {
-    status: 404,
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      // Never let a miss be cached: the next deploy may legitimately contain it.
-      'Cache-Control': 'no-store',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+export async function onRequest({ request, env }) {
+  return serveFileOr404(request, env);
 }

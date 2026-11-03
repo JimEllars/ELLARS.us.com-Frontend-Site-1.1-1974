@@ -236,13 +236,70 @@ The first version returned a hand-written header list — `Content-Type`, `Cache
 
 ---
 
+---
+
+## Sprint 2.12 — The shell answers for files and pages that do not exist
+
+**Branch:** `fix/soft-404s-and-edge-file-misses` · **Base:** `15b354d` (main)
+
+### Why this cycle
+
+A live probe of production for the previous sprints' own guarantees turned up
+three defects that share one shape: **the SPA shell is a 200, and Cloudflare will
+serve it for anything.** Every one of them is invisible from a browser and loud
+to a crawler or a scraper.
+
+| Probe | Was | Now |
+|---|---|---|
+| `GET /screenshot_home.png` (the `og:image`) | `200 text/html` — the shell | `404 text/plain`, `no-store` |
+| `GET /platform/not-a-directive` | `200` shell, `index, follow`, no canonical | `404`, `noindex, follow`, `404 Signal Lost` title, no canonical |
+| `GET /assets/<missing>.js` | `404 text/plain` (Sprint 2.9) | unchanged |
+| `GET /pwa-192x192.png` | `public, max-age=31536000, must-revalidate, immutable` | `public, max-age=31536000, immutable` |
+
+### Shipped
+
+**Social previews had no image at all** — `index.html`, `public/og-image.png`, `scripts/generate-og-image.py`
+- `og:image` and `twitter:image` both named `https://ellars.us.com/screenshot_home.png`. That file was **never committed** (the only screenshots in the repo are the three loose PNGs at the root, none of them this one), so every share previewed as a bare card, and the request for it was answered by the HTML shell.
+- Generated a real 1200×630 card from the palette — void field, electric-yellow constructed mark, deco frame, scanline texture, text-free per the brand rule — 78 kB, well under the scraper limit. Committed with the script that produces it (`python3 scripts/generate-og-image.py`), so the asset is reproducible rather than a binary nobody can regenerate.
+- Added `og:image:type/width/height/alt` and `twitter:image:alt`. Excluded it from the service-worker precache: scrapers fetch it, visitors never do.
+
+**A missing file of any extension returned the shell** — `lib/edge/assets.js` (new), `functions/_middleware.js`, `functions/assets/[[path]].js`
+- Sprint 2.9 fixed this for `/assets/*` only, because that is where it produced a white page. The rule now lives in `lib/edge/assets.js` and is applied by both the `/assets/*` Function and the root middleware, so `/screenshot_home.png`, `/whatever.webp` and every other binary/media path answer with a real `404 text/plain`, `no-store`, `nosniff`.
+- Extension matching is deliberately narrow (binary/media only). `xml`, `json`, `txt` and `html` are excluded because they have handlers of their own — treating `/sitemap.xml` as a file would have 404'd the sitemap, which is exactly what the first version of this change did in `wrangler pages dev`. Caught before it shipped; `/sitemap.xml`, `/200.html` and `/index.html` are now explicitly reserved.
+- A dispatch slug containing a dot (`/articles/prices.and.paychecks`) is not a file request: only the listed extensions qualify.
+
+**Unknown routes were indexable soft 404s** — `lib/edge/meta.js`, `functions/_middleware.js`
+- `_redirects` can only answer `200`, so a typo'd or removed path got the shell with `index, follow`, the site title and no canonical — the exact profile a crawler keeps.
+- `resolveMeta()` still returns `null` for a path it does not know (the decision that made 2.11 testable); the middleware now interprets `null` as *the router does not serve this* and renders the shell with `status: 404`, the NotFound page's own title (`404 Signal Lost | James Ellars`, copied verbatim so hydration is a no-op), `noindex, follow`, `Cache-Control: no-store` and **no canonical** — a self-canonical is how a soft 404 legitimises itself. `applyMeta()` gained the branch that drops the tag instead of writing `href="undefined"`.
+- `/articles/:slug` deliberately stays `200`: whether a dispatch exists lives in WordPress, and a fetch on the navigation path is the latency/availability trade-off already recorded in 2.11.
+
+**Contradictory cache headers on every asset** — `public/_headers`
+- Pages merges the headers of every matching rule instead of overriding, so `Cache-Control` on `/*` was **concatenated** onto each specific rule. Measured in production: `/sw.js` shipped `public, max-age=0, must-revalidate, no-cache, no-store, must-revalidate`. Contradictory directives in one header are undefined behaviour, and on the service worker — the one file that decides whether a client ever picks up a new build — that is how a stale worker survives a deploy.
+- `Cache-Control` is now declared only on specific rules (`/`, `/index.html`, `/200.html`, `/sw.js`, `/manifest.webmanifest`, `/assets/*`, `/*.png|svg|webm|woff2`, `/api/*`), and the wildcard rule carries security headers only. Verified single-valued on every surface in `wrangler pages dev`.
+
+### Tests
+
+`npm run test:functions` → **134 assertions** (was 115). New: file-extension classification (including the slug-with-dots and `/sitemap.xml` exclusions), reserved paths, missing image → 404/`no-store`/not-HTML, real image passthrough with its own content type and `immutable`, unknown route → 404 + noindex + NotFound title + no canonical + `no-store`, dispatch path still 200, `/api/*` untouched, and a **router ↔ edge-table drift guard** that parses `src/App.jsx` and asserts every `<Route path>` resolves in `lib/edge/meta.js`. Plus the social card: declared, absolute, present in `public/`, a real PNG, 1200×630, under 300 kB, `twitter:image` identical to `og:image`; and the `_headers` rules: no `Cache-Control` on `/*`, at most one per rule, `/sw.js` never storable.
+
+CI gains an artifact assertion: `dist/index.html`'s `og:image` must resolve to a file that is actually in `dist/`. A missing social card is now a red build rather than a silent one.
+
+### Verified
+
+`wrangler pages dev` with `Accept: text/html` on every route: `/`, `/platform`, `/about` → 200 with their own titles; `/platform/not-a-directive` → 404 noindex; `/articles/anything` → 200; `/sitemap.xml` → 200 `application/xml`; `/og-image.png` → 200 `image/png` immutable; `/screenshot_home.png` and `/assets/nope.js` → 404 `text/plain`; `/api/config` → JSON 503 locally (no binding, as designed) and `/api/nope` → JSON 404. One `Cache-Control` value on every surface. A real browser load of an unknown path renders the branded 404 and its redirect home.
+
+### Known limits
+
+- `og:image` is one card for the whole site. Per-article cards need the WordPress featured image in a `og:image` rewrite, which belongs with the article-title work already recorded as the 2.11 limit.
+- The 404 status is decided by the route table, so a new page must be added to `lib/edge/meta.js` in the same commit as `src/App.jsx`. The drift guard now fails CI if that is forgotten — but it parses App.jsx, so a route created outside `<Route path>` would still slip through.
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
 |---|---|---|---|
 | 1 | **Supabase env values in the Pages project** | Cloudflare dashboard | The anon key *is* bound (verified: `/api/config` → `configured:true`), but `SUPABASE_URL` **and** `VITE_SUPABASE_URL` are set to `https://<ref>.supabase.co/rest/v1/`. Sprint 2.9 normalises it client- and edge-side; the binding should still be corrected to the bare origin so the guard becomes belt-and-braces. |
-| 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. |
-| 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. **Verify before any further Vault work.** |
+| 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. Measured 2026-11-03: `POST /api/telemetry` → `202` with `{"kv":"unbound","d1":"unbound","analytics":"unbound"}`, i.e. **no telemetry is being stored anywhere today**. The 202 is honest, the drop is total. |
+| 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. Measured 2026-11-03 with the live anon key: `ecosystem_vault` and `telemetry_logs` both answer `200` with `[]`. An empty result does **not** prove RLS is off (a table with RLS on and no policy also returns `[]`), and it does not prove it is on — this needs the service role, not a probe. **Verify before any further Vault work.** |
+| 2b | **`axim_vault` does not exist in the live project** | Database access | Measured 2026-11-03: `GET /rest/v1/axim_vault` → `PGRST205`. The live project has `ecosystem_vault` (columns `id`, `created_at`, `updated_at`; **no tenant column**) and `telemetry_logs`. So **every Vault call from the dashboard 404s in production** — list, create, update, delete — while the public site looks healthy. The client is not repointed at `ecosystem_vault` on purpose (no tenancy column). `0003_axim_vault.sql` exists only in the workspace handoff (`context/axim-vault-migration.sql`), **not in the repo**, so the schema is unversioned: copy it in, then apply it, then set `app_metadata.app_id` on the operator user. |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |
 | 4 | ~~Raw-HTML metadata for non-JS crawlers~~ | **Closed in 2.11** | `functions/_middleware.js` + `lib/edge/meta.js` rewrite title/description/canonical/og for every HTML navigation, for every user agent. Remaining: article titles still come from WordPress after hydration (see the limit recorded above). |
 | 5 | ~~`<UpdatePrompt />` unmounted + competing service workers~~ | **Closed in 2.10** | Prompt mounted, `public/sw.js` deleted, feed/font strategies moved into `workbox.runtimeCaching`, `controllerchange` handshake with an audio-safe prompt. Remaining nicety: a "Reload" affordance in `PrivacyBanner`-style chrome for users who dismiss the toast. |
@@ -261,10 +318,12 @@ The first version returned a hand-written header list — `Content-Type`, `Cache
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.12+)
+## Roadmap Milestones (Sprint 2.13+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
 - Expand D1 querying components on the frontend to visualise site telemetry (now that events actually arrive).
 - Optimise caching and payload sizes for Vault and WP API requests.
+- Per-article `og:image` from the WordPress featured image (the 2.12 card is site-wide).
+- Repo hygiene: 556 kB of loose screenshots at the root, `commit_message.txt`, the unreferenced `scripts/copy-spa-fallback.mjs`, and `build.sourcemap: true` shipping ~3.7 MB of maps to the CDN (open item 10).

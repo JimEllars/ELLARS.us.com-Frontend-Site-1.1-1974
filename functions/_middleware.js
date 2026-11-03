@@ -1,15 +1,32 @@
 /**
- * Cloudflare Pages middleware: per-URL metadata in the raw HTML.
+ * Cloudflare Pages middleware: per-URL metadata in the raw HTML, and a real
+ * status for paths and files that do not exist.
  *
  * Pages serves one static shell for every route, so without this a crawler that
  * does not execute JavaScript sees the site title on every URL, no canonical, and
  * one description. The client fixes all of that after hydration; this fixes it in
  * the bytes that arrive first.
  *
+ * This runs before every Pages Function, so it is also the only place that can
+ * see a request the router does not serve. Two rules live here:
+ *
+ *  1. A filename-shaped path with a binary/media extension (`/screenshot_home.png`)
+ *     is served by the asset pipeline or answered with a real 404 — never the
+ *     HTML shell with a 200. The same defect that blanked pages on a stale chunk
+ *     hash (Sprint 2.9) applied to every file extension, including the og:image.
+ *  2. A document request for a path the router does not serve gets the shell with
+ *     a **404** status, the NotFound page's own title and `noindex, follow`.
+ *     `_redirects` can only answer 200, so `/platform/typo` was an indexable soft
+ *     404 — the canonical was absent, the title was the site title, and a crawler
+ *     had no reason to drop it.
+ *
  * Scope, deliberately narrow:
- *  - only requests that asked for a document (`Accept: text/html`);
- *  - only paths the router actually serves, via lib/edge/meta.js;
- *  - everything else falls straight through to `next()`.
+ *  - only GET;
+ *  - never `/api/*`, `/cdn-cgi/*`, `/sitemap.xml` or the shell itself (those own
+ *    their responses, and an unknown API route is a JSON 404, not an HTML one);
+ *  - `/assets/*` shares the file rule with functions/assets/[[path]].js;
+ *  - only binary/media extensions count as a file, so `/sitemap.xml` and the
+ *    SPA's own `.html` fallback are untouched.
  *
  * One document for every user agent, on purpose: Cloudflare caches by URL and
  * ignores `Vary: User-Agent`, so a crawler-only render can be served to a
@@ -17,15 +34,34 @@
  * vary.
  */
 
-import { applyMeta, canonicalOriginFor, isPreviewHost, resolveMeta, wantsDocument } from '../lib/edge/meta.js';
+import {
+  NOT_FOUND_META,
+  applyMeta,
+  canonicalOriginFor,
+  isPreviewHost,
+  resolveMeta,
+  wantsDocument,
+} from '../lib/edge/meta.js';
+import { isFileRequest, isReservedPath, serveFileOr404 } from '../lib/edge/assets.js';
 
 export async function onRequest({ request, next, env }) {
   if (request.method !== 'GET') return next();
-  if (!wantsDocument(request)) return next();
 
   const url = new URL(request.url);
-  const meta = resolveMeta(url.pathname, canonicalOriginFor(url), { forceNoindex: isPreviewHost(url) });
-  if (!meta) return next();
+  if (isReservedPath(url.pathname)) return next();
+
+  // A file request is answered by the asset pipeline, or not at all. `/assets/*`
+  // is included: its own Function applies the same rule, so a module loader gets
+  // a text/plain 404 whichever layer sees the request first.
+  if (isFileRequest(url.pathname)) {
+    return serveFileOr404(request, env);
+  }
+
+  if (!wantsDocument(request)) return next();
+
+  const resolved = resolveMeta(url.pathname, canonicalOriginFor(url), { forceNoindex: isPreviewHost(url) });
+  const isNotFound = !resolved;
+  const meta = resolved || NOT_FOUND_META;
 
   // The shell is a static asset; fetching it through ASSETS keeps the Pages cache
   // in play instead of duplicating the file here. Fetch the root, not
@@ -48,7 +84,12 @@ export async function onRequest({ request, next, env }) {
   headers.delete('content-encoding');
   headers.delete('etag'); // the body was rewritten; a stale validator would be a lie
   headers.set('Content-Type', 'text/html; charset=utf-8');
-  if (!headers.has('Cache-Control')) headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  if (isNotFound) {
+    // A 404 must never be cached: the path may exist after the next deploy.
+    headers.set('Cache-Control', 'no-store');
+  } else if (!headers.has('Cache-Control')) {
+    headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  }
 
-  return new Response(applyMeta(html, meta), { status: 200, headers });
+  return new Response(applyMeta(html, meta), { status: isNotFound ? 404 : 200, headers });
 }

@@ -99,6 +99,27 @@ jobs:
           fi
           echo "ok    supabase client present in the build"
 
+      - name: Assert the social card ships and resolves
+        run: |
+          set -euo pipefail
+          # index.html advertised /screenshot_home.png as og:image for a month. The
+          # file was never committed, so every shared link previewed with no image
+          # and the request was answered by the SPA shell with a 200.
+          if [ ! -f dist/og-image.png ]; then
+            echo "::error::dist/og-image.png is missing — every social preview would be blank."
+            exit 1
+          fi
+          advertised=$(grep -o 'property="og:image" content="https://ellars\.us\.com/[^"]*"' dist/index.html | head -1 | sed 's#.*ellars\.us\.com/##; s#"$##')
+          if [ -z "$advertised" ]; then
+            echo "::error::dist/index.html declares no og:image."
+            exit 1
+          fi
+          if [ ! -f "dist/$advertised" ]; then
+            echo "::error::og:image points at /$advertised, which is not in the build."
+            exit 1
+          fi
+          echo "ok    og:image ships: /$advertised"
+
       - name: Assert single PWA manifest identity
         run: |
           set -euo pipefail

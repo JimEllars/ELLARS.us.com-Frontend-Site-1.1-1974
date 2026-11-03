@@ -11,6 +11,15 @@
 # - script-src still carries 'unsafe-inline'. Moving to hashes/nonces is tracked
 #   in PlanForContinuedDevelopment.md; it needs the Turnstile loader and the
 #   Cloudflare Web Analytics beacon verified first.
+# - Cache-Control is declared ONLY on the specific rules below, never on `/*`.
+#   Pages merges the headers of every matching rule instead of overriding, so a
+#   `Cache-Control` on `/*` was concatenated onto each specific one. Measured in
+#   production before this was fixed:
+#     /pwa-192x192.png -> public, max-age=31536000, must-revalidate, immutable
+#     /sw.js           -> public, max-age=0, must-revalidate, no-cache, no-store, must-revalidate
+#   Contradictory directives in one header is undefined behaviour, and on the
+#   service worker — the one file whose caching decides whether a client ever
+#   updates — it is how a stale worker survives a deploy.
 
 /*
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -21,6 +30,8 @@
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: accelerometer=(), autoplay=(self), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), interest-cohort=()
   Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://wp.axim.us.com https://wp.ellars.us.com https://images.unsplash.com https://i.ytimg.com https://*.cloudflarestream.com; media-src 'self' blob: data: https://*.cloudflarestream.com https://play.pod.co; connect-src 'self' https://*.supabase.co https://wp.ellars.us.com https://wp.axim.us.com https://play.pod.co https://challenges.cloudflare.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://play.pod.co https://*.cloudflarestream.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
+
+/
   Cache-Control: public, max-age=0, must-revalidate
 
 /index.html
