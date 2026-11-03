@@ -105,13 +105,13 @@ jobs:
           # index.html advertised /screenshot_home.png as og:image for a month. The
           # file was never committed, so every shared link previewed with no image
           # and the request was answered by the SPA shell with a 200.
-          if [ ! -f dist/og-image.png ]; then
-            echo "::error::dist/og-image.png is missing — every social preview would be blank."
-            exit 1
-          fi
+          #
+          # Resolve the advertised path rather than naming a file here: the card is
+          # versioned by filename (Sprint 2.13), so a hard-coded name is a guard
+          # that fails on a rename instead of on a missing asset.
           advertised=$(grep -o 'property="og:image" content="https://ellars\.us\.com/[^"]*"' dist/index.html | head -1 | sed 's#.*ellars\.us\.com/##; s#"$##')
           if [ -z "$advertised" ]; then
-            echo "::error::dist/index.html declares no og:image."
+            echo "::error::dist/index.html declares no og:image — every social preview would be blank."
             exit 1
           fi
           if [ ! -f "dist/$advertised" ]; then
