@@ -10,10 +10,11 @@
  * This runs before every Pages Function, so it is also the only place that can
  * see a request the router does not serve. Two rules live here:
  *
- *  1. A filename-shaped path with a binary/media extension (`/screenshot_home.png`)
- *     is served by the asset pipeline or answered with a real 404 — never the
- *     HTML shell with a 200. The same defect that blanked pages on a stale chunk
- *     hash (Sprint 2.9) applied to every file extension, including the og:image.
+ *  1. A filename-shaped path — binary media (`/screenshot_home.png`) or a text
+ *     file (`/robots.txt`) — is served by the asset pipeline or answered with a
+ *     real 404, never the HTML shell with a 200. The same defect that blanked
+ *     pages on a stale chunk hash (Sprint 2.9) applied to every file extension,
+ *     including the og:image and, briefly, robots.txt.
  *  2. A document request for a path the router does not serve gets the shell with
  *     a **404** status, the NotFound page's own title and `noindex, follow`.
  *     `_redirects` can only answer 200, so `/platform/typo` was an indexable soft
@@ -25,8 +26,8 @@
  *  - never `/api/*`, `/cdn-cgi/*`, `/sitemap.xml` or the shell itself (those own
  *    their responses, and an unknown API route is a JSON 404, not an HTML one);
  *  - `/assets/*` shares the file rule with functions/assets/[[path]].js;
- *  - only binary/media extensions count as a file, so `/sitemap.xml` and the
- *    SPA's own `.html` fallback are untouched.
+ *  - only known extensions count as a file, so an article slug containing a dot
+ *    is still a route, and `/sitemap.xml` / the `.html` fallback are reserved.
  *
  * One document for every user agent, on purpose: Cloudflare caches by URL and
  * ignores `Vary: User-Agent`, so a crawler-only render can be served to a
@@ -42,7 +43,7 @@ import {
   resolveMeta,
   wantsDocument,
 } from '../lib/edge/meta.js';
-import { isFileRequest, isReservedPath, serveFileOr404 } from '../lib/edge/assets.js';
+import { isReservedPath, isStaticFileRequest, serveFileOr404 } from '../lib/edge/assets.js';
 
 export async function onRequest({ request, next, env }) {
   if (request.method !== 'GET') return next();
@@ -53,7 +54,12 @@ export async function onRequest({ request, next, env }) {
   // A file request is answered by the asset pipeline, or not at all. `/assets/*`
   // is included: its own Function applies the same rule, so a module loader gets
   // a text/plain 404 whichever layer sees the request first.
-  if (isFileRequest(url.pathname)) {
+  //
+  // `/robots.txt`, `/manifest.webmanifest` and friends are *files*, not routes.
+  // They were missed by the first version of this rule and fell through to the
+  // document branch, where `/robots.txt` answered `404` to any client sending
+  // `Accept: text/html`.
+  if (isStaticFileRequest(url.pathname)) {
     return serveFileOr404(request, env);
   }
 
