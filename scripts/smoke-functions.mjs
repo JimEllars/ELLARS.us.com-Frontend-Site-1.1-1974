@@ -20,6 +20,7 @@ import { onRequest as assetsHandler } from '../functions/assets/[[path]].js';
 import { onRequest as middleware } from '../functions/_middleware.js';
 import {
   DIRECTIVE_SLUGS as META_DIRECTIVE_SLUGS,
+  NOT_FOUND_META,
   SITE_ORIGIN,
   applyMeta,
   canonicalOriginFor,
@@ -27,6 +28,8 @@ import {
   resolveMeta,
   wantsDocument,
 } from '../lib/edge/meta.js';
+import { isFileRequest, isReservedPath } from '../lib/edge/assets.js';
+import { readFileSync } from 'node:fs';
 import {
   DIRECTIVE_SLUGS,
   STATIC_ROUTES,
@@ -330,12 +333,172 @@ describe('lib/edge/meta.js');
   check('middleware drops the stale content-length', injected.headers.get('Content-Length') === null);
   check('middleware sets one canonical', (body.match(/rel="canonical"/g) || []).length === 1);
 
-  const passedThrough = await middleware({ request: assetRequest, env, next: () => new Response(null, { status: 204 }) });
-  check('middleware passes assets through untouched', passedThrough.status === 204);
+  // The file rule is shared with functions/assets/[[path]].js, so the middleware
+  // answers an asset path itself rather than letting _redirects turn the miss
+  // into the HTML shell.
+  const assetMiss = await middleware({ request: assetRequest, env, next: () => new Response(null, { status: 204 }) });
+  check('middleware answers an asset miss with 404', assetMiss.status === 404, String(assetMiss.status));
+  check('an asset miss is plain text, not HTML', /text\/plain/.test(assetMiss.headers.get('Content-Type') || ''));
+
+  const nonDocument = new Request('https://ellars.us.com/platform', { headers: { accept: 'application/json' } });
+  const passedThrough = await middleware({ request: nonDocument, env, next: () => new Response(null, { status: 204 }) });
+  check('middleware passes non-document, non-file requests through', passedThrough.status === 204);
 
   const unknownRoute = new Request('https://ellars.us.com/api/config', { headers: { accept: 'text/html' } });
   const passedUnknown = await middleware({ request: unknownRoute, env, next: () => new Response(null, { status: 204 }) });
-  check('middleware passes unmapped paths through', passedUnknown.status === 204);
+  check('middleware never touches /api/*', passedUnknown.status === 204);
+}
+
+describe('lib/edge/assets.js');
+{
+  check('og:image path is a file request', isFileRequest('/og-image.png') === true);
+  check('a hashed chunk is a file request', isFileRequest('/assets/index-abc123.js') === true);
+  check('an SPA route is not a file request', isFileRequest('/platform') === false);
+  check(
+    'a slug containing dots is not a file request',
+    isFileRequest('/articles/prices.and.paychecks') === false,
+    '/articles/prices.and.paychecks'
+  );
+  // Excluded on purpose: a middleware fetch through env.ASSETS misses /sitemap.xml
+  // (it is a Pages Function), so treating it as a file would 404 the sitemap.
+  check('/sitemap.xml is not a file request', isFileRequest('/sitemap.xml') === false);
+  check('/200.html is not a file request', isFileRequest('/200.html') === false);
+  check('/api/* is reserved', isReservedPath('/api/telemetry') === true);
+  check('/cdn-cgi/* is reserved', isReservedPath('/cdn-cgi/trace') === true);
+  check('an ordinary route is not reserved', isReservedPath('/dashboard') === false);
+}
+
+describe('functions/_middleware.js — files and 404s');
+{
+  // A factory, not a shared Response: an undici body can only be read once, and
+  // every request in production gets its own.
+  const shellResponse = () =>
+    new Response('<!doctype html><html><head><title>James Ellars | Official Hub & Policy Platform</title></head></html>', {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=0, must-revalidate' },
+    });
+  const shellEnv = { ASSETS: { fetch: async () => shellResponse() } };
+  const nextStub = () => new Response(null, { status: 204 });
+
+  // The live defect: /screenshot_home.png was the og:image and did not exist, so
+  // the scraper received the app shell with a 200 and rendered nothing.
+  const missingImage = await middleware({
+    request: new Request('https://ellars.us.com/screenshot_home.png', { headers: { accept: 'image/png,image/*' } }),
+    env: shellEnv,
+    next: nextStub,
+  });
+  check('a missing image is a 404, not the shell', missingImage.status === 404, String(missingImage.status));
+  check('a missing image is never cached', missingImage.headers.get('Cache-Control') === 'no-store');
+  check('a missing image is not HTML', !/doctype/i.test(await missingImage.text()));
+
+  const realImage = await middleware({
+    request: new Request('https://ellars.us.com/og-image.png', { headers: { accept: 'image/png,image/*' } }),
+    env: {
+      ASSETS: {
+        fetch: async () => new Response('pngbytes', { status: 200, headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } }),
+      },
+    },
+    next: nextStub,
+  });
+  check('a real image passes through with its own type', realImage.headers.get('Content-Type') === 'image/png');
+  check('a real image keeps its cache rule', /immutable/.test(realImage.headers.get('Cache-Control') || ''));
+
+  // Unknown route: indexable 200 shell before, real 404 with the NotFound
+  // identity now. `_redirects` cannot express a status other than 200.
+  const notFound = await middleware({
+    request: new Request('https://ellars.us.com/platform/not-a-directive', { headers: { accept: 'text/html' } }),
+    env: shellEnv,
+    next: nextStub,
+  });
+  const notFoundBody = await notFound.text();
+  check('an unknown route answers 404', notFound.status === 404, String(notFound.status));
+  check('an unknown route is not cached', notFound.headers.get('Cache-Control') === 'no-store');
+  check('an unknown route carries the NotFound title', notFoundBody.includes(`<title>${NOT_FOUND_META.title}</title>`));
+  check('an unknown route is noindex', /<meta name="robots" content="noindex, follow" \/>/.test(notFoundBody), notFoundBody.slice(0, 200));
+  check('an unknown route carries no canonical', !/rel="canonical"/.test(notFoundBody));
+
+  const unknownArticleSlug = await middleware({
+    request: new Request('https://ellars.us.com/articles/anything-at-all', { headers: { accept: 'text/html' } }),
+    env: shellEnv,
+    next: nextStub,
+  });
+  check('a dispatch path stays 200 (its id is validated by WordPress, not here)', unknownArticleSlug.status === 200);
+}
+
+describe('router ↔ edge table drift');
+{
+  // The table in lib/edge/meta.js mirrors src/App.jsx by hand, which is how a
+  // route ends up serving the site title and an indexable 200 to a crawler.
+  const appSource = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  const routerPaths = [...appSource.matchAll(/<Route\s+path="([^"]+)"/g)].map((match) => match[1]);
+  check('router paths were found', routerPaths.length >= 8, String(routerPaths.length));
+
+  const wildcardOnly = routerPaths.filter((path) => path !== '*');
+  for (const path of wildcardOnly) {
+    const probe = path === '/articles/:slug' ? '/articles/some-dispatch' : path.replace(':directiveSlug', 'working-class-foundation');
+    check(`router path ${path} has edge metadata`, resolveMeta(probe, SITE_ORIGIN) !== null, probe);
+  }
+}
+
+describe('public/_headers');
+{
+  // Pages merges the headers of every matching rule rather than overriding, so a
+  // `Cache-Control` on `/*` is concatenated onto each specific rule. Production
+  // served `/sw.js` as `public, max-age=0, must-revalidate, no-cache, no-store,
+  // must-revalidate` — contradictory directives on the one file that decides
+  // whether a client ever picks up a new build.
+  const source = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
+  const rules = source
+    .split(/\n\s*\n/)
+    .map((block) => ({
+      selector: block.split('\n')[0].trim(),
+      headers: block
+        .split('\n')
+        .slice(1)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#')),
+    }))
+    .filter((rule) => rule.selector && !rule.selector.startsWith('#'));
+
+  check('header rules were parsed', rules.length >= 10, String(rules.length));
+
+  const wildcard = rules.find((rule) => rule.selector === '/*');
+  check('the wildcard rule exists', Boolean(wildcard));
+  check('the wildcard rule declares no Cache-Control', !wildcard.headers.some((line) => /^cache-control:/i.test(line)));
+
+  for (const rule of rules) {
+    const cacheLines = rule.headers.filter((line) => /^cache-control:/i.test(line));
+    check(`${rule.selector} declares Cache-Control at most once`, cacheLines.length <= 1, String(cacheLines.length));
+  }
+
+  const shell = rules.find((rule) => rule.selector === '/');
+  check('the shell has its own cache rule', Boolean(shell) && /max-age=0/.test(shell.headers.join(' ')));
+  const serviceWorker = rules.find((rule) => rule.selector === '/sw.js');
+  check(
+    'the service worker is never storable',
+    Boolean(serviceWorker) && !/max-age=[1-9]/.test(serviceWorker.headers.join(' ')),
+    serviceWorker?.headers.join(' ')
+  );
+}
+
+describe('index.html social card');
+{
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/i)?.[1] || '';
+  check('og:image is declared', Boolean(ogImage), ogImage);
+  check('og:image is absolute', /^https:\/\/ellars\.us\.com\//.test(ogImage), ogImage);
+
+  const relative = ogImage.replace('https://ellars.us.com/', '');
+  const png = readFileSync(new URL(`../public/${relative}`, import.meta.url));
+  check('og:image exists in public/', png.length > 0, relative);
+  check('og:image is a PNG', png.subarray(1, 4).toString() === 'PNG', png.subarray(0, 8).toString('hex'));
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  check('og:image is 1200x630', width === 1200 && height === 630, `${width}x${height}`);
+  check('og:image stays under the 300 kB scraper limit', png.length < 300 * 1024, String(png.length));
+
+  const twitterImage = html.match(/<meta name="twitter:image" content="([^"]+)"/i)?.[1] || '';
+  check('twitter:image matches og:image', twitterImage === ogImage, twitterImage);
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);
