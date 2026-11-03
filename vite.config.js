@@ -1,18 +1,35 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { copyFile } from 'node:fs/promises';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Vite 8 loads this config through its native loader, where `__dirname` is not
+// defined. Resolve the project root from the module URL instead, which is valid
+// on every loader.
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Cloudflare Pages serves `dist/200.html` for the SPA catch-all. It must be the
+ * built shell, byte for byte.
+ *
+ * The copy happens in `writeBundle`, not `closeBundle`. Under Rollup both ran
+ * after the output was flushed; under Rolldown (Vite 8) `closeBundle` fires
+ * before `dist/index.html` is on disk, so the copy threw ENOENT and the build
+ * died. `writeBundle` is documented as "called after the bundle has been
+ * written" and is empirically true on both bundlers (verified with an
+ * existsSync probe). `generateBundle` is not an option either: Rolldown's
+ * bundle object holds only the JS/CSS graph, so there is no index.html asset to
+ * clone there.
+ */
 function cloudflarePagesSpaFallback() {
   return {
     name: 'cloudflare-pages-spa-fallback',
     apply: 'build',
-    async closeBundle() {
-      await copyFile(
-        path.resolve(__dirname, 'dist/index.html'),
-        path.resolve(__dirname, 'dist/200.html')
-      );
+    async writeBundle() {
+      const shell = path.resolve(rootDir, 'dist/index.html');
+      await copyFile(shell, path.resolve(rootDir, 'dist/200.html'));
     }
   };
 }
@@ -146,7 +163,7 @@ export default defineConfig({
   base: '/',
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(rootDir, './src')
     }
   },
   server: {
@@ -167,11 +184,23 @@ export default defineConfig({
         // async chunk. Naming it as a manual chunk produced an empty 0.05 kB
         // `vendor-supabase` file and left the SDK wherever it happened to land —
         // which was nowhere at all once the anon key was missing at build time.
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-sanitize': ['dompurify'],
-          'vendor-data': ['swr', 'zustand', 'jwt-decode'],
+        //
+        // Function form, not an object: Rolldown (Vite 8) rejects the object
+        // shape outright ("Expected Function but received Object") and then
+        // silently emits a single vendor chunk, which is the regression this
+        // split exists to prevent. Matching on the resolved module id keeps the
+        // same four groups under both bundlers.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) {
+            return 'vendor-react';
+          }
+          if (/node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) {
+            return 'vendor-motion';
+          }
+          if (/node_modules[\\/]dompurify[\\/]/.test(id)) return 'vendor-sanitize';
+          if (/node_modules[\\/](swr|zustand|jwt-decode)[\\/]/.test(id)) return 'vendor-data';
+          return undefined;
         },
       },
     },
