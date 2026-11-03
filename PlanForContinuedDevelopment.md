@@ -254,7 +254,7 @@ to a crawler or a scraper.
 | `GET /screenshot_home.png` (the `og:image`) | `200 text/html` — the shell | `404 text/plain`, `no-store` |
 | `GET /platform/not-a-directive` | `200` shell, `index, follow`, no canonical | `404`, `noindex, follow`, `404 Signal Lost` title, no canonical |
 | `GET /assets/<missing>.js` | `404 text/plain` (Sprint 2.9) | unchanged |
-| `GET /pwa-192x192.png` | `public, max-age=31536000, must-revalidate, immutable` | `public, max-age=31536000, immutable` |
+| `GET /pwa-192x192.png` | `public, max-age=31536000, must-revalidate, immutable` | one value (see 2.13 for the final TTL) |
 
 ### Shipped
 
@@ -292,6 +292,76 @@ CI gains an artifact assertion: `dist/index.html`'s `og:image` must resolve to a
 - `og:image` is one card for the whole site. Per-article cards need the WordPress featured image in a `og:image` rewrite, which belongs with the article-title work already recorded as the 2.11 limit.
 - The 404 status is decided by the route table, so a new page must be added to `lib/edge/meta.js` in the same commit as `src/App.jsx`. The drift guard now fails CI if that is forgotten — but it parses App.jsx, so a route created outside `<Route path>` would still slip through.
 
+---
+
+## Sprint 2.13 — An unhashed URL cannot be `immutable`, and the cache had already proved it
+
+**Branch:** `fix/static-asset-cache-poisoning` · **Base:** `78a2148` (main)
+
+### Why this cycle
+
+Found while verifying 2.12 in production, minutes after the merge.
+
+The new social card deployed correctly — `https://ellars.us.com/og-card.png`
+answers `200 image/png` — but the URL that was actually advertised,
+`/og-image.png`, answered `200 text/html`, `age: 945`, `cf-cache-status: HIT`,
+with the **old** merged cache header still attached. The edge had cached the SPA
+shell *as if it were an image*, and `_headers` had told it to keep it for a year.
+No deploy can fix that: the bytes at that URL are pinned until the entry expires
+or someone purges it, and nothing in this project can purge (see below).
+
+The rule that allowed it:
+
+```
+/*.png
+  Cache-Control: public, max-age=31536000, immutable
+```
+
+`immutable` is a promise that the bytes at a URL never change. That is true for
+`/assets/*`, where Vite content-hashes every filename — a changed file is a
+changed URL. It is false for every root-level file: `og-card.png`,
+`pwa-192x192.png`, `favicon.svg` are all names that get reused. Combined with
+2.12's defect — every `.png` miss answered by the shell with a 200 — the first
+request for a not-yet-deployed image taught every edge colo and every browser to
+keep the HTML for a year.
+
+### Shipped
+
+**The card lives at a URL no cache has ever seen** — `public/og-card.png`, `index.html`, `scripts/generate-og-image.py`, `vite.config.js`
+- Renamed from `og-image.png`. This is the only fix available without purge credentials, and it is the correct one anyway: a versioned URL is what a long-lived asset should have. Regenerating the card means bumping this name.
+
+**Root-level media is cached for a day, not a year** — `public/_headers`
+- `/*.png`, `/*.svg`, `/*.webm`, `/*.woff2` → `public, max-age=86400`. A replaced file propagates within a day; a hashed build asset keeps `immutable` under `/assets/*`, where the name guarantees the promise.
+- The reasoning is written into the file next to the rules, with the measured `age: 945` / `HIT` evidence, because the next person to "optimise" this will otherwise put the year back.
+
+### Tests
+
+`npm test` → **136 assertions** (was 134). New: `immutable` is declared on exactly one rule and that rule is `/assets/*`; no rule outside `/assets/*` may carry a `max-age` over a day. Both fail loudly if someone re-adds a year-long root rule.
+
+### Verified
+
+`wrangler pages dev`: `/og-card.png` → `200 image/png`, `public, max-age=86400`; `/og-image.png` → `404 text/plain`, `no-store`; every other surface single-valued.
+
+### The reason this could not simply be purged
+
+`src/lib/api.js` fires `fetch('/api/v1/cache/purge-tag', …)` on publish and
+swallows the result. The endpoint **does not exist**: `POST
+https://ellars.us.com/api/v1/cache/purge-tag` answers
+`{"error":"not_found"}` from the `/api/[[path]]` catch-all. Sprint 2.5 recorded it
+as shipped ("returns `501 purge_not_configured` until `CF_ZONE_ID` and
+`CF_PURGE_TOKEN` are bound"), and it is not in `functions/` — so there has never
+been a purge path, and a poisoned URL had no eviction route other than waiting
+out its TTL. Logged as open item 12; the honest options are to build it (and bind
+the token) or delete the dead call.
+
+### Known limits
+
+- `/screenshot_home.png` remains cached as HTML for anyone holding an old document
+  or a warm colo. Nothing references it now; the card was renamed rather than
+  repaired. A purge is the only way to shorten that.
+- Root media at one day means an icon change is not instant. That is the intended
+  trade: bounded staleness beats an unbounded commitment.
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -306,9 +376,10 @@ CI gains an artifact assertion: `dist/index.html`'s `og:image` must resolve to a
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` now covers `/api/config` and the sitemap helpers in CI (22 assertions, no runner needed). Still uncovered: telemetry sink independence, vault row-shape mapping, and the crawl/404 rules — those need component-level tests, i.e. `vitest` as a real dependency. |
-| 10 | **Repo hygiene and sourcemaps** | This branch's successor | 2.4 MB of PNG screenshots at the repo root, `test-results/`, `commit_message.txt`, and `build.sourcemap: true` shipping a 2.3 MB map per chunk to the CDN. Also `og:image` points at a 559 kB asset. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **136 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
+| 10 | **Repo hygiene and sourcemaps** | Next cycle | 556 kB of loose PNGs at the repo root, `commit_message.txt`, the unreferenced `scripts/copy-spa-fallback.mjs`, and `build.sourcemap: true` shipping ~3.7 MB of maps to the CDN. The `og:image` half of this item is **closed** (2.12/2.13): the card is 79 kB and exists. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
+| 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all, although Sprint 2.5 records it as shipped and `src/lib/api.js` still calls it fire-and-forget on publish. Until it exists (or the dead call is removed), a bad edge cache entry cannot be evicted. |
 
 ---
 
@@ -318,7 +389,7 @@ CI gains an artifact assertion: `dist/index.html`'s `og:image` must resolve to a
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.13+)
+## Roadmap Milestones (Sprint 2.14+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.

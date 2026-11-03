@@ -473,6 +473,18 @@ describe('public/_headers');
 
   const shell = rules.find((rule) => rule.selector === '/');
   check('the shell has its own cache rule', Boolean(shell) && /max-age=0/.test(shell.headers.join(' ')));
+
+  // `immutable` is a promise that the URL's bytes never change, and only Vite's
+  // content-hashed /assets/* filenames can keep it. A root-level `/*.png` at a
+  // year, immutable, is how the HTML shell ended up cached as an image for a
+  // year (see Sprint 2.13).
+  const cacheControlOf = (rule) => rule.headers.find((line) => /^cache-control:/i.test(line)) || '';
+  const immutableRules = rules.filter((rule) => /immutable/i.test(cacheControlOf(rule)));
+  check('immutable is only declared on content-hashed assets', immutableRules.length === 1 && immutableRules[0].selector === '/assets/*', immutableRules.map((rule) => rule.selector).join(','));
+
+  const maxAgeOf = (rule) => Number(cacheControlOf(rule).match(/max-age=(\d+)/)?.[1] ?? 0);
+  const longLived = rules.filter((rule) => rule.selector !== '/assets/*' && maxAgeOf(rule) > 86400);
+  check('no rule caches an unhashed path longer than a day', longLived.length === 0, longLived.map((rule) => `${rule.selector}=${maxAgeOf(rule)}`).join(','));
   const serviceWorker = rules.find((rule) => rule.selector === '/sw.js');
   check(
     'the service worker is never storable',

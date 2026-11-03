@@ -81,7 +81,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // The social card is fetched by scrapers, never by the app, so caching it
         // in every visitor's service worker only costs install bandwidth.
-        globIgnores: ['**/og-image.png'],
+        globIgnores: ['**/og-card.png'],
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/api\/.*/i,

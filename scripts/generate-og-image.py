@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generates public/og-image.png — the 1200x630 social card.
+Generates public/og-card.png — the 1200x630 social card.
 
 Why this file exists at all: index.html named
 `https://ellars.us.com/screenshot_home.png` as both `og:image` and
@@ -104,5 +104,5 @@ while x <= W - 96:
 draw.rectangle([W - 96 - 190, H - 108, W - 96, H - 108 + 10], fill=YELLOW)
 draw.rectangle([W - 96 - 118, H - 86, W - 96, H - 86 + 10], fill=(90, 80, 30))
 
-img.save("public/og-image.png", "PNG", optimize=True)
-print("wrote public/og-image.png")
+img.save("public/og-card.png", "PNG", optimize=True)
+print("wrote public/og-card.png")
