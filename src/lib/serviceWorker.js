@@ -34,7 +34,12 @@ export const registerServiceWorker = () => {
       return;
     }
 
-    const hadController = Boolean(navigator.serviceWorker.controller);
+    // Whether this page began life under a service worker. It is *not* a constant:
+    // after the first install claims this page, the very next controllerchange is
+    // an update. Capturing this once at registration made every later activation
+    // look like a first install — the policy said 'ignore', no reload happened, and
+    // the tab kept running an old document over a new worker (measured in 2.16).
+    let hadController = Boolean(navigator.serviceWorker.controller);
     let lastCheck = Date.now();
 
     const checkForUpdate = () => {
@@ -68,6 +73,9 @@ export const registerServiceWorker = () => {
         audioPlaying: useAppStore.getState().audioIsPlaying,
         alreadyReloaded,
       });
+
+      // From here on the page has a controller, whatever this event was.
+      hadController = true;
 
       if (decision === 'prompt') {
         useAppStore.getState().setUpdateAvailable(true);
