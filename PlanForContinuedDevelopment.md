@@ -362,6 +362,60 @@ the token) or delete the dead call.
 - Root media at one day means an icon change is not instant. That is the intended
   trade: bounded staleness beats an unbounded commitment.
 
+---
+
+## Sprint 2.14 — `robots.txt` was a casualty of the same rule (hotfix)
+
+**Branch:** `fix/static-text-paths` · **Base:** `95811ac`
+
+### Why this cycle
+
+The post-merge regression sweep on `main` — every public surface, with
+`Accept: text/html` — found `/robots.txt` answering **`404 text/html`** with the
+NotFound title. It had been 200 before 2.12 because the document branch simply
+fell through to `_redirects` when it did not recognise a path; 2.12 made "does
+not recognise this path" mean "404", and `robots.txt` is not a route.
+
+Crawlers survived it by luck: Googlebot fetches robots.txt with `Accept: */*`,
+so `wantsDocument()` was false and the request still reached the asset pipeline.
+Every other client — a browser, a monitoring check, a human with curl — got a 404
+for the file that defines the whole crawl policy.
+
+### Root cause and fix
+
+`lib/edge/assets.js` classified only binary/media extensions as files. Text files
+that are nonetheless files — `robots.txt`, `manifest.webmanifest`, a stray
+`.json` — were left to the document branch. There is now an explicit
+`DOCUMENT_EXTENSIONS` set and `isStaticFileRequest()`, which is what the
+middleware uses: a known extension means "the asset pipeline or a 404", never
+"the router".
+
+`/sitemap.xml` stays out of that set on purpose — it is a Pages Function, and is
+handled by `isReservedPath`.
+
+### Tests
+
+`npm test` → **144 assertions** (was 136). New: `robots.txt` / `manifest.webmanifest`
+/ `sw.js` classify as static file requests; `/platform` and a dispatch slug ending
+in dots do not; `robots.txt` answers 200 with `text/plain` even when the request
+asks for HTML; a missing `.txt` is a 404 rather than the shell.
+
+### Verified
+
+`wrangler pages dev` with `Accept: text/html` on every surface: `/robots.txt` 200
+`text/plain`, `/sitemap.xml` 200 `application/xml`, `/manifest.webmanifest` 200
+`application/manifest+json`, `/og-card.png` 200 `image/png`, `/sw.js` 200
+`application/javascript`, `/articles/prices.and.paychecks` 200 (slug logic intact),
+`/gone.txt` 404 `text/plain`, `/platform/nope` 404 noindex.
+
+### What this says about 2.12's verification
+
+2.12 verified the paths it had reasoned about. It did not enumerate the static
+surface, so the one file whose absence is invisible in a browser — and decisive
+for crawlers — was the one that broke. The lesson is now encoded rather than
+remembered: the smoke suite asserts the classification of every root static file
+type, not just the ones a sprint happened to touch.
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -376,7 +430,7 @@ the token) or delete the dead call.
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **136 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **144 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
 | 10 | **Repo hygiene and sourcemaps** | Next cycle | 556 kB of loose PNGs at the repo root, `commit_message.txt`, the unreferenced `scripts/copy-spa-fallback.mjs`, and `build.sourcemap: true` shipping ~3.7 MB of maps to the CDN. The `og:image` half of this item is **closed** (2.12/2.13): the card is 79 kB and exists. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all, although Sprint 2.5 records it as shipped and `src/lib/api.js` still calls it fire-and-forget on publish. Until it exists (or the dead call is removed), a bad edge cache entry cannot be evicted. |
@@ -389,7 +443,7 @@ the token) or delete the dead call.
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.14+)
+## Roadmap Milestones (Sprint 2.15+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - Crawler-facing metadata rewrite (canonical, og/twitter, `lastmod`) inside a Pages Function middleware.
 - Resolve the service-worker duplication and mount `<UpdatePrompt />` with a real `waiting` handshake.

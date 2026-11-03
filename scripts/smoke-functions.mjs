@@ -28,7 +28,7 @@ import {
   resolveMeta,
   wantsDocument,
 } from '../lib/edge/meta.js';
-import { isFileRequest, isReservedPath } from '../lib/edge/assets.js';
+import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
 import { readFileSync } from 'node:fs';
 import {
   DIRECTIVE_SLUGS,
@@ -362,6 +362,17 @@ describe('lib/edge/assets.js');
   // Excluded on purpose: a middleware fetch through env.ASSETS misses /sitemap.xml
   // (it is a Pages Function), so treating it as a file would 404 the sitemap.
   check('/sitemap.xml is not a file request', isFileRequest('/sitemap.xml') === false);
+  // regression: robots.txt fell through to the document branch and 404'd for any
+  // client sending Accept: text/html. It is a file, not a route.
+  check('/robots.txt is a static file request', isStaticFileRequest('/robots.txt') === true);
+  check('/manifest.webmanifest is a static file request', isStaticFileRequest('/manifest.webmanifest') === true);
+  check('/sw.js is a static file request', isStaticFileRequest('/sw.js') === true);
+  check('/platform is not a static file request', isStaticFileRequest('/platform') === false);
+  check(
+    'an article slug ending in a known extension is not a file',
+    isStaticFileRequest('/articles/prices.and.paychecks') === false,
+    '/articles/prices.and.paychecks'
+  );
   check('/200.html is not a file request', isFileRequest('/200.html') === false);
   check('/api/* is reserved', isReservedPath('/api/telemetry') === true);
   check('/cdn-cgi/* is reserved', isReservedPath('/cdn-cgi/trace') === true);
@@ -390,6 +401,27 @@ describe('functions/_middleware.js — files and 404s');
   check('a missing image is a 404, not the shell', missingImage.status === 404, String(missingImage.status));
   check('a missing image is never cached', missingImage.headers.get('Cache-Control') === 'no-store');
   check('a missing image is not HTML', !/doctype/i.test(await missingImage.text()));
+
+  // robots.txt must survive a browser-style Accept header.
+  const robotsRequest = new Request('https://ellars.us.com/robots.txt', { headers: { accept: 'text/html' } });
+  const robots = await middleware({
+    request: robotsRequest,
+    env: {
+      ASSETS: {
+        fetch: async () =>
+          new Response('User-agent: *\nDisallow: /dashboard\n', {
+            status: 200,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
+          }),
+      },
+    },
+    next: nextStub,
+  });
+  check('robots.txt is served, not 404ed', robots.status === 200, String(robots.status));
+  check('robots.txt keeps text/plain', /text\/plain/.test(robots.headers.get('Content-Type') || ''));
+
+  const missingText = await middleware({ request: new Request('https://ellars.us.com/gone.txt'), env: shellEnv, next: nextStub });
+  check('a missing text file is a 404, not the shell', missingText.status === 404, String(missingText.status));
 
   const realImage = await middleware({
     request: new Request('https://ellars.us.com/og-image.png', { headers: { accept: 'image/png,image/*' } }),
