@@ -32,7 +32,9 @@ import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import {
+  CACHE_KEY_PATH,
   DIRECTIVE_SLUGS,
+  POSTS_CACHE_KEY_PATH,
   STATIC_ROUTES,
   buildSitemap,
   escapeXml,
@@ -214,12 +216,16 @@ check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length ===
 // tool that probed the sitemap first was told `text/html`. And the response
 // advertised an hour of edge caching while `cf-cache-status` measured DYNAMIC on
 // every repeat: a Pages Function is not implicitly cached, so the Cache API is
-// now what holds the document, and these assert both halves.
+// now what holds the document. Its *first* deploy then taught the other two
+// lessons asserted here — `s-maxage` alone does not set a Cache API lifetime, and
+// a failed origin must not be allowed to erase the dispatches it could not see.
 {
   // Deterministic failure: port 1 refuses immediately, so "WordPress is down" is
   // exercised without reaching the network.
   const deadOrigin = { WP_API_URL: 'http://127.0.0.1:1/wp-json/wp/v2' };
   const request = new Request('https://ellars.us.com/sitemap.xml');
+  const documentKey = `https://ellars.us.com${CACHE_KEY_PATH}`;
+  const postsKey = `https://ellars.us.com${POSTS_CACHE_KEY_PATH}`;
 
   const head = await sitemapHead({ request: new Request(request, { method: 'HEAD' }), env: deadOrigin });
   check('HEAD /sitemap.xml is answered by the sitemap, not the SPA shell', head.status === 200, String(head.status));
@@ -235,19 +241,28 @@ check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length ===
   check('a degraded sitemap still serves the static routes', xml.includes('<loc>https://ellars.us.com/platform</loc>'));
   check('a degraded sitemap keeps all six directives', DIRECTIVE_SLUGS.every((slug) => xml.includes(`/platform/${slug}<`)));
   check(
-    'a degraded sitemap is cached for a minute, not an hour',
+    'a degraded sitemap lives for a minute, not an hour',
     get.headers.get('x-sitemap-ttl') === '60',
     get.headers.get('x-sitemap-ttl')
   );
+  // The measured regression: `max-age=600, s-maxage=60` was stored for ten
+  // minutes. One number, in the directive the Cache API reads.
+  check(
+    'the stored lifetime is stated in max-age, which the Cache API honours',
+    get.headers.get('cache-control') === 'public, max-age=60',
+    get.headers.get('cache-control')
+  );
+  check('no s-maxage is advertised for a Pages Function', !/s-maxage/.test(get.headers.get('cache-control') || ''));
   check('an uncached response says so', get.headers.get('x-sitemap-cache') === 'miss-degraded', get.headers.get('x-sitemap-cache'));
 
-  // A hit must be served without touching WordPress again. The fake cache stores
-  // whatever the handler puts, which is the same contract caches.default offers.
+  // A fake cache with the same contract caches.default offers.
   const stored = new Map();
+  // `caches.default` returns a *new* response per match, whose body can be read
+  // once; a fake that hands back the same object fails on the second read.
   const fakeCache = {
-    match: async (req) => stored.get(req.url),
-    put: async (req, response) => {
-      stored.set(req.url, response);
+    match: async (key) => stored.get(key)?.clone(),
+    put: async (key, response) => {
+      stored.set(key, response.clone());
       return undefined;
     },
   };
@@ -256,7 +271,9 @@ check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length ===
   try {
     const cold = await sitemapGet({ request, env: deadOrigin });
     await cold.text();
-    check('a cold response is stored', stored.has(request.url));
+    check('a cold response is stored under the versioned synthetic key', stored.has(documentKey), [...stored.keys()].join(','));
+    check('nothing is stored under the incoming URL', !stored.has('https://ellars.us.com/sitemap.xml'));
+
     const warm = await sitemapGet({ request, env: deadOrigin });
     const warmXml = await warm.text();
     check('a warm response is served from the edge cache', warm.headers.get('x-sitemap-cache') === 'hit', warm.headers.get('x-sitemap-cache'));
@@ -265,6 +282,33 @@ check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length ===
     const warmHead = await sitemapHead({ request: new Request(request, { method: 'HEAD' }), env: deadOrigin });
     check('HEAD is served from the same cache', warmHead.headers.get('x-sitemap-cache') === 'hit');
     check('HEAD from cache still has no body', (await warmHead.text()) === '');
+
+    // A query string must not fan the document out into a second cache entry.
+    const withQuery = await sitemapGet({ request: new Request('https://ellars.us.com/sitemap.xml?utm_source=x'), env: deadOrigin });
+    check('a query string still hits the one document entry', withQuery.headers.get('x-sitemap-cache') === 'hit', withQuery.headers.get('x-sitemap-cache'));
+    // One document entry, keyed by the synthetic path — not one per query string,
+    // and (with the origin down) no posts entry to accompany it.
+    check('no second document entry was created', stored.size === 1, [...stored.keys()].join(','));
+
+    // Now the case the first deploy got wrong: a previously good post list must
+    // survive an outage instead of the sitemap quietly dropping every dispatch.
+    stored.delete(documentKey);
+    stored.set(
+      postsKey,
+      new Response(JSON.stringify([{ loc: 'https://ellars.us.com/articles/known-good', lastmod: '2026-10-30T06:00:00', changefreq: 'monthly', priority: '0.8' }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+      })
+    );
+    const stale = await sitemapGet({ request, env: deadOrigin });
+    const staleXml = await stale.text();
+    check(
+      'an outage reuses the last good post list instead of dropping it',
+      staleXml.includes('<loc>https://ellars.us.com/articles/known-good</loc>'),
+      staleXml.match(/<loc>[^<]*articles[^<]*<\/loc>/)?.[0]
+    );
+    check('the response reports the stale post list', stale.headers.get('x-sitemap-cache') === 'miss-stale-posts', stale.headers.get('x-sitemap-cache'));
+    check('a stale-post document is cached for five minutes', stale.headers.get('x-sitemap-ttl') === '300', stale.headers.get('x-sitemap-ttl'));
   } finally {
     globalThis.caches = previous;
   }
