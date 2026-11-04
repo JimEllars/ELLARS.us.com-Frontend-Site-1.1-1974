@@ -1002,9 +1002,91 @@ the request itself is now simple enough not to need permission).
 - **`X-AXiM-Tenant` is a client-supplied tenancy header.** Nothing server-side reads it, and
   the guardrail says tenancy comes from `app_metadata.app_id`. If any RLS policy is ever
   written against a request header, this becomes a forgery vector. Recorded, not changed.
-- **The sitemap's `Cache-Control` is still advisory.** `s-maxage` does nothing on a Pages
-  Function; the Cache API is what enforces the hour. Both are sent, and `X-Sitemap-Cache`
-  reports which one answered.
+- **~~The sitemap's `Cache-Control` is still advisory.~~ Superseded by Sprint 2.22**, which
+  measured the consequence: `s-maxage` is not merely advisory on a Pages Function, it is
+  ignored, and `max-age` governed the Cache API entry. The response now states one lifetime
+  in `max-age` and nothing else.
+
+---
+
+## Sprint 2.22 — The sitemap cache repeated the defect it was written to fix
+
+**Branch:** `fix/sitemap-degraded-cache` · **Base:** `a9d5595` (main)
+
+### Why this cycle
+
+2.21 was verified against production minutes after merge — HEAD parity passed on all five
+paths, and the sitemap answered `x-sitemap-cache: hit` in 108 ms. It was also serving a
+**1,538-byte sitemap with no dispatches at all**, from cache, with
+`X-Sitemap-TTL: 60` … for over ten minutes. `cache-control: public, max-age=600,
+s-maxage=60`.
+
+Two mistakes, both mine, both measurable only in production:
+
+1. **`s-maxage` does not set a Cache API lifetime.** `caches.default` read `max-age=600`
+   from the same header. The TTL split the function was so proud of — "a degraded document
+   is cached for a minute, not an hour" — was decorative: the degraded document was stored
+   for ten minutes, and every crawler that arrived in that window was told the site has no
+   articles.
+2. **A 2.5 s timeout is too tight for a cold worker.** The origin answers in ~0.9 s warm
+   and was measured at 4.0 s on the first request after a deploy. The very first request
+   through the new code hit that ceiling, produced a degraded document, and the code then
+   did the worst possible thing with it: cached it.
+
+The lesson is not "the timeout was wrong". It is that a fallback which **deletes** content
+it cannot see is worse than a stale answer, and that a cache lifetime has to be enforced by
+the number the cache actually reads.
+
+### Shipped — `functions/sitemap.xml.js`
+
+- **One lifetime, in `max-age`.** `s-maxage` is gone from the response. Measured, not
+  assumed: the directive named in the previous cycle's comment was not the one being read.
+- **The last good post list is kept separately and survives an outage.**
+  `POSTS_CACHE_KEY_PATH` stores the mapped post entries for an hour; when the origin does
+  not answer, the sitemap is rebuilt from that list and reported as `miss-stale-posts`
+  (cache TTL 300 s) instead of published with the dispatches removed. A WordPress blip no
+  longer makes the articles disappear from the sitemap.
+- **Versioned, synthetic cache keys** (`/__edge-cache/sitemap-v2`,
+  `/__edge-cache/sitemap-posts-v2`). A document written by an older deployment cannot be
+  inherited by this one — which is exactly the state the previous cycle left in a colo — and
+  a crawler appending `?utm_source=` cannot fan one document out into many entries.
+- **Origin timeout raised 2.5 s → 6 s**, above the 4.0 s measured cold-start worst case.
+- `X-Sitemap-Cache` now distinguishes `miss` / `hit` / `miss-degraded` /
+  `miss-stale-posts`.
+
+### Tests
+
+`scripts/smoke-functions.mjs`: **199 assertions** (was 191). New:
+- the stored lifetime is asserted as `public, max-age=60` and the absence of `s-maxage` is
+  asserted separately, so the regression cannot be reintroduced by re-adding a hint;
+- a cold response is stored under the **versioned synthetic key**, and *not* under the
+  incoming URL;
+- a query string hits the same single document entry;
+- a previously good post list is reused through an outage, reported as `miss-stale-posts`,
+  and cached for 300 s.
+
+The fake cache now clones on read the way `caches.default` does — the first version handed
+back the same object and failed on the second read, which is a fake that does not behave
+like the thing it stands in for.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm test` **81 + 199 = 280 assertions, 0 failed** ·
+`npm run build` clean · `wrangler pages dev dist`: `/sitemap.xml` → 67 URLs,
+`max-age=3600`, **miss 736 ms → hit 9 ms**.
+
+### Known limits
+
+- **The stale-post list is per-colo.** `caches.default` is not a global store, so a colo
+  that has never served a good sitemap has nothing to fall back on. The window is one
+  request wide per colo, and the cost is a `miss-degraded` document, not a wrong one.
+- **A degraded document is still published when there is nothing to fall back to.** That is
+  the honest answer — 4 static routes and 6 directives are real URLs — but it is a thinner
+  sitemap than a crawler would like, and the only cure is a reachable origin.
+- **Production verification is manual.** The failure this cycle fixes was invisible to
+  local tests and to CI: both ran the same code that passed. Nothing in the pipeline
+  asserts the *deployed* sitemap contains dispatches. A post-deploy probe would have caught
+  it in seconds; there is still no post-deploy probe.
 
 ---
 
@@ -1022,7 +1104,7 @@ the request itself is now simple enough not to need permission).
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **191 assertions** in CI (plus 81 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **199 assertions** in CI (plus 81 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
@@ -1039,10 +1121,15 @@ the request itself is now simple enough not to need permission).
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.22+)
+## Roadmap Milestones (Sprint 2.23+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
+- **Add a post-deploy probe.** Both defects of 2.21/2.22 were invisible to CI and to local
+  runs — the pipeline executes the same code that passed. A scheduled check against
+  production (`/sitemap.xml` contains at least one `/articles/` URL, `HEAD` matches `GET` on
+  the five paths in the 2.21 table, `/api/config` → `configured:true`) would have caught
+  both in seconds. This is the highest-value remaining item that needs no external access.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.

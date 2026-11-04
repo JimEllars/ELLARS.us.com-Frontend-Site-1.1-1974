@@ -21,6 +21,25 @@
  * 3. **The WordPress fetch had no timeout.** A hung origin held the worker until
  *    the platform killed it; measured cold at 4.0 s against a 0.7 s origin.
  *
+ * ## What the first deploy of the above taught, measured in production
+ *
+ * A 2.5 s timeout was too tight for a cold worker, and `s-maxage` alone does not
+ * control a Cache API entry: the stored response also carried `max-age=600`, so
+ * the **degraded** document (4 static routes and 6 directives, no dispatches)
+ * was served from cache for ten minutes after the origin had recovered. `s-maxage`
+ * is a hint for intermediary proxies; `caches.default` read `max-age`. Two rules
+ * follow, and both are now enforced here:
+ *
+ *  - `Cache-Control` on a stored response states the same lifetime in `max-age`
+ *    that the code intends. One number, honoured by everything.
+ *  - A failure never erases what it cannot see. The post list is kept in its own
+ *    cache entry, and a failed origin reuses the last good one instead of
+ *    publishing a sitemap that pretends the dispatches do not exist.
+ *
+ * The cache keys are versioned and synthetic for the same reason: an entry
+ * written by an older deployment cannot be inherited by this one, and a crawler
+ * adding `?utm=` cannot fan the document out into a hundred cache entries.
+ *
  * Two details that matter:
  *
  * 1. WordPress returns naive local timestamps ("2026-10-30T06:00:00", no zone).
@@ -38,8 +57,23 @@ const DEFAULT_WP_API = "https://wp.ellars.us.com/wp-json/wp/v2";
 const CACHE_SECONDS_OK = 3600;
 const CACHE_SECONDS_DEGRADED = 60;
 
-/** A shared origin that has not answered in this long is not going to. */
-const WP_TIMEOUT_MS = 2500;
+/** How long a post list is reused when the origin is unreachable. */
+const CACHE_SECONDS_STALE_POSTS = 300;
+
+/**
+ * A shared origin that has not answered in this long is not going to.
+ * 2.5 s was measured to be too tight for a cold worker against this origin; the
+ * same fetch took ~0.9 s warm and 4.0 s on the first request after a deploy.
+ */
+const WP_TIMEOUT_MS = 6000;
+
+/**
+ * Cache keys. Deliberately synthetic and versioned: they are not routable paths,
+ * so they cannot collide with a page, and a document written by an older
+ * deployment cannot be served by this one.
+ */
+export const CACHE_KEY_PATH = "/__edge-cache/sitemap-v2";
+export const POSTS_CACHE_KEY_PATH = "/__edge-cache/sitemap-posts-v2";
 
 // Mirrors the router in src/App.jsx. Keep in sync when a route is added.
 const STATIC_ROUTES = [
@@ -155,40 +189,56 @@ const buildSitemap = (postEntries = []) => {
 
 const headersFor = ({ cacheState, ttl }) => ({
   "Content-Type": "application/xml; charset=utf-8",
-  // Kept honest: `s-maxage` is advisory only for a Pages Function, so the Cache
-  // API below is what actually enforces the hour. `X-Sitemap-Cache` makes the
-  // difference visible from a single curl instead of an inference, and
-  // `X-Sitemap-TTL` carries the stored lifetime across a cache hit (a degraded
-  // document is stored for a minute, not an hour).
-  "Cache-Control": `public, max-age=600, s-maxage=${ttl}`,
+  // One lifetime, stated in `max-age`, because that is the directive the Cache
+  // API actually reads. `s-maxage` alone was measured to be ignored: a degraded
+  // document stored with `max-age=600, s-maxage=60` was still being served ten
+  // minutes later, with its dispatches missing.
+  "Cache-Control": `public, max-age=${ttl}`,
+  // Visible from one curl instead of inferred from a payload diff.
   "X-Sitemap-Cache": cacheState,
   "X-Sitemap-TTL": String(ttl),
   "X-Content-Type-Options": "nosniff",
 });
 
-const xmlResponse = (xml, method, meta) =>
-  new Response(method === "HEAD" ? null : xml, {
-    status: 200,
-    headers: headersFor(meta),
-  });
+/**
+ * Reads a cache entry as text, tolerating a missing cache or a failed read.
+ * Returns `null` when there is nothing usable.
+ */
+const cacheRead = async (cache, key) => {
+  if (!cache) return null;
+  try {
+    const hit = await cache.match(key);
+    if (!hit) return null;
+    return hit;
+  } catch (error) {
+    console.warn("sitemap: edge cache read failed", error?.message);
+    return null;
+  }
+};
+
+const cacheWrite = async (cache, key, response, waitUntil) => {
+  if (!cache) return;
+  const write = cache
+    .put(key, response)
+    .catch((error) => console.warn("sitemap: edge cache write failed", error?.message));
+  if (typeof waitUntil === "function") waitUntil(write);
+  else await write;
+};
 
 async function serve({ request, env, waitUntil }, method = "GET") {
   const cache = typeof caches !== "undefined" && caches?.default ? caches.default : null;
+  const origin = new URL(request.url).origin;
+  const documentKey = `${origin}${CACHE_KEY_PATH}`;
+  const postsKey = `${origin}${POSTS_CACHE_KEY_PATH}`;
 
-  if (cache) {
-    try {
-      const hit = await cache.match(request);
-      if (hit) {
-        const storedTtl = Number(hit.headers.get("X-Sitemap-TTL"));
-        const ttl = Number.isFinite(storedTtl) && storedTtl > 0 ? storedTtl : CACHE_SECONDS_OK;
-        return new Response(method === "HEAD" ? null : await hit.text(), {
-          status: 200,
-          headers: headersFor({ cacheState: "hit", ttl }),
-        });
-      }
-    } catch (error) {
-      console.warn("sitemap: edge cache read failed", error?.message);
-    }
+  const hit = await cacheRead(cache, documentKey);
+  if (hit) {
+    const storedTtl = Number(hit.headers.get("X-Sitemap-TTL"));
+    const ttl = Number.isFinite(storedTtl) && storedTtl > 0 ? storedTtl : CACHE_SECONDS_OK;
+    return new Response(method === "HEAD" ? null : await hit.text(), {
+      status: 200,
+      headers: headersFor({ cacheState: "hit", ttl }),
+    });
   }
 
   const wpApi = env?.WP_API_URL || DEFAULT_WP_API;
@@ -198,32 +248,58 @@ async function serve({ request, env, waitUntil }, method = "GET") {
     postEntries = await parsePosts(wpApi);
   } catch (error) {
     // A WordPress outage must not take the sitemap down with it; the static
-    // routes and directives are still valid.
+    // routes and directives are still valid, and so is the last good post list.
     console.warn("sitemap: WordPress unavailable", error?.message);
   }
 
-  const degraded = postEntries === null;
-  const xml = buildSitemap(postEntries || []);
-  const ttl = degraded ? CACHE_SECONDS_DEGRADED : CACHE_SECONDS_OK;
+  let cacheState = "miss";
+  let ttl = CACHE_SECONDS_OK;
 
-  // Only cache what we are willing to serve for the whole TTL. A degraded
-  // document is cached briefly on purpose, so a crawler that arrives during an
-  // outage is not answered from a truncated sitemap for the next hour.
-  if (cache) {
-    const store = cache
-      .put(
-        request,
-        new Response(xml, {
-          status: 200,
-          headers: headersFor({ cacheState: "stored", ttl }),
-        })
-      )
-      .catch((error) => console.warn("sitemap: edge cache write failed", error?.message));
-    if (typeof waitUntil === "function") waitUntil(store);
-    else await store;
+  if (postEntries === null) {
+    // The origin did not answer. Reusing the last good post list is the whole
+    // point of keeping it separately: a sitemap that silently drops every
+    // dispatch because of one failed fetch is a worse answer than a stale one.
+    const stale = await cacheRead(cache, postsKey);
+    const staleEntries = stale ? await stale.json().catch(() => null) : null;
+    if (Array.isArray(staleEntries) && staleEntries.length) {
+      postEntries = staleEntries;
+      cacheState = "miss-stale-posts";
+      ttl = CACHE_SECONDS_STALE_POSTS;
+    } else {
+      cacheState = "miss-degraded";
+      ttl = CACHE_SECONDS_DEGRADED;
+    }
+  } else {
+    await cacheWrite(
+      cache,
+      postsKey,
+      new Response(JSON.stringify(postEntries), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${CACHE_SECONDS_OK}`,
+        },
+      }),
+      waitUntil
+    );
   }
 
-  return xmlResponse(xml, method, { cacheState: degraded ? "miss-degraded" : "miss", ttl });
+  const xml = buildSitemap(postEntries || []);
+
+  // Cache the document for exactly the lifetime it is allowed to live. A
+  // degraded document is short-lived on purpose, so a crawler that arrives
+  // during an outage is not answered from a truncated sitemap for an hour.
+  await cacheWrite(
+    cache,
+    documentKey,
+    new Response(xml, { status: 200, headers: headersFor({ cacheState: "stored", ttl }) }),
+    waitUntil
+  );
+
+  return new Response(method === "HEAD" ? null : xml, {
+    status: 200,
+    headers: headersFor({ cacheState, ttl }),
+  });
 }
 
 export async function onRequestGet(context) {
