@@ -22,7 +22,8 @@
  *     had no reason to drop it.
  *
  * Scope, deliberately narrow:
- *  - only GET;
+ *  - GET and HEAD (HEAD is GET with the body dropped; answering it any other way
+ *    makes a monitor or a link checker disagree with a browser);
  *  - never `/api/*`, `/cdn-cgi/*`, `/sitemap.xml` or the shell itself (those own
  *    their responses, and an unknown API route is a JSON 404, not an HTML one);
  *  - `/assets/*` shares the file rule with functions/assets/[[path]].js;
@@ -46,7 +47,16 @@ import {
 import { isReservedPath, isStaticFileRequest, serveFileOr404 } from '../lib/edge/assets.js';
 
 export async function onRequest({ request, next, env }) {
-  if (request.method !== 'GET') return next();
+  // `HEAD` is answered by the same code path as `GET`, with the body dropped.
+  //
+  // It used to be answered by `_redirects` instead, because this handler bailed
+  // out on anything that was not GET: `HEAD /screenshot.png` returned the SPA
+  // shell as `text/html` with a 200, `HEAD /nonexistent` returned a 200 where
+  // `GET` correctly returned 404, and every uptime monitor, link checker and
+  // crawling tool that probes with HEAD was told the opposite of what a browser
+  // is told. A status must not depend on the verb used to ask for it.
+  const isHead = request.method === 'HEAD';
+  if (request.method !== 'GET' && !isHead) return next();
 
   const url = new URL(request.url);
   if (isReservedPath(url.pathname)) return next();
@@ -60,7 +70,9 @@ export async function onRequest({ request, next, env }) {
   // document branch, where `/robots.txt` answered `404` to any client sending
   // `Accept: text/html`.
   if (isStaticFileRequest(url.pathname)) {
-    return serveFileOr404(request, env);
+    const file = await serveFileOr404(request, env);
+    if (!isHead) return file;
+    return new Response(null, { status: file.status, headers: file.headers });
   }
 
   if (!wantsDocument(request)) return next();
@@ -97,5 +109,5 @@ export async function onRequest({ request, next, env }) {
     headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
   }
 
-  return new Response(applyMeta(html, meta), { status: isNotFound ? 404 : 200, headers });
+  return new Response(isHead ? null : applyMeta(html, meta), { status: isNotFound ? 404 : 200, headers });
 }

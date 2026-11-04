@@ -34,7 +34,10 @@ import { execFileSync } from 'node:child_process';
 import {
   DIRECTIVE_SLUGS,
   STATIC_ROUTES,
+  buildSitemap,
   escapeXml,
+  onRequestGet as sitemapGet,
+  onRequestHead as sitemapHead,
   toUtcIso,
 } from '../functions/sitemap.xml.js';
 
@@ -207,6 +210,71 @@ check('unparseable timestamp -> omitted', toUtcIso('nope') === null);
 check('static route table mirrors the router', STATIC_ROUTES.length === 4, String(STATIC_ROUTES.length));
 check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length === 6, String(DIRECTIVE_SLUGS.length));
 
+// A HEAD on /sitemap.xml used to fall through `_redirects` to the SPA shell, so a
+// tool that probed the sitemap first was told `text/html`. And the response
+// advertised an hour of edge caching while `cf-cache-status` measured DYNAMIC on
+// every repeat: a Pages Function is not implicitly cached, so the Cache API is
+// now what holds the document, and these assert both halves.
+{
+  // Deterministic failure: port 1 refuses immediately, so "WordPress is down" is
+  // exercised without reaching the network.
+  const deadOrigin = { WP_API_URL: 'http://127.0.0.1:1/wp-json/wp/v2' };
+  const request = new Request('https://ellars.us.com/sitemap.xml');
+
+  const head = await sitemapHead({ request: new Request(request, { method: 'HEAD' }), env: deadOrigin });
+  check('HEAD /sitemap.xml is answered by the sitemap, not the SPA shell', head.status === 200, String(head.status));
+  check(
+    'HEAD /sitemap.xml declares XML',
+    head.headers.get('content-type') === 'application/xml; charset=utf-8',
+    head.headers.get('content-type')
+  );
+  check('HEAD /sitemap.xml carries no body', (await head.text()) === '');
+
+  const get = await sitemapGet({ request, env: deadOrigin });
+  const xml = await get.text();
+  check('a degraded sitemap still serves the static routes', xml.includes('<loc>https://ellars.us.com/platform</loc>'));
+  check('a degraded sitemap keeps all six directives', DIRECTIVE_SLUGS.every((slug) => xml.includes(`/platform/${slug}<`)));
+  check(
+    'a degraded sitemap is cached for a minute, not an hour',
+    get.headers.get('x-sitemap-ttl') === '60',
+    get.headers.get('x-sitemap-ttl')
+  );
+  check('an uncached response says so', get.headers.get('x-sitemap-cache') === 'miss-degraded', get.headers.get('x-sitemap-cache'));
+
+  // A hit must be served without touching WordPress again. The fake cache stores
+  // whatever the handler puts, which is the same contract caches.default offers.
+  const stored = new Map();
+  const fakeCache = {
+    match: async (req) => stored.get(req.url),
+    put: async (req, response) => {
+      stored.set(req.url, response);
+      return undefined;
+    },
+  };
+  const previous = globalThis.caches;
+  globalThis.caches = { default: fakeCache };
+  try {
+    const cold = await sitemapGet({ request, env: deadOrigin });
+    await cold.text();
+    check('a cold response is stored', stored.has(request.url));
+    const warm = await sitemapGet({ request, env: deadOrigin });
+    const warmXml = await warm.text();
+    check('a warm response is served from the edge cache', warm.headers.get('x-sitemap-cache') === 'hit', warm.headers.get('x-sitemap-cache'));
+    check('the cached document is the one that was built', warmXml === xml);
+    check('the cached lifetime survives the hit', warm.headers.get('x-sitemap-ttl') === '60', warm.headers.get('x-sitemap-ttl'));
+    const warmHead = await sitemapHead({ request: new Request(request, { method: 'HEAD' }), env: deadOrigin });
+    check('HEAD is served from the same cache', warmHead.headers.get('x-sitemap-cache') === 'hit');
+    check('HEAD from cache still has no body', (await warmHead.text()) === '');
+  } finally {
+    globalThis.caches = previous;
+  }
+
+  const built = buildSitemap([{ loc: 'https://ellars.us.com/articles/example', lastmod: '2026-10-30T06:00:00' }]);
+  check('the sitemap declares its namespace', built.includes('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'));
+  check('post entries reach the document', built.includes('<loc>https://ellars.us.com/articles/example</loc>'));
+  check('every static route is present', STATIC_ROUTES.every((route) => built.includes(`<loc>https://ellars.us.com${route.path}</loc>`)));
+}
+
 describe('lib/edge/meta.js');
 {
   const home = resolveMeta('/', SITE_ORIGIN);
@@ -361,6 +429,32 @@ describe('lib/edge/meta.js');
   const unknownRoute = new Request('https://ellars.us.com/api/config', { headers: { accept: 'text/html' } });
   const passedUnknown = await middleware({ request: unknownRoute, env, next: () => new Response(null, { status: 204 }) });
   check('middleware never touches /api/*', passedUnknown.status === 204);
+
+  // HEAD must agree with GET. Before Sprint 2.21 the handler bailed out on
+  // anything that was not GET, so `_redirects` answered every HEAD with the SPA
+  // shell and a 200 — including for files and routes that do not exist.
+  const headRoute = new Request('https://ellars.us.com/about', { method: 'HEAD', headers: { accept: 'text/html' } });
+  const headDocument = await middleware({ request: headRoute, env, next: () => new Response(null, { status: 204 }) });
+  check('HEAD is answered by the middleware, not the rewrite', headDocument.status === 200, String(headDocument.status));
+  check('HEAD carries no body', (await headDocument.text()) === '');
+  check(
+    'HEAD keeps the document content type',
+    /text\/html/.test(headDocument.headers.get('Content-Type') || ''),
+    headDocument.headers.get('Content-Type')
+  );
+
+  const headUnknown = new Request('https://ellars.us.com/not-a-route', { method: 'HEAD', headers: { accept: 'text/html' } });
+  const headNotFound = await middleware({ request: headUnknown, env, next: () => new Response(null, { status: 204 }) });
+  check('HEAD on an unknown route is a 404, exactly like GET', headNotFound.status === 404, String(headNotFound.status));
+
+  const headAsset = new Request('https://ellars.us.com/foo.png', { method: 'HEAD', headers: { accept: '*/*' } });
+  const headAssetMiss = await middleware({ request: headAsset, env, next: () => new Response(null, { status: 204 }) });
+  check('HEAD on a missing asset is a 404, not the shell', headAssetMiss.status === 404, String(headAssetMiss.status));
+  check('HEAD on a missing asset carries no body', (await headAssetMiss.text()) === '');
+
+  const headPost = new Request('https://ellars.us.com/about', { method: 'POST', headers: { accept: 'text/html' } });
+  const postPassed = await middleware({ request: headPost, env, next: () => new Response(null, { status: 204 }) });
+  check('a non-GET, non-HEAD verb is still passed through untouched', postPassed.status === 204);
 }
 
 describe('lib/edge/assets.js');
