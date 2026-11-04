@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import SafeIcon from '@/common/SafeIcon';
 
 const NotFound = () => {
@@ -16,10 +15,7 @@ const NotFound = () => {
 
   return (
     <div className="bg-[#050505] min-h-screen flex flex-col items-center justify-center text-center px-6">
-      <Helmet>
-        <title>404 Signal Lost | James Ellars</title>
-        <meta name="robots" content="noindex, follow" />
-      </Helmet>
+      {/* Title and `noindex, follow` come from <RouteMeta /> (NOT_FOUND_META in lib/edge/meta.js), which is the same object the middleware serves with the 404. */}
       <div className="deco-frame max-w-lg w-full border border-yellow-electric/30 p-12 text-center rounded-sm font-mono text-zinc-400">
         <SafeIcon name="AlertTriangle" className="w-12 h-12 text-yellow-electric/80 mx-auto mb-6" />
         <h1 className="text-yellow-electric text-3xl md:text-5xl font-deco uppercase tracking-widest mb-6">

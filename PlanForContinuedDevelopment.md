@@ -522,6 +522,132 @@ Before the fix the same probe left the new worker `waiting` forever and the mark
 
 ---
 
+## Sprint 2.17 — Every hydrated document declared its identity twice
+
+**Branch:** `fix/head-metadata-single-owner` · **Base:** `9bf4da9` (main)
+
+### Why this cycle
+
+Open item 13, the decision 2.15 deliberately deferred: after hydration the document
+carried two of each identity tag. Measured in a browser on `/news-media` before the
+change — `description` ×2, `og:title` ×2, `og:description` ×2, `og:type` ×2,
+`og:url` ×2, `og:image` ×2, 27 `<meta>` nodes where 21 belong. `index.html` declares
+the set (and the middleware rewrites it per route), then each page's `<Helmet>`
+appends its own copy. Two more findings came out of reading what those copies
+actually said:
+
+- **They had already drifted from the edge.** `/news-media` advertised
+  `og:title` "News & Media Hub | James Ellars" in the DOM while the `<title>`, the
+  edge table and the share card said "…| Official". `Home` said
+  "James Ellars | The Blueprint"; `description` on three pages was template
+  residue ("Leading American innovation through disruptive systems…") that no
+  other surface agreed with.
+- **Every page except dispatches pointed `og:image` at `wp.axim.us.com`** — the
+  legacy WordPress host, four times, on a site whose first architectural rule is
+  that nothing routes to legacy infrastructure. Worse, the shell's
+  `og:image:width`/`height`/`type` (which describe `/og-card.png`, 1200×630)
+  survived next to the duplicate image, so the document sized an image it no
+  longer declared.
+
+### What was built
+
+**One table, one client writer** — `src/lib/headMeta.js`, `src/components/common/RouteMeta.jsx`
+- `RouteMeta` emits `title`, `description`, `robots`, `og:type`, `og:title`,
+  `og:description`, `og:url`, `twitter:title`, `twitter:description` and the
+  canonical, resolved from **the same table the middleware and sitemap already
+  share** (`lib/edge/meta.js`). Hydration is now a no-op by construction instead of
+  by eight hand-copied string pairs staying in sync.
+- It replaces `<CanonicalUrl />` (deleted), a third writer that owned only
+  canonical + `og:url`. Normalisation is unchanged: trailing slashes stripped,
+  query/hash dropped.
+- `/articles/:slug` returns `null` on purpose. A dispatch's title, excerpt and share
+  image come from WordPress, so `ArticleDetail.jsx` remains that route's only
+  writer — two writers on one route is the defect being removed.
+
+**Ownership hand-off for the shell's copy** — `src/components/common/HeadOwnership.jsx`
+- The shell's tags are not React's, so Helmet appends rather than replaces. This
+  component waits one frame (react-helmet-async commits inside a
+  `requestAnimationFrame` — its `defer: true` default), then removes the shell's
+  copy of any key the client has written, and only those. A document that never
+  hydrates keeps its metadata; a field the page does not declare is never blanked.
+- It also drops the shell's `og:image:*` hints when a client `og:image` names a
+  *different* file, which is the dispatch case (featured image, not site card).
+- The decision is a pure function (`planHeadDedupe`) asserted in CI; the component
+  only applies it. Re-runs on pathname change and is idempotent, so StrictMode's
+  double-invoked effects cannot keep eating tags.
+
+**Eight pages stopped writing route metadata** — `Home`, `Platform`, `About`,
+`NewsMedia`, `DirectiveDetail`, `Login`, `Dashboard`, `NotFound`
+- Removed every `<title>`, `description`, `og:*` and `twitter:*`. Each page keeps
+  what is genuinely page-local: its JSON-LD (Home/Platform/About), and
+  `DirectiveDetail` keeps its slug list — now guarded against `DIRECTIVE_META`
+  drifting from it.
+- `Login`/`Dashboard`/`NotFound` no longer render a `<Helmet>` at all; their
+  identity comes from `NOINDEX_ROUTES`/`NOT_FOUND_META`, the same objects the edge
+  serves. `ArticleDetail` gained `og:type=article`.
+
+### Tests
+
+`npm test` → **222 assertions**, all passing (158 before: 11 client + 147 edge). New ones:
+
+- **Client parity** (`scripts/smoke-client.mjs`, 63 assertions, was 11): for every
+  route in the table — `/`, `/platform`, `/about`, `/news-media`, `/login`,
+  `/dashboard` and all six directives — the client's title, description, robots and
+  canonical must equal `resolveMeta()`'s. Parity is asserted *against the edge
+  module*, not against re-typed strings, so a copy edit cannot leave a stale test
+  behind. Plus: a dispatch path yields `null`, an unknown path and an unknown
+  directive resolve to `NOT_FOUND_META` (no canonical), `og:url` falls back to the
+  site root, and nine dedupe-plan cases including idempotence.
+- **Source guards** (`scripts/smoke-functions.mjs`): no page component writes
+  `<title>`/`og:*`/`description`/`twitter:*`; `headMeta` still imports the edge
+  table; `RouteMeta`/`HeadOwnership` are mounted and `CanonicalUrl` is gone;
+  `DirectiveDetail`'s slugs match `DIRECTIVE_META`; no `og:*` tag names the legacy
+  host; the shell declares each managed key at most once. The guards read code, not
+  prose — the first version tripped on a 2.15 comment that quotes the banned
+  pattern, and a guard that fails on its own documentation gets deleted rather than
+  fixed.
+
+### Verified (real browser, `vite preview`, fresh origin)
+
+- `/news-media` → **0 duplicate keys**, one `<title>`, one canonical, 21 `<meta>`
+  nodes (was 27), `og:image` = `https://ellars.us.com/og-card.png`.
+- `/` → "Home | James Ellars | Official"; **client-side click to `/about`** →
+  "About James Ellars | Bridging Main Street" with canonical and `og:url` both
+  `/about`, 0 duplicates (the frame-ordering case, not just first load).
+- `/platform` → edge title, `description` from the table, both JSON-LD blocks intact.
+- `/platform/political-reform` → "POLITICAL REFORM Policy | James Ellars", which is
+  what `DirectiveDetail` used to compose by hand — now from the table.
+- `/no-such-page` → "404 Signal Lost | James Ellars", `noindex, follow`, **no**
+  canonical, `og:url` = site root: identical to what the middleware serves with the
+  404.
+- `/dashboard` unauthenticated → redirects to `/login`, settles on "Auth Gateway |
+  James Ellars", `noindex, nofollow`, canonical `/login`.
+- `/articles/prices-and-paychecks` with WordPress unreachable → "Transmission
+  Error | James Ellars", `noindex`, shell card retained **with** its 1200×630 hints
+  because no competing image won. 0 duplicates.
+- `eslint --max-warnings=0` clean; `npm run build` clean; `200.html` byte-identical
+  to `index.html`; 0 `.map` files; precache 35 entries.
+
+### Known limits
+
+- **A dispatch's canonical is still the post URL even in the "Transmission Error"
+  state.** The edge cannot know a slug is bad without fetching WordPress, and the
+  client error state no longer sets a canonical at all, so the edge's stands. It is
+  `noindex`, which is the part that matters for a crawler.
+- **Per-article `og:image` is still not visible to scrapers**, and now it is explicit
+  rather than accidental: scrapers do not execute JavaScript, so a client-emitted
+  featured image never reached them — the roster of dispatch cards they saw was the
+  site card all along. `ArticleDetail` keeps emitting it (in-browser share surfaces
+  use it) and the shell hints are dropped when it wins. Doing it properly is the
+  roadmap item, and it needs the image at the edge, not in an effect.
+- **`og:type` is `website` for every non-dispatch route**, including directives.
+  Uniform on purpose: the shell declares it, the client now repeats it, and a
+  per-route value would be a fifth thing to keep in sync for no crawlable benefit.
+- **`index.html`'s static `keywords`/`author` remain shell-only** and are untouched by
+  the hand-off. They are the same on every route and nobody else writes them.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -536,11 +662,11 @@ Before the fix the same probe left the new worker `waiting` forever and the mark
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **147 assertions** in CI (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM — those want `vitest` as a real dependency. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **159 assertions** in CI (plus 63 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
 | 10 | **Repo hygiene (sourcemaps closed in 2.15)** | Next cycle | `build.sourcemap` is now `false`: **0** `.map` files in `dist/`, 5.2 MB → 1.2 MB (2.15). Remaining: 556 kB of loose PNGs at the repo root and `commit_message.txt`. (`scripts/copy-spa-fallback.mjs` no longer exists on main.) |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
-| 13 | **`og:title` and `description` are declared twice per document** | Design decision | `index.html` declares both (and `functions/_middleware.js` rewrites them per route, so the first — and correct — value is what a crawler sees), then each page's `<Helmet>` appends a second. Measured in 2.15: `/news-media` carries `og:title` ×2 and `description` ×2. No crawler is misled, but the DOM contradicts itself. Two candidate fixes: a mount-time head-dedupe that keeps Helmet's copy, or removing page-level `og:*`/`description` from the four static routes the edge already covers. Deliberately not decided mid-sweep. |
+| 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
 
 ---
 
@@ -550,9 +676,9 @@ Before the fix the same probe left the new worker `waiting` forever and the mark
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.17+)
+## Roadmap Milestones (Sprint 2.18+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
-- Decide the double-metadata question: head-dedupe on mount, or drop page-level `og:*` for edge-covered routes (open item 13, found in 2.15).
+- ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
 - Expand D1 querying components on the frontend to visualise site telemetry (now that events actually arrive).
 - Optimise caching and payload sizes for Vault and WP API requests.

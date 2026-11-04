@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import EmptyState from '@/components/common/EmptyState';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
 import SafeIcon from '@/common/SafeIcon';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import AutomationCalculator from '@/components/intel/AutomationCalculator';
@@ -237,10 +236,8 @@ const DirectiveDetail = () => {
         style={{ scaleX, transformOrigin: '0%' }}
       />
 
-      <Helmet>
-          <title>Validating Directive | James Ellars</title>
-          <meta name="robots" content="noindex" />
-        </Helmet>
+      {/* A valid directive already has its title from <RouteMeta />; an unknown
+          slug resolves to NOT_FOUND_META, the same identity the edge serves. */}
         <div className="deco-frame border border-yellow-electric/20 p-12 text-center max-w-md bg-surface">
           <div className="w-8 h-8 border-2 border-yellow-electric border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <h1 className="tracking-[0.2em] uppercase font-deco font-normal text-xl text-yellow-electric mb-4">
@@ -254,10 +251,8 @@ const DirectiveDetail = () => {
   if (!directive) {
     return (
       <div className="min-h-screen bg-void pt-32 pb-20 px-6 flex flex-col items-center justify-center bg-grid relative">
-        <Helmet>
-          <title>Directive Not Found | James Ellars</title>
-          <meta name="robots" content="noindex" />
-        </Helmet>
+        {/* Unknown slug: RouteMeta resolves NOT_FOUND_META (404 Signal Lost,
+            noindex), matching the 404 the edge returns for this path. */}
         <EmptyState message="Transmission Interrupted - Invalid Directive" />
         <Link
           to="/platform"
@@ -276,10 +271,9 @@ const DirectiveDetail = () => {
         style={{ scaleX, transformOrigin: '0%' }}
       />
 
-      <Helmet>
-        <title>{`${directive.title} Policy | James Ellars`}</title>
-        <meta name="description" content={directive.description} />
-      </Helmet>
+      {/* Title and description come from <RouteMeta />, which resolves this slug
+          through DIRECTIVE_META — the same table the edge writes into the raw
+          shell, so a directive's tab title and its crawler title cannot drift. */}
 
       <div className="max-w-4xl mx-auto px-6 relative z-10">
         <Link to="/platform" className="inline-flex items-center text-yellow-electric text-xs uppercase tracking-widest hover:text-white transition-colors mb-12 border border-yellow-electric/20 px-4 py-2 hover:bg-yellow-electric/10">

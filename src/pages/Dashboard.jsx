@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSWR, { useSWRConfig } from 'swr';
 import { fetchSavedVaultItems, deleteVaultItem, archiveVaultItem, restoreVaultItem, stripHtml, formatDate } from '@/lib/api';
@@ -310,10 +309,7 @@ useEffect(() => {
 
   return (
     <>
-      <Helmet>
-        <title>Secure Dashboard | James Ellars</title>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      {/* Title and noindex robots come from <RouteMeta /> (NOINDEX_ROUTES in lib/edge/meta.js). */}
 
       <div className="min-h-screen pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 

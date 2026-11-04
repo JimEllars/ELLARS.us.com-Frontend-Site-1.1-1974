@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
 import { useAppStore } from '@/store/useAppStore';
 import { loginUser } from '@/lib/api';
 
@@ -41,10 +40,7 @@ const Login = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Auth Gateway | James Ellars</title>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      {/* Title and noindex robots come from <RouteMeta /> (NOINDEX_ROUTES in lib/edge/meta.js). */}
 
       <div className="min-h-screen bg-void flex items-center justify-center p-6 relative overflow-hidden">
         {/* Background Gradients */}

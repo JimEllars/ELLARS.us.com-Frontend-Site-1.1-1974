@@ -2,7 +2,6 @@ import MediaPlaylist from '../components/intel/MediaPlaylist';
 import React, { useEffect, useState, useRef } from 'react';
 import { useLoader } from '@/components/Layout';
 import SafeIcon from '@/common/SafeIcon';
-import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { getLatestPosts, getSocialFeed, stripHtml, formatDate, fetchLatestNews } from '@/lib/api';
 import DOMPurify from 'dompurify';
@@ -75,10 +74,11 @@ const SocialSkeleton = () => (
 );
 
 const NewsMedia = () => {
-  // Title and description are declared in <Helmet> below (and mirrored in the raw
-  // shell by lib/edge/meta.js). The effect that assigned document.title here won
-  // over Helmet and produced "Ellars for Congress | News & Media" in the tab for a
-  // page whose crawler title was "News & Media Hub | James Ellars | Official".
+  // Title and description are owned by <RouteMeta />, resolved from the same table
+  // the edge middleware uses (lib/edge/meta.js). The effect that assigned
+  // document.title here used to win over Helmet and produced "Ellars for Congress |
+  // News & Media" in the tab for a page whose crawler title was
+  // "News & Media Hub | James Ellars | Official".
   const { setIsLoading } = useLoader();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [posts, setPosts] = useState([]);
@@ -220,15 +220,6 @@ const NewsMedia = () => {
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-transparent">
-      <Helmet>
-        <meta name="robots" content="index, follow" />
-        <title>News & Media Hub | James Ellars | Official</title>
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="News & Media Hub | James Ellars" />
-        <meta property="og:image" content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1" />
-        <meta name="description" content="Leading American innovation through disruptive systems and algorithmic economic equity. Sovereign Innovation." />
-        <meta property="og:description" content="James Ellars' updates on American innovation and economic freedom" />
-      </Helmet>
       <div className="max-w-7xl mx-auto px-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="max-w-2xl">
