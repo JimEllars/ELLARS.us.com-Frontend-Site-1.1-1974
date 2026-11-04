@@ -816,13 +816,23 @@ as though it covered the tree.
 - `deepmerge` 4.3.1 (GHSA-gcqx-w48m-w2h4, low): **no fixed version exists**. It reaches us
   through `@rollup/plugin-node-resolve` → `workbox-build` → `vite-plugin-pwa`.
 
-**The reconciliation is now mechanical** — `.github/workflows/verify.yml`
-- New step **Sweep Dependabot alerts**: reads the GitHub advisory database (the authority
-  here), prints every open alert as `severity / scope / package@version / GHSA` on every
-  run so the backlog is visible in CI logs instead of only on the security tab, and fails
-  the build on a **high/critical alert in runtime scope**. Grants `security-events: read`,
-  nothing more. If the token cannot read alerts the step warns and passes rather than
-  breaking the gate on a permissions problem.
+**The reconciliation is now mechanical, and token-free** — `.github/workflows/verify.yml`
+- **`Assert no high/critical advisory reaches shipped code`** → `npm audit --omit=dev
+  --audit-level=high`. `--omit=dev` is stated explicitly because npm silently defaults to
+  it whenever `NODE_ENV=production`, which is the whole defect: the scope must be a
+  decision in the workflow, not an ambient variable. This is the gate — an advisory in
+  shipped code fails the build.
+- **`Report the dev-scope advisory backlog`** → `npm audit --include=dev || true`.
+  Informational on purpose: the remaining advisories are accepted with reasons, so the
+  step must not be red every run, but the backlog belongs in CI logs rather than only on
+  the security tab.
+
+The first version of this used the Dependabot alerts API instead. It ran on the PR and
+printed `Dependabot alerts unavailable to this token` — `GITHUB_TOKEN` with
+`security-events: read` returned 403 for `repos/{owner}/{repo}/dependabot/alerts` in that
+context (measured 2026-11-04). It degraded to a warning and passed, which is a green gate
+that checks nothing — the same shape as the `npm audit → 0` claim this sprint exists to
+correct. Removed rather than documented as working.
 
 ### Verified
 
@@ -837,10 +847,13 @@ to pre-override.
   accepted: every one is a build-time DoS or prototype issue in tooling that processes our
   own source, and the only offered fixes are major downgrades of `vite-plugin-pwa` or a
   `minimatch` major that ESLint cannot use.
-- **The sweep only sees alerts, not reachability.** Dependabot reports
-  `reachability.verdict: "disabled"` for all six, i.e. it cannot tell us whether a
-  vulnerable path is exercised. The runtime/dev split is the coarse proxy, and it is
-  enforced; a real reachability answer would need code scanning.
+- **The gate is a scope split, not a reachability analysis.** Dependabot reports
+  `reachability.verdict: "disabled"` on all six, i.e. it cannot say whether a vulnerable
+  path is exercised. "Runtime vs dev" is the coarse proxy, and it is enforced; a real
+  reachability answer would need code scanning.
+- **The Dependabot backlog is not read by CI.** The alerts API refuses `GITHUB_TOKEN` in
+  PR runs (403, measured), so the security tab stays the authoritative view of the six;
+  the two `npm audit` steps cover the same ground from the other side, token-free.
 - `NODE_ENV=production` is still set in the sandbox, so any future `npm audit` run there
   repeats the same trap unless `--include=dev` is explicit. The CI step no longer depends
   on `npm audit` at all.
