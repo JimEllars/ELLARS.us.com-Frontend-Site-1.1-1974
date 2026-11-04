@@ -7,6 +7,9 @@ on:
 
 permissions:
   contents: read
+  # Read-only, and only so the sweep below can see the repository's Dependabot
+  # alerts. Nothing in this workflow writes to the security tab.
+  security-events: read
 
 concurrency:
   group: verify-${{ github.ref }}
@@ -166,3 +169,47 @@ jobs:
             exit 1
           fi
           echo "ok    exactly one manifest link"
+
+      - name: Sweep Dependabot alerts (fails on a high/critical runtime alert)
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # `npm audit` reports 0 here while GitHub shows open alerts — and the cause is
+          # not a lagging advisory feed (checked: npm's own endpoint lists them all). It
+          # is `NODE_ENV=production`, which makes npm default to `--omit=dev`, so the
+          # audit only ever looked at the 37 runtime dependencies. With `--include=dev`
+          # the same tree reports 16 (2 low, 14 moderate), none of them shipped.
+          # Measured 2026-11-04. Both numbers are true; only the scope differs, and 2.15
+          # recorded the narrow one without saying so. This sweep reads the GitHub
+          # advisory database, prints the backlog on every run, and blocks on a
+          # high/critical alert in *runtime* scope only.
+          alerts="$RUNNER_TEMP/dependabot-alerts.json"
+          if ! gh api "repos/$REPO/dependabot/alerts?state=open&per_page=100" > "$alerts" 2>/dev/null; then
+            echo "::warning::Dependabot alerts unavailable to this token; the security tab remains the source of truth."
+            exit 0
+          fi
+          python3 - "$alerts" <<'PY'
+          import json, sys
+          try:
+              alerts = json.load(open(sys.argv[1]))
+          except Exception:
+              alerts = []
+          if not isinstance(alerts, list):
+              print("  (alerts endpoint returned a non-list response; skipping)")
+              raise SystemExit(0)
+          for alert in sorted(alerts, key=lambda a: (a["security_advisory"]["severity"], a["dependency"]["package"]["name"])):
+              dep, adv = alert["dependency"], alert["security_advisory"]
+              print("  {:<9}{:<11}{}@{:<10}{}".format(
+                  adv["severity"], dep["scope"], dep["package"]["name"], dep["version_requirement"], adv["ghsa_id"]))
+          blocking = [a for a in alerts
+                      if a["security_advisory"]["severity"] in ("high", "critical")
+                      and a["dependency"]["scope"] == "runtime"]
+          print("ok    {} open alert(s); {} high/critical in runtime scope".format(len(alerts), len(blocking)))
+          if blocking:
+              names = ", ".join(sorted({a["dependency"]["package"]["name"] for a in blocking}))
+              print("::error::high/critical Dependabot alert(s) affect shipped code: {}".format(names))
+              raise SystemExit(1)
+          PY

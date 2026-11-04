@@ -766,6 +766,87 @@ neither posts a message nor passes the ignored argument.
 
 ---
 
+## Sprint 2.20 — Four advisories fixed, and the reason `npm audit` said zero
+
+**Branch:** `chore/dependency-alerts` · **Base:** `4447495` (main)
+
+### Why this cycle
+
+GitHub reported six open Dependabot alerts on `main` (1 high, 3 moderate, 2 low) while
+`npm audit` reported **0 vulnerabilities** in the same tree. Those two cannot both be a
+statement about the same thing. All six are `development`-scope transitive packages, so
+neither number was urgent — but a security signal nobody can reconcile stops being read.
+
+### The discrepancy, measured
+
+`npm audit` was run with `--include=dev` against the same lockfile: **16 vulnerabilities
+(2 low, 14 moderate)**. The cause is not a lagging advisory feed — npm's own bulk
+endpoint (`registry.npmjs.org/-/npm/v1/security/advisories/bulk`) lists every one of them.
+It is `NODE_ENV=production`, which this environment sets, and which makes npm default to
+`--omit=dev`: the audit was only ever looking at the **37 runtime dependencies**. Both
+numbers are honest, but 2.15 recorded the narrow one ("`npm audit` → 0 vulnerabilities")
+as though it covered the tree.
+
+- **Runtime scope: 0 vulnerabilities.** Nothing that ships in the bundle is affected.
+- **Full tree: 16**, all in the build/dev chain (eslint's `minimatch`/`glob`/`ejs`/
+  `filelist`/`jake`, and `deepmerge` behind `workbox-build`).
+
+### Shipped
+
+**Four of the six alerts closed** — `package.json`, `package-lock.json`
+- `browserslist` **4.28.2 → 4.29.5** (GHSA-73wf-gq98-2v4g, high: uncaught crash and
+  prototype write via an untrusted `browserslist-stats.json` — the advisory affects
+  `<= 4.28.6`). Reached through `@babel/helper-compilation-targets`, so `npm update`
+  lifts it inside the existing `^4.24.0` range.
+- `baseline-browser-mapping` **2.10.34 → 2.11.35** (GHSA-w5vr-8v7q-w6rv, `process.exit()`
+  on invalid input), lifted with `browserslist`.
+- `postcss-selector-parser` **6.1.2 → 6.1.5** (GHSA-w9m9-85wc-3x92, low) via `npm update`.
+- `postcss-selector-parser` **6.0.10 → 6.1.5** (GHSA-rj75-hqrm-r3gf, moderate: quadratic
+  selector parsing) needed an `overrides` entry, because `@tailwindcss/typography` pins
+  `6.0.10` **exactly**. Verified safe the only way that counts: `<link>` a rebuild before
+  and after and compare bytes — `dist/assets/index-BdVpI0Fz.css`,
+  `sha256 6fd3a567…49e36`, **identical**, so the override changes no rendered CSS.
+
+**The two that cannot be fixed without a major** — documented, not silenced
+- `minimatch` 3.1.5 / 5.1.9 / 10.2.5 (GHSA-g3hv-75wg-m249, moderate): the first patched
+  version is **11.0.1**, and the three copies are required by `eslint` (`^3.1.5`),
+  `filelist` (`^5`) and `glob` (`^10`). Forcing 11.x through `overrides` would break
+  ESLint's callable-default API. The advisory needs attacker-controlled glob patterns;
+  every pattern here comes from our own config.
+- `deepmerge` 4.3.1 (GHSA-gcqx-w48m-w2h4, low): **no fixed version exists**. It reaches us
+  through `@rollup/plugin-node-resolve` → `workbox-build` → `vite-plugin-pwa`.
+
+**The reconciliation is now mechanical** — `.github/workflows/verify.yml`
+- New step **Sweep Dependabot alerts**: reads the GitHub advisory database (the authority
+  here), prints every open alert as `severity / scope / package@version / GHSA` on every
+  run so the backlog is visible in CI logs instead of only on the security tab, and fails
+  the build on a **high/critical alert in runtime scope**. Grants `security-events: read`,
+  nothing more. If the token cannot read alerts the step warns and passes rather than
+  breaking the gate on a permissions problem.
+
+### Verified
+
+`npm audit --omit=dev` → **0** (shipped code). `npm audit --include=dev` → 16, none
+runtime. `npm ci --include=dev` from a clean cache, `eslint --max-warnings=0` clean,
+`npm test` 231 assertions, `npm run build` clean, precache 35 entries, CSS byte-identical
+to pre-override.
+
+### Known limits
+
+- **The remaining 14 dev-scope advisories will keep `npm audit --include=dev` red** and are
+  accepted: every one is a build-time DoS or prototype issue in tooling that processes our
+  own source, and the only offered fixes are major downgrades of `vite-plugin-pwa` or a
+  `minimatch` major that ESLint cannot use.
+- **The sweep only sees alerts, not reachability.** Dependabot reports
+  `reachability.verdict: "disabled"` for all six, i.e. it cannot tell us whether a
+  vulnerable path is exercised. The runtime/dev split is the coarse proxy, and it is
+  enforced; a real reachability answer would need code scanning.
+- `NODE_ENV=production` is still set in the sandbox, so any future `npm audit` run there
+  repeats the same trap unless `--include=dev` is explicit. The CI step no longer depends
+  on `npm audit` at all.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -795,7 +876,7 @@ neither posts a message nor passes the ignored argument.
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.18+)
+## Roadmap Milestones (Sprint 2.21+)
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
