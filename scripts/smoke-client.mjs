@@ -18,6 +18,35 @@ import {
   ogUrlFor,
 } from '../src/lib/headMeta.js';
 import { DIRECTIVE_META, resolveMeta, SITE_ORIGIN } from '../lib/edge/meta.js';
+import { buildRequestHeaders, isFirstPartyUrl } from '../src/lib/requestHeaders.js';
+
+/**
+ * WordPress only allows `Authorization, X-WP-Nonce, Content-Disposition,
+ * Content-MD5, Content-Type, X-Sli-Auth-Token` in `Access-Control-Allow-Headers`.
+ * Anything else turns a simple GET into a preflighted request that the browser
+ * then refuses to send. Asserted against that literal list rather than against
+ * our own constant, so the test fails if WordPress's list is the thing we drift
+ * from.
+ */
+const WP_ALLOWED_REQUEST_HEADERS = new Set([
+  'authorization',
+  'x-wp-nonce',
+  'content-disposition',
+  'content-md5',
+  'content-type',
+  'x-sli-auth-token',
+  'accept',
+  'accept-language',
+  'accept-encoding',
+  'user-agent',
+  'origin',
+  'referer',
+  'cache-control',
+  'pragma',
+  'if-none-match',
+]);
+
+const headerNames = (headers) => Object.keys(headers).map((name) => name.toLowerCase());
 
 let passed = 0;
 const failures = [];
@@ -168,6 +197,75 @@ check(
   const removals = new Set(planHeadDedupe(tags));
   const survivors = tags.filter((_, index) => !removals.has(index));
   check('the plan is idempotent', planHeadDedupe(survivors).length === 0, String(planHeadDedupe(survivors).length));
+}
+
+
+console.log('\nsrc/lib/requestHeaders.js');
+
+// The production defect, stated as an assertion: a dispatch fetch now carries no
+// header that WordPress's allow-list omits, so there is no preflight to fail.
+{
+  const wpUrl = 'https://wp.ellars.us.com/wp-json/wp/v2/posts?per_page=5&_embed';
+  const sent = buildRequestHeaders({ url: wpUrl, origin: 'https://ellars.us.com', method: 'GET' });
+  const offenders = headerNames(sent).filter((name) => !WP_ALLOWED_REQUEST_HEADERS.has(name));
+  check('the WordPress feed request sends no header WordPress will reject', offenders.length === 0, offenders.join(', '));
+  check(
+    'the provenance headers are gone from the feed request',
+    !('X-Client-Telemetry' in sent) && !('X-Project-Domain' in sent),
+    JSON.stringify(sent)
+  );
+  check('a bodyless GET no longer declares Content-Type', !('Content-Type' in sent), JSON.stringify(sent));
+  check('the feed request still accepts JSON', sent.Accept === 'application/json', String(sent.Accept));
+}
+
+// Third-party means "not ours". A Supabase URL keeps its credentialed headers —
+// Supabase reflects whatever the preflight asks for — but loses ours.
+{
+  const supabase = buildRequestHeaders({
+    url: 'https://pvbcdndqjguzqeafhwhw.supabase.co/rest/v1/axim_vault?select=*',
+    origin: 'https://ellars.us.com',
+    headers: { apikey: 'k', Authorization: 'Bearer t', Prefer: 'count=exact', Range: '0-19' },
+  });
+  check('third-party calls keep their credentialed headers', supabase.apikey === 'k' && supabase.Authorization === 'Bearer t');
+  check('third-party calls keep Prefer and Range', supabase.Prefer === 'count=exact' && supabase.Range === '0-19');
+  check('third-party calls drop the vendor headers', !('X-Client-Telemetry' in supabase), JSON.stringify(Object.keys(supabase)));
+}
+
+{
+  const same = buildRequestHeaders({ url: '/api/telemetry', origin: 'https://ellars.us.com', method: 'POST', hasBody: true });
+  check('same-origin keeps the vendor headers', same['X-Project-Domain'] === 'ellars.us.com' && same['X-Client-Telemetry'] === 'AXiM-Frontend-v1');
+  check('a request with a body keeps Content-Type', same['Content-Type'] === 'application/json');
+
+  const absoluteOwn = buildRequestHeaders({ url: 'https://ellars.us.com/api/config', origin: 'https://abc.pages.dev' });
+  check(
+    'a preview build targeting production still counts as first-party',
+    absoluteOwn['X-Project-Domain'] === 'ellars.us.com',
+    JSON.stringify(absoluteOwn)
+  );
+
+  const absoluteLocal = buildRequestHeaders({ url: 'http://127.0.0.1:8788/api/config', origin: 'http://127.0.0.1:8788' });
+  check('localhost is first-party', absoluteLocal['X-Project-Domain'] === 'ellars.us.com');
+
+  const crossOriginOwn = buildRequestHeaders({ url: 'https://www.ellars.us.com/api/x', origin: 'https://ellars.us.com' });
+  check('the www host is first-party', crossOriginOwn['X-Project-Domain'] === 'ellars.us.com');
+}
+
+check('a relative URL is first-party', isFirstPartyUrl('/api/config', 'https://ellars.us.com') === true);
+check('the WordPress host is third-party', isFirstPartyUrl('https://wp.ellars.us.com/wp-json/wp/v2/posts') === false);
+check('a pages.dev preview host is third-party', isFirstPartyUrl('https://abc.ellars-us-com.pages.dev/api/config') === false);
+check('an unparseable target is treated as first-party', isFirstPartyUrl('http://[::bad') === true);
+
+// A POST to a third party that rejects our headers would still be an asset we
+// own: the body must keep its Content-Type.
+{
+  const post = buildRequestHeaders({
+    url: 'https://wp.ellars.us.com/wp-json/contact/v1/send',
+    origin: 'https://ellars.us.com',
+    method: 'POST',
+    hasBody: true,
+  });
+  check('a third-party POST keeps Content-Type', post['Content-Type'] === 'application/json');
+  check('a third-party POST drops the vendor headers', !('X-Client-Telemetry' in post));
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

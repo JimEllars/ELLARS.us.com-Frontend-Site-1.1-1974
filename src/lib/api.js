@@ -1,4 +1,5 @@
 import { getSupabase, getSupabaseConfig } from './supabase.js';
+import { buildRequestHeaders } from './requestHeaders.js';
 import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
@@ -87,14 +88,9 @@ export async function fetchLatestNews(page = 1, perPage = 9) {
   try {
     let url = `${WP_API_URL}/posts?page=${page}&per_page=${perPage}&_embed`;
 
-    const response = await fetchWithRetry(url, {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Project-Domain": "ellars.us.com",
-        "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400"
-      }
-    });
+    // No per-call headers: fetchWithRetry owns them, and a request `Cache-Control`
+    // is a no-op that WordPress would reject in the preflight anyway.
+    const response = await fetchWithRetry(url, { credentials: "include" });
 
     if (response.isError) {
       if (typeof window !== 'undefined') { enqueuePayload({
@@ -197,19 +193,20 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
 
-    const defaultHeaders = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'X-Project-Domain': 'ellars.us.com',
-      'X-Client-Telemetry': 'AXiM-Frontend-v1'
-    };
-
+    // Headers are built per *target*, not once for everything. The vendor
+    // provenance headers were previously attached to every request regardless of
+    // destination, and WordPress rejects them in its fixed CORS allow-list — so
+    // the browser refused every dispatch fetch and the fabricated fallback
+    // articles were served in their place. See src/lib/requestHeaders.js.
     const fetchOptions = {
       ...options,
-      headers: {
-        ...defaultHeaders,
-        ...(options.headers || {})
-      },
+      headers: buildRequestHeaders({
+        url,
+        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        method: options.method || 'GET',
+        hasBody: options.body !== undefined && options.body !== null,
+        headers: options.headers || {},
+      }),
       signal: controller.signal
     };
 
@@ -264,13 +261,7 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
     let url = `${WP_API_URL}/posts?per_page=${limit}&_embed`;
     if (categoryId) url += `&categories=${categoryId}`;
 
-    const response = await fetchWithRetry(url, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Project-Domain': 'ellars.us.com'
-      }
-    });
+    const response = await fetchWithRetry(url, { credentials: 'include' });
 
     if (response.isError) { if (typeof window !== 'undefined') { enqueuePayload({
         telemetry_envelope: {
@@ -325,11 +316,7 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 export async function getPostBySlug(slug) {
   try {
     const response = await fetchWithRetry(`${WP_API_URL}/posts?slug=${slug}&_embed`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Project-Domain': 'ellars.us.com'
-      }
+      credentials: 'include'
     });
 
     if (response.isError) return response;
@@ -374,13 +361,7 @@ export async function getSocialFeed(limit = 10) {
   try {
     const url = `${WP_API_URL.replace('/wp/v2', '/spotlight/v1')}/instagram?feed=390&per_page=${limit}`;
 
-    const response = await fetchWithRetry(url, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Project-Domain': 'ellars.us.com'
-      }
-    });
+    const response = await fetchWithRetry(url, { credentials: 'include' });
 
     if (response.isError) return SOCIAL_FALLBACK;
     const data = await response.json();

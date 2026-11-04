@@ -105,6 +105,18 @@ const respond = (body, status) =>
     },
   });
 
+/**
+ * `HEAD /api/config` used to be answered `404` by the `/api/[[path]]` catch-all,
+ * because this module exported no handler for it and Pages fell through to the
+ * next matching route. `/api/config` is the one endpoint that reports whether a
+ * deployment is configured at all, so the cheapest possible health probe — a
+ * HEAD — reported the opposite. Same resolution as GET, no body.
+ */
+export async function onRequestHead(context) {
+  const response = await onRequestGet(context);
+  return new Response(null, { status: response.status, headers: response.headers });
+}
+
 export async function onRequestGet({ env }) {
   const supabaseUrl = normalizeSupabaseUrl(firstDefined(env, URL_NAMES));
   const anonKey = firstDefined(env, ANON_KEY_NAMES);

@@ -860,6 +860,154 @@ to pre-override.
 
 ---
 
+## Sprint 2.21 — The dispatch feed had never loaded, and `HEAD` was never answered by the edge
+
+**Branch:** `fix/wp-preflight-and-head-parity` · **Base:** `2e9ce9d` (main)
+
+### Why this cycle
+
+A routine sweep of the live site in a real browser — not `curl` — produced two classes of
+defect that no page-level check could see, because in both cases the site answered `200`.
+
+### Defect 1: every WordPress request was blocked by its own CORS preflight
+
+`fetchWithRetry` in `src/lib/api.js` attached two provenance headers to **every** request:
+
+```
+X-Project-Domain: ellars.us.com
+X-Client-Telemetry: AXiM-Frontend-v1
+```
+
+Nothing reads either one. Not a Pages Function, not WordPress, not Supabase. They were
+decoration — and on `wp.ellars.us.com` they were fatal. WordPress sends a fixed CORS
+allow-list:
+
+```
+Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type, X-Sli-Auth-Token
+```
+
+A custom request header turns a simple `GET` into a preflighted one. The preflight is
+answered `200` with that list, the browser compares it against what the request carries,
+finds `x-client-telemetry` absent, and **refuses to send the request**. Measured in
+production on 2026-11-04, in a real Firefox session, on the homepage, `/platform`,
+`/platform/:slug` and `/news-media`:
+
+```
+Cross-Origin Request Blocked: ... header 'x-client-telemetry' is not allowed according to
+header 'Access-Control-Allow-Headers' from CORS preflight. (Reason: CORS request did not
+succeed). Status code: (null)
+```
+
+Every dispatch fetch failed. `FALLBACK_POSTS` supplied three invented articles in its
+place, so the homepage `DISPATCH` card, the archive and the platform page were publishing
+fictional dispatches dated Sep 2025 — **the exact phantom content open item 8 describes,
+except it was not a quiet fallback, it was the only thing the site has ever shown.**
+The site looked healthy throughout, which is why this survived twenty cycles.
+
+### Defect 2: `HEAD` was answered by the SPA rewrite instead of the edge
+
+Only `GET` was handled anywhere on the edge, so `HEAD` fell through `_redirects`
+(`/* /index.html 200`) and was answered by the shell. Measured against the live site:
+
+| request | GET | HEAD (before) | HEAD (after) |
+|---|---|---|---|
+| `/sitemap.xml` | `200 application/xml` | `200 text/html` | `200 application/xml` |
+| `/nonexistent` | `404` | `200 text/html` | `404` |
+| `/foo.png` (missing) | `404` | `200 text/html` | `404 text/plain` |
+| `/api/config` | `200 application/json` | `404` | `200 application/json` |
+
+Every uptime monitor, link checker, sitemap prober and pre-fetch crawler was told the
+opposite of what a browser is told. Sprint 2.12 exists to stop soft 404s; it stopped them
+for `GET` only.
+
+### Shipped
+
+**A per-target header policy** — `src/lib/requestHeaders.js` (new), `src/lib/api.js`
+- `buildRequestHeaders()` is pure (no imports, no `window`) so CI can assert it. The vendor
+  headers are attached **only to first-party targets** — `ellars.us.com`,
+  `www.ellars.us.com`, localhost, and every relative URL. Third-party targets never receive
+  a header that only we understand.
+- A bodyless `GET`/`HEAD` no longer declares `Content-Type` to a third party. It has no body
+  to describe, and the declaration was the remaining reason a feed read cost an `OPTIONS`
+  round trip. The live request now carries exactly one header of our choosing: `Accept`.
+- Credentialed headers are untouched: `apikey`, `Authorization`, `Prefer` and `Range` still
+  reach Supabase, which reflects whatever its preflight is asked for.
+- The four WordPress call sites pass no per-call headers at all; the duplicated
+  `Content-Type`/`X-Project-Domain` copied into each one is gone, along with a request
+  `Cache-Control: s-maxage=3600` that no origin ever honoured and WordPress would reject.
+
+**`HEAD` parity across the edge** — `functions/_middleware.js`, `functions/sitemap.xml.js`,
+`functions/api/config.js`
+- The middleware handles `GET` **and** `HEAD`, and drops the body rather than the decision:
+  files, unknown routes and real routes all answer with the status their `GET` counterpart
+  answers. Any other verb is still passed straight through.
+- `/sitemap.xml` exports `onRequestHead`; `/api/config` does too, so the cheapest possible
+  health probe no longer reports a configured deployment as `404`.
+
+**The sitemap's edge cache now exists** — `functions/sitemap.xml.js`
+- The handler returned `s-maxage=3600` and its comment claimed a crawler sweep cost one
+  WordPress round trip. It did not: Cloudflare does not implicitly cache a Pages *Function*
+  response, and `cf-cache-status` measured `DYNAMIC` on repeated identical requests. The
+  document is now stored in `caches.default`.
+- The WordPress fetch had no timeout. It now aborts at 2.5 s (measured origin latency:
+  0.7 s; a cold function request was taking 4.0 s).
+- A degraded document (origin down) is cached for **60 s**, not an hour — caching a
+  WordPress outage for an hour is how dispatches stay missing after the origin recovers.
+  `X-Sitemap-Cache` (`hit` / `miss` / `miss-degraded`) and `X-Sitemap-TTL` make that
+  visible from one `curl` instead of an inference.
+
+**A phantom endpoint removed** — `src/pages/Platform.jsx`
+- An `IntersectionObserver` existed solely to fire `/api/precache?path=<slug>` for each
+  directive card that scrolled into view. No such Pages Function has ever been mounted, so
+  every visit to `/platform` produced six guaranteed `404`s that the catch-all answered and
+  the client swallowed. The observer and the call are gone; the routes are already
+  code-split and precached by the service worker.
+
+### Tests
+
+- **`scripts/smoke-client.mjs`: +18 assertions (63 → 81).** The WordPress header set is
+  asserted against WordPress's own allow-list literal, not against our constant, so the
+  test fails on the drift that caused this. Plus: first-party retention, `www` and preview
+  origins, bodyless-`GET` `Content-Type` removal, credentialed-header preservation,
+  third-party `POST` bodies.
+- **`scripts/smoke-functions.mjs`: +23 assertions (168 → 191).** `HEAD` on a document, an
+  unknown route, a missing asset and a passed-through `POST`; `HEAD`/`GET` parity on the
+  sitemap; a fake `caches.default` proving a cold response is stored and a warm one is
+  served from cache with its stored TTL; the degraded-TTL split.
+- Both suites are plain `node`, no runner, and they gate CI.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm test` **81 + 191 = 272 assertions, 0 failed** ·
+`npm run build` clean, precache 35 entries · `wrangler pages dev dist` parity table above
+reproduced locally for all seven paths · a real Firefox run against the local build shows
+the feed request carrying `accept: application/json` and nothing else, with **no preflight
+and no CORS error** (the local origin is not in WordPress's allow-list, which is expected;
+the request itself is now simple enough not to need permission).
+
+### Known limits
+
+- **The fix is verified for the *request*, not yet for the *response*.** WordPress only
+  allows `https://ellars.us.com` as an origin, so the restored feed can only be confirmed
+  in production, after merge. That verification is the first thing the next cycle does.
+- **`FALLBACK_POSTS` is unchanged.** It still fabricates three dispatches whenever the feed
+  fails — and prefetching a WordPress origin will sometimes fail. Now that the feed works,
+  the fallback is a real fallback again rather than the only path, but it is still
+  indistinguishable from real content to a reader. Open item 8 remains an editorial call.
+- **The Supabase call sites still set the vendor headers by hand** (`X-AXiM-Tenant`,
+  `X-Client-Telemetry` on seven raw `fetch` calls). Supabase reflects them, so they work
+  today; they were left alone deliberately to keep this cycle's blast radius on the path
+  that was actually broken. They should move onto the same policy when something else
+  touches them.
+- **`X-AXiM-Tenant` is a client-supplied tenancy header.** Nothing server-side reads it, and
+  the guardrail says tenancy comes from `app_metadata.app_id`. If any RLS policy is ever
+  written against a request header, this becomes a forgery vector. Recorded, not changed.
+- **The sitemap's `Cache-Control` is still advisory.** `s-maxage` does nothing on a Pages
+  Function; the Cache API is what enforces the hour. Both are sent, and `X-Sitemap-Cache`
+  reports which one answered.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -873,13 +1021,15 @@ to pre-override.
 | 5 | ~~`<UpdatePrompt />` unmounted + competing service workers~~ | **Closed in 2.10** | Prompt mounted, `public/sw.js` deleted, feed/font strategies moved into `workbox.runtimeCaching`, `controllerchange` handshake with an audio-safe prompt. Remaining nicety: a "Reload" affordance in `PrivacyBanner`-style chrome for users who dismiss the toast. |
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
-| 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **159 assertions** in CI (plus 63 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
+| 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **191 assertions** in CI (plus 81 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
 | 14 | ~~A returning client may still run the previous deploy's bundle~~ | **Closed in 2.19** | Measured with two real builds: the handshake fires on a returning visit, reloads once and lands on the new build in **3,102 ms**, with no loop on the next navigation. The 2.17 observation was taken at ~0.9 s and cancelled by the next navigation — a measurement artifact, not a defect. The prompt's dead `SKIP_WAITING` post and ignored `reload(true)` argument were removed in the same cycle. See Sprint 2.19. |
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
+| 15 | **The Instagram feed endpoint does not exist** | Editorial / plugin access | Measured 2026-11-04: `GET /wp-json/spotlight/v1/instagram?feed=390` → `404 {"code":"rest_no_route"}`. The installed plugin's real namespace is **`sl-insta`**, and every route it publishes is admin CRUD behind auth (`/sl-insta/feeds`, `/sl-insta/accounts`, `/sl-insta/connect`) — there is no public read endpoint to point at. So `getSocialFeed()` fails on every `/news-media` view and renders `SOCIAL_FALLBACK`. Needs either a server-side fetch in a Pages Function or a decision to drop the surface. |
+| 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 
 ---
 
@@ -889,7 +1039,10 @@ to pre-override.
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.21+)
+## Roadmap Milestones (Sprint 2.22+)
+- ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
+  preflight is gone and the request is simple. First item of 2.22: confirm the restored
+  feed **in production**, since WordPress only allows the production origin.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
