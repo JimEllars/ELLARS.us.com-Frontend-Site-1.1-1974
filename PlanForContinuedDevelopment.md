@@ -648,6 +648,48 @@ actually said:
 
 ---
 
+## Sprint 2.18 — The repo root was a screenshot folder
+
+**Branch:** `chore/repo-hygiene` · **Base:** `2ea099f` (main)
+
+### Why this cycle
+
+Open item 10, the last mechanical debt on the list. `git ls-files` at the root carried
+**1.9 MB** of PNGs — `screenshot.png` and `screenshot_home.png` are byte-identical
+548 kB copies, plus five more editor dumps — alongside a `commit_message.txt` from a
+previous cycle and a tracked playwright `test-results/.last-run.json` whose entire
+content is `{"status": "failed"}`. Nothing in the repo references any of them; the real
+assets live in `public/`, where the edge's static-file rules apply to them. Every clone,
+every CI cache and every `git log` paid for them.
+
+### Shipped
+
+- **Removed** eight root PNGs, `commit_message.txt` and `test-results/.last-run.json`
+  (1.9 MB, -10 tracked files).
+- **`.gitignore`** now covers `/test-results/`, root-level `*.png|jpg|jpeg|webp` (anchored
+  with a leading slash, so `public/*.png` — the PWA icons and the share card — stays
+  tracked) and `/commit_message.txt`.
+- **Three guards** in `scripts/smoke-functions.mjs`: no binary at the repo root, no
+  commit-message draft at the root, and nothing under `dist/` or `test-results/` tracked.
+  Verified they fail: dropping a copy of `favicon-32x32.png` at the root turned the suite
+  red (`FAIL no binaries at the repo root :: leak.png`), and removing it went green.
+
+### Tests
+
+`npm test` → **225 assertions** (222 before). `eslint --max-warnings=0` clean,
+`npm run build` clean, `dist/` unchanged in content.
+
+### Known limits
+
+- The deleted files remain in history. Rewriting it would invalidate every clone and
+  every open branch for no runtime benefit, so the 1.9 MB stays reachable by hash but
+  is no longer part of a working tree.
+- Root-level `*.svg` is still allowed: the PWA mask icon was referenced from the root
+  during one cycle and a legitimate one-off diagram is plausible. The guard covers
+  binaries, which is what actually accumulated.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -663,7 +705,7 @@ actually said:
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Either label them as offline cache or empty them — a journalist clicking one hits a stub. |
 | 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **159 assertions** in CI (plus 63 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
-| 10 | **Repo hygiene (sourcemaps closed in 2.15)** | Next cycle | `build.sourcemap` is now `false`: **0** `.map` files in `dist/`, 5.2 MB → 1.2 MB (2.15). Remaining: 556 kB of loose PNGs at the repo root and `commit_message.txt`. (`scripts/copy-spa-fallback.mjs` no longer exists on main.) |
+| 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
@@ -683,4 +725,4 @@ actually said:
 - Expand D1 querying components on the frontend to visualise site telemetry (now that events actually arrive).
 - Optimise caching and payload sizes for Vault and WP API requests.
 - Per-article `og:image` from the WordPress featured image (the 2.12 card is site-wide).
-- Repo hygiene: 556 kB of loose screenshots at the root and `commit_message.txt`. (`build.sourcemap` was turned off in 2.15 — 0 `.map` files, `dist/` 5.2 MB → 1.2 MB.)
+- ~~Repo hygiene~~ — **closed in 2.18**: 1.9 MB of root PNGs and two stray artifacts removed, root-level binaries and tracked output now guarded.

@@ -30,6 +30,7 @@ import {
 } from '../lib/edge/meta.js';
 import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
 import { readFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import {
   DIRECTIVE_SLUGS,
   STATIC_ROUTES,
@@ -583,6 +584,31 @@ describe('the shell declares each head key once');
     .filter((name) => String(name).endsWith('.jsx'))
     .filter((name) => /property="og:[a-z:]+"[\s\S]{0,120}wp\.axim\.us\.com/.test(readFileSync(new URL(name, srcDir), 'utf8')));
   check('no og:* tag points at the legacy WordPress host', legacyMeta.length === 0, legacyMeta.join(', '));
+}
+
+describe('repo root is not a screenshot folder');
+{
+  // Open item 10: 1.9 MB of loose PNGs at the repo root — including two byte-identical
+  // 548 kB copies — plus a `commit_message.txt` and a tracked playwright
+  // `test-results/.last-run.json`, all of it shipped to every clone and none of it
+  // referenced by a single line of code. Real assets live in public/, where the edge's
+  // static-file rules apply to them. The guard is mechanical so the next dump does not
+  // quietly re-enter the history.
+  const rootDir = new URL('../', import.meta.url);
+  const media = readdirSync(rootDir)
+    .filter((name) => /^[^.].*\.(png|jpe?g|webp|gif|mp4|mov|zip)$/i.test(String(name)));
+  check('no binaries at the repo root (public/ owns assets)', media.length === 0, media.join(', '));
+
+  const drafts = readdirSync(rootDir).filter((name) => /^commit_message\.txt$/i.test(String(name)));
+  check('no commit-message drafts at the repo root', drafts.length === 0, drafts.join(', '));
+
+  // `dist` and `test-results` are build output. Tracked output is how a stale artifact
+  // ends up looking like source.
+  const tracked = execFileSync('git', ['ls-files', 'dist', 'test-results'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+  }).trim();
+  check('no build or test output is tracked', tracked === '', tracked.split('\n').slice(0, 5).join(', '));
 }
 
 describe('public/_headers');
