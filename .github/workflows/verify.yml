@@ -166,3 +166,22 @@ jobs:
             exit 1
           fi
           echo "ok    exactly one manifest link"
+
+      - name: Assert no high/critical advisory reaches shipped code
+        run: |
+          set -euo pipefail
+          # Token-free and deterministic. `--omit=dev` is stated explicitly because npm
+          # silently defaults to it whenever NODE_ENV=production, which is how 2.15
+          # recorded "npm audit -> 0 vulnerabilities" believing it covered the whole tree
+          # (it covered the 37 runtime dependencies; the full tree reported 16, all dev).
+          # This is the gate that matters: an advisory in shipped code fails the build.
+          npm audit --omit=dev --audit-level=high
+
+      - name: Report the dev-scope advisory backlog
+        run: |
+          set -euo pipefail
+          # Informational, never fails. Every remaining advisory is dev/build tooling
+          # (minimatch via eslint, deepmerge behind workbox-build) and the accepted
+          # reasons live in PlanForContinuedDevelopment.md, Sprint 2.20. Printed so the
+          # backlog is visible in CI logs rather than only on the security tab.
+          npm audit --include=dev || true
