@@ -24,3 +24,17 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Build and test output
+/test-results/
+
+# Loose binaries at the repo root. Real assets live in public/ (and go through the
+# edge's static-file rules); screenshots dumped at the root are editor leftovers and
+# were 1.9 MB of them — including two byte-identical 548 kB copies.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
+# One-off commit drafts
+/commit_message.txt

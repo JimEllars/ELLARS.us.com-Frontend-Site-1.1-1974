@@ -1,6 +1,0 @@
-feat(telemetry): verify d1 batch writes, wire wp fallback telemetry, and harden seo tags
-
-- Verified Cloudflare D1 batch writes within the edge telemetry API.
-- Assessed that WP fallback functions appropriately trigger the wp_feed_fallback_served event and properly guard session routing on 401 response status codes.
-- Added Vault Draft Export functionality within the Automation Calculator layout.
-- Verified SEO metadata hardening on root document markup.
