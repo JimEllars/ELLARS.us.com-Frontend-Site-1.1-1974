@@ -12,7 +12,8 @@ import Home from './pages/Home';
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 import ProtectedRoute from './components/common/ProtectedRoute';
-import CanonicalUrl from './components/common/CanonicalUrl';
+import RouteMeta from './components/common/RouteMeta';
+import HeadOwnership from './components/common/HeadOwnership';
 const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./components/intel/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
@@ -113,7 +114,11 @@ function App() {
     <HelmetProvider>
       <Router>
         <ScrollToTop />
-        <CanonicalUrl />
+        {/* RouteMeta is the only client writer of title/description/og/twitter/canonical
+            (sourced from the edge table). HeadOwnership then drops the static shell's
+            copies of those keys, which React would otherwise duplicate. */}
+        <RouteMeta />
+        <HeadOwnership />
         {/* No skip link here: Layout owns the single one, and it targets the
             #main-content id that actually exists. The duplicate that lived here
             pointed at #content, which no element carried. */}

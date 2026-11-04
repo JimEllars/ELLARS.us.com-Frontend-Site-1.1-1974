@@ -96,25 +96,6 @@ const About = () => {
   return (
     <div className="overflow-x-hidden pt-32 pb-20 min-h-screen bg-transparent space-y-32 py-24 bg-grid">
       <Helmet>
-        <meta name="robots" content="index, follow" />
-        <title>About James Ellars | Bridging Main Street</title>
-        <meta
-          name="description"
-          content="Discover James Ellars: From a working class foundation to an 18-year career in business development. Bridging Main Street through healthcare reform and overturning Citizens United for a People-First Economy."
-        />
-        <meta
-          property="og:description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
-        />
-        <meta
-          name="twitter:description"
-          content="The comprehensive profile of James Ellars—bridging the gap between working-class grit and forward-thinking American innovation."
-        />
-        <meta
-          property="og:image"
-          content="https://wp.axim.us.com/wp-content/uploads/2026/04/1776866096564_04266f9841304c5e8d53190e26a26e95.webp?v=1.1"
-        />
-
         <script type="application/ld+json">
           {`
             {

@@ -490,14 +490,99 @@ describe('document metadata has one owner');
   );
   check('no page assigns document.title outside <Helmet>', offenders.length === 0, offenders.join(', '));
 
+  // These guards read code, not prose: several of the comments in this codebase quote
+  // the exact patterns being banned, and a guard that trips on its own documentation
+  // gets deleted rather than fixed.
+  const stripComments = (source) =>
+    source
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .split('\n')
+      .filter((line) => !/^\s*\/\//.test(line))
+      .join('\n');
+
   const descriptionWriters = pageFiles.filter((name) =>
-    /querySelector\(\s*['"]meta\[name="description"\]/i.test(readFileSync(new URL(name, pagesDir), 'utf8'))
+    /querySelector\(\s*['"]meta\[name="description"\]/i.test(
+      stripComments(readFileSync(new URL(name, pagesDir), 'utf8'))
+    )
   );
   check(
     'no page rewrites the description meta tag by hand',
     descriptionWriters.length === 0,
     descriptionWriters.join(', ')
   );
+
+  // 2.17: the same defect one layer up. Eight pages declared title/description/og:*
+  // from hand-copied strings alongside the shell, so every hydrated document carried
+  // two of each — and the copies had drifted from the edge, one of them still naming
+  // the legacy WordPress host as its share image. Route metadata has exactly one
+  // client writer now: components/common/RouteMeta.jsx, fed by src/lib/headMeta.js.
+  const metaOwners = pageFiles.filter((name) => {
+    const source = stripComments(readFileSync(new URL(name, pagesDir), 'utf8'));
+    return /<title[>\s]/.test(source) || /<meta\s+property="og:/.test(source) || /<meta\s+name="(?:description|twitter:)/.test(source);
+  });
+  check(
+    'no page component writes route metadata (RouteMeta owns it)',
+    metaOwners.length === 0,
+    metaOwners.join(', ')
+  );
+
+  // The table, not a copy of it: if this import ever points somewhere else, the client
+  // and the edge can drift again while every other assertion here still passes.
+  const headMetaSource = readFileSync(new URL('../src/lib/headMeta.js', import.meta.url), 'utf8');
+  check(
+    'the client resolves metadata from the edge table',
+    /from\s+'\.\.\/\.\.\/lib\/edge\/meta\.js'/.test(headMetaSource),
+    'src/lib/headMeta.js no longer imports lib/edge/meta.js'
+  );
+  check(
+    'a dispatch path yields the head to the page component',
+    /articles/.test(headMetaSource) && /return null/.test(headMetaSource)
+  );
+
+  const appSource = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  check('RouteMeta is mounted', /<RouteMeta\s*\/>/.test(appSource));
+  check('HeadOwnership is mounted', /<HeadOwnership\s*\/>/.test(appSource));
+  check('the superseded CanonicalUrl is gone', !/CanonicalUrl/.test(appSource));
+
+  // DirectiveDetail carries its own slug list for the page body. The metadata comes
+  // from DIRECTIVE_META, so a slug added to one and not the other would render a
+  // policy page under the 404's title.
+  const directivePage = readFileSync(new URL('../src/pages/DirectiveDetail.jsx', import.meta.url), 'utf8');
+  const pageSlugs = [...directivePage.matchAll(/slug:\s*"([^"]+)"/g)].map((match) => match[1]);
+  check('directive page slugs were found', pageSlugs.length === META_DIRECTIVE_SLUGS.length, String(pageSlugs.length));
+  check(
+    'directive page slugs and DIRECTIVE_META agree',
+    pageSlugs.every((slug) => META_DIRECTIVE_SLUGS.includes(slug)),
+    pageSlugs.filter((slug) => !META_DIRECTIVE_SLUGS.includes(slug)).join(', ')
+  );
+}
+
+describe('the shell declares each head key once');
+{
+  // The shell is the no-JS document *and* the document the client hydrates into, so a
+  // second copy of a key inside it is a contradiction no scanner can resolve: the first
+  // wins for a crawler, react-helmet-appended copies win in the DOM.
+  const shell = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const keys = [...shell.matchAll(/<meta\s+(?:property|name)="([^"]+)"/g)].map((match) => match[1]);
+  const managed = ['description', 'og:title', 'og:description', 'og:type', 'og:url', 'og:image', 'twitter:title', 'twitter:description', 'twitter:image'];
+  const duplicated = managed.filter((key) => keys.filter((candidate) => candidate === key).length > 1);
+  check('no head key appears twice in the shell', duplicated.length === 0, duplicated.join(', '));
+
+  const ogImage = shell.match(/<meta\s+property="og:image"\s+content="([^"]+)"/);
+  check('the shell declares an og:image', Boolean(ogImage));
+  check(
+    'the shell share image is served from the site origin',
+    ogImage && ogImage[1].startsWith(`${SITE_ORIGIN}/`),
+    ogImage && ogImage[1]
+  );
+
+  // The legacy WordPress host is still used for body imagery (Hero, About, article
+  // fallbacks), so the guard is scoped to what a scraper reads as the page's identity.
+  const srcDir = new URL('../src/', import.meta.url);
+  const legacyMeta = readdirSync(srcDir, { recursive: true })
+    .filter((name) => String(name).endsWith('.jsx'))
+    .filter((name) => /property="og:[a-z:]+"[\s\S]{0,120}wp\.axim\.us\.com/.test(readFileSync(new URL(name, srcDir), 'utf8')));
+  check('no og:* tag points at the legacy WordPress host', legacyMeta.length === 0, legacyMeta.join(', '));
 }
 
 describe('public/_headers');

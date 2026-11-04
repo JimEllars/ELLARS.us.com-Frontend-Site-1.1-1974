@@ -342,8 +342,12 @@ const ArticleDetail = () => {
         <meta name="robots" content="index, follow" />
         <title>{title} | James Ellars Official</title>
         <meta name="description" content={cleanExcerpt} />
+        <meta property="og:type" content="article" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={cleanExcerpt} />
+        {/* The one route whose share image is data-driven, so this component owns it
+            instead of <RouteMeta />. The shell's og:image:width/height are dropped by
+            <HeadOwnership /> when they describe a different file than this one. */}
         <meta property="og:image" content={featuredImage} />
         <script type="application/ld+json">
           {JSON.stringify(schemaData)}
