@@ -690,6 +690,82 @@ every CI cache and every `git log` paid for them.
 
 ---
 
+## Sprint 2.19 — The update handshake works; the measurement was the defect
+
+**Branch:** `fix/pwa-update-measurement` · **Base:** `a7b0caa` (main)
+
+### Why this cycle
+
+Open item 14 recorded a production observation from the end of 2.17: a browser with a
+previously registered worker loaded the **pre-deploy** bundle and still served the old
+shell on a second navigation, while the origin was already serving the new one. The item
+said, in as many words, that this was either the handshake not firing or the check
+landing before the single post-`controllerchange` reload — indistinguishable from
+outside — and that the worker should not be touched until it was measured. 2.16's fix
+had itself been a correction of a plausible-but-wrong explanation.
+
+### What was measured
+
+Two real builds behind `vite preview` on a fresh origin, with a `<meta name="deploy-probe">`
+in the shell so the *served document* identifies which build it is:
+
+1. Load `/` → worker installs, activates, claims. Probe `A`, controller present,
+   `waiting: false`, marker `null`.
+2. Rebuild with the probe flipped to `B` (new `index.html` bytes → new precache revision,
+   new `sw.js` bytes) — a faithful deploy, not a script edit.
+3. Navigate to `/news-media` as a returning, controlled visitor: the old worker served
+   build `A`, the handshake fired, the page **reloaded once** and landed on build `B`.
+   After it settled: `probe: "B"`, `navType: "reload"`, marker `"true"`, one precache,
+   `waiting: false`, `installing: false`, `active: "activated"`.
+4. Repeat with a third build for timing: **3,102 ms** from the old document's
+   `timeOrigin` to the reloaded document's `timeOrigin` — detection via `register()`'s
+   implicit update check, install, activate, claim, reload.
+5. Steady state afterwards: navigating again gave `navType: "navigate"`, probe `C`, no
+   second reload. The loop guard holds.
+
+**Conclusion: 2.16 works.** The 2.17 observation was taken at ~0.9 s, before
+install/activate could finish, and the following `browser_navigate` cancelled the pending
+reload — so it measured the hand-off, not a failure. The stale bundle seen on the *second*
+navigation was the browser still using the old worker, which was expected at that point
+and is exactly what the automatic reload then replaced.
+
+### What was fixed (the two things measurement exposed)
+
+**`UpdatePrompt.handleRefresh()` was reassuring rather than correct** — `src/components/common/UpdatePrompt.jsx`
+- It posted `{ type: 'SKIP_WAITING' }` to `registration.waiting`. The shipped worker is
+  built with `skipWaiting: true`, so it never enters the waiting state, and
+  `grep -c SKIP_WAITING dist/sw.js` is **0** — there is no message listener at all. The
+  message went to nobody.
+- It called `window.location.reload(true)`. Browsers have ignored that argument for years
+  (already noted in 2.9); it was doing nothing.
+- Both removed. A plain reload is the whole action, because by the time the prompt appears
+  the new worker is already active and controlling — the prompt exists only for the two
+  cases where the reload was deliberately withheld: audio playing, or this tab already
+  reloaded once.
+
+### Tests
+
+`npm test` → **231 assertions** (225 before). New source guards, all reading code rather
+than prose (`stripComments` is now a module-level helper, because the fix's own comment
+quotes `reload(true)`): the reload path writes the loop marker *before* reloading, the
+policy is consulted rather than inlined, `hadController` is mutable, and the prompt
+neither posts a message nor passes the ignored argument.
+
+### Known limits
+
+- **The first paint after a deploy is still the previous build.** The navigation route is
+  cache-first, which is what makes the site work offline; the price is that a returning
+  visitor sees the old shell for the ~3 s the handshake needs. The 3.1 s figure is a
+  **lower bound**: the simulated deploy changed only the shell, so install re-fetched one
+  file. A real deploy changes asset hashes and precaches ~900 kB.
+- **The reload is unconditional when nothing is playing.** A visitor reading an article
+  loses scroll position when a deploy lands mid-session. Not changed: the alternative is
+  leaving them on a shell whose chunks may already be deleted, which is the failure 2.10
+  and 2.16 exist to prevent.
+- Item 14 stays open only as a pointer to this sprint's evidence, not as a defect.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -708,7 +784,7 @@ every CI cache and every `git log` paid for them.
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
-| 14 | **A returning client may still run the previous deploy's bundle for one or more navigations** | Measurement needed | Observed 2026-11-04, immediately after the 2.17 deploy went live, in a real browser with a previously registered worker: `/news-media` loaded `index-CTvyJIyM.js`'s predecessor and still served the old shell on a second navigation, showing the pre-2.17 duplicate head (27 `<meta>`, `og:image` ×2) while the origin was already serving the 2.17 bundle. Unregistering the worker and deleting the caches produced the new bundle and the clean head (21 `<meta>`, 0 duplicates) on the next load. This is either the 2.16 handshake not firing on a cold navigation, or the check landing before the single post-`controllerchange` reload — the two are indistinguishable from outside. Next cycle should instrument it: log `updatefound`, the `waiting` list, `controllerchange` and the reload marker across two consecutive loads after a deploy, and assert whichever path is real. Do not change the worker until that is measured; 2.16's fix was itself a correction of a plausible-but-wrong explanation. |
+| 14 | ~~A returning client may still run the previous deploy's bundle~~ | **Closed in 2.19** | Measured with two real builds: the handshake fires on a returning visit, reloads once and lands on the new build in **3,102 ms**, with no loop on the next navigation. The 2.17 observation was taken at ~0.9 s and cancelled by the next navigation — a measurement artifact, not a defect. The prompt's dead `SKIP_WAITING` post and ignored `reload(true)` argument were removed in the same cycle. See Sprint 2.19. |
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
 
 ---

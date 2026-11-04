@@ -59,6 +59,19 @@ const check = (name, condition, detail = '') => {
 
 const describe = (label) => console.log(`\n${label}`);
 
+/**
+ * Guards read code, not prose. Several comments in this codebase quote the exact
+ * patterns being banned (and one of them was written by this very guard's predecessor),
+ * so a source check that trips on documentation gets deleted rather than fixed.
+ */
+const stripComments = (source) =>
+  source
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .split('\n')
+    .filter((line) => !/^\s*\/\//.test(line))
+    .join('\n');
+
+
 describe('functions/api/config.js');
 {
   const response = await configHandler({ env: {} });
@@ -491,16 +504,6 @@ describe('document metadata has one owner');
   );
   check('no page assigns document.title outside <Helmet>', offenders.length === 0, offenders.join(', '));
 
-  // These guards read code, not prose: several of the comments in this codebase quote
-  // the exact patterns being banned, and a guard that trips on its own documentation
-  // gets deleted rather than fixed.
-  const stripComments = (source) =>
-    source
-      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-      .split('\n')
-      .filter((line) => !/^\s*\/\//.test(line))
-      .join('\n');
-
   const descriptionWriters = pageFiles.filter((name) =>
     /querySelector\(\s*['"]meta\[name="description"\]/i.test(
       stripComments(readFileSync(new URL(name, pagesDir), 'utf8'))
@@ -584,6 +587,32 @@ describe('the shell declares each head key once');
     .filter((name) => String(name).endsWith('.jsx'))
     .filter((name) => /property="og:[a-z:]+"[\s\S]{0,120}wp\.axim\.us\.com/.test(readFileSync(new URL(name, srcDir), 'utf8')));
   check('no og:* tag points at the legacy WordPress host', legacyMeta.length === 0, legacyMeta.join(', '));
+}
+
+describe('the update handshake can reload but not loop');
+{
+  // Measured in 2.19 with two real builds behind `vite preview`: a returning visit
+  // served the old shell, the handshake fired, the tab reloaded once and landed on the
+  // new one (3.1 s from old document start to new document start, marker set, no
+  // waiting worker). The two properties that make that safe are mechanical.
+  const sw = readFileSync(new URL('../src/lib/serviceWorker.js', import.meta.url), 'utf8');
+  const markerAt = sw.indexOf('sessionStorage.setItem(RELOAD_MARKER');
+  const reloadAt = sw.indexOf('window.location.reload()');
+  check('the reload path writes the loop marker', markerAt !== -1);
+  check('the marker is written before the reload', markerAt !== -1 && reloadAt !== -1 && markerAt < reloadAt);
+  check('the policy is consulted, not inlined', /decideOnControllerChange\s*\(/.test(sw));
+  check(
+    'hadController is mutable (a first install becomes an update)',
+    /let\s+hadController/.test(sw),
+    'captured once at registration = every later activation looks like a first install'
+  );
+
+  // The prompt is shown only when the reload was held back (audio, or a loop guard), and
+  // the new worker is already active by then — `skipWaiting` is set in the build and
+  // dist/sw.js has no message listener. Posting SKIP_WAITING is a message to nobody.
+  const prompt = stripComments(readFileSync(new URL('../src/components/common/UpdatePrompt.jsx', import.meta.url), 'utf8'));
+  check('the prompt does not post SKIP_WAITING to a worker that never waits', !/postMessage\s*\(/.test(prompt));
+  check('the prompt does not pass the ignored force-reload argument', !/reload\s*\(\s*true\s*\)/.test(prompt));
 }
 
 describe('repo root is not a screenshot folder');
