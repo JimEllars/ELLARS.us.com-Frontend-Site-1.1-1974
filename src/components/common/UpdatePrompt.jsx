@@ -5,18 +5,20 @@ import { useAppStore } from '@/store/useAppStore';
 const UpdatePrompt = () => {
   const { updateAvailable, setUpdateAvailable } = useAppStore();
 
+  // Measured in 2.19: by the time this prompt is shown the new worker is already
+  // active and controlling the page (the build sets workbox `skipWaiting: true` and
+  // `clientsClaim: true`, and `dist/sw.js` has no message listener at all —
+  // `grep -c SKIP_WAITING dist/sw.js` is 0). So the prompt only appears when the
+  // reload was deliberately held back: audio was playing, or this tab already
+  // reloaded once for an update. Either way a plain reload is the whole action.
+  //
+  // It used to post `{ type: 'SKIP_WAITING' }` to `registration.waiting` and call
+  // `reload(true)`. The first was a message to a worker that had never been in the
+  // waiting state and has no handler for it; the second is an argument browsers have
+  // ignored for years. Both were removed rather than left as reassurance.
   const handleRefresh = () => {
     setUpdateAvailable(false);
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-        window.location.reload(true);
-      });
-    } else {
-      window.location.reload(true);
-    }
+    window.location.reload();
   };
 
   return (
