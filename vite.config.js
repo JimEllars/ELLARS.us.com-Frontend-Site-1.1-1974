@@ -112,7 +112,11 @@ export default defineConfig({
         // (it posts SKIP_WAITING), but only if the user noticed and clicked it.
         skipWaiting: true,
         clientsClaim: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // woff2 is deliberately NOT precached. Four self-hosted families are ~108 kB, and
+        // precaching them would put every one in every visitor's install — including the
+        // three a given page never uses. They are fetched on first use and kept for 30
+        // days by the `image-font-cache` runtime route below.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         // The social card is fetched by scrapers, never by the app, so caching it
         // in every visitor's service worker only costs install bandwidth.
         globIgnores: ['**/og-card.png'],
@@ -149,15 +153,6 @@ export default defineConfig({
             options: {
               cacheName: 'intel-feed',
               expiration: { maxEntries: 40, maxAgeSeconds: 24 * 60 * 60 }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] }
             }
           },
           {
