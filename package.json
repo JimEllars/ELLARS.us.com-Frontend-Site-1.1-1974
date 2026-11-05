@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test:functions": "node scripts/smoke-functions.mjs",
     "test:client": "node scripts/smoke-client.mjs",
-    "test": "npm run test:client && npm run test:functions"
+    "test": "npm run test:client && npm run test:functions",
+    "probe": "node scripts/probe-production.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

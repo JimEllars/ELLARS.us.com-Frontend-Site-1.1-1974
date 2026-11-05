@@ -29,6 +29,7 @@ import {
   wantsDocument,
 } from '../lib/edge/meta.js';
 import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
+import { MANAGED_KEYS, compareDocument, readDocumentIdentity } from '../lib/edge/documentIdentity.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import {
@@ -881,6 +882,135 @@ describe('index.html social card');
 
   const twitterImage = html.match(/<meta name="twitter:image" content="([^"]+)"/i)?.[1] || '';
   check('twitter:image matches og:image', twitterImage === ogImage, twitterImage);
+}
+
+describe('lib/edge/documentIdentity.js — the probe reads what a crawler reads');
+{
+  // `applyMeta` replaces the title and inserts any tag it cannot find, so a minimal
+  // shell with a <head> is enough to produce a complete document.
+  const shell = () =>
+    '<!doctype html><html><head><title>James Ellars | Official Hub & Policy Platform</title></head><body></body></html>';
+
+  // The dividend directive's title contains an ampersand, which reaches the document
+  // as `&amp;`. Comparison happens on values, so the reader has to decode or this
+  // — a perfectly correct document — would be the case that fails.
+  const dividend = resolveMeta('/platform/the-automation-dividend-and-taxation', SITE_ORIGIN);
+  const document = applyMeta(shell(), dividend);
+  const identity = readDocumentIdentity(document);
+
+  check('reads the title back', identity.title === dividend.title, identity.title);
+  check('the ampersand survives decoding', dividend.title.includes('&') && identity.title.includes('&'));
+  check('reads the canonical', identity.canonical === dividend.canonical, identity.canonical);
+  check('reads robots', identity.robots === dividend.robots, identity.robots);
+  check('reads og:title', identity.ogTitle === dividend.title, identity.ogTitle);
+  check('reads og:url', identity.ogUrl === dividend.canonical, identity.ogUrl);
+  check('reads a description', Boolean(identity.description));
+  check('counts exactly one title', identity.counts.title === 1, String(identity.counts.title));
+  check(
+    'counts exactly one of each managed key',
+    MANAGED_KEYS.every((key) => identity.counts[key] === 1),
+    MANAGED_KEYS.filter((key) => identity.counts[key] !== 1).map((key) => `${key}=${identity.counts[key]}`).join(', ')
+  );
+}
+
+{
+  const meta = resolveMeta('/about', SITE_ORIGIN);
+  const good = applyMeta(
+    '<!doctype html><html><head><title>James Ellars | Official Hub & Policy Platform</title></head><body></body></html>',
+    meta
+  );
+  const compare = (overrides = {}) =>
+    compareDocument({ path: '/about', status: 200, expectedStatus: 200, html: good, meta, ...overrides });
+
+  // Non-vacuity is the point of this block. A probe that cannot fail is the green gate
+  // that checks nothing — the shape Sprint 2.20 deleted from the workflow. Every case
+  // below is a defect the deployment probe exists to catch, so every one must produce
+  // a failure rather than a pass.
+  check('a correct document produces no failures', compare().length === 0, compare().join(' | '));
+  check(
+    'a wrong status fails',
+    compare({ status: 500 }).some((failure) => /answered 500, expected 200/.test(failure)),
+    compare({ status: 500 }).join(' | ')
+  );
+  check(
+    'the site title instead of the route title fails',
+    compare({ html: good.replace(meta.title, 'James Ellars | Official Hub & Policy Platform') }).some((failure) =>
+      /title/.test(failure)
+    )
+  );
+  check(
+    'a duplicated description fails (Sprint 2.17 returning)',
+    compare({ html: good.replace('</head>', '<meta name="description" content="second" /></head>') }).some((failure) =>
+      /declares description 2 times/.test(failure)
+    )
+  );
+  check(
+    'a missing canonical fails',
+    compare({ html: good.replace(/<link rel="canonical"[^>]*>/, '') }).some((failure) => /canonical "absent"|canonical absent/.test(failure)),
+    compare({ html: good.replace(/<link rel="canonical"[^>]*>/, '') }).join(' | ')
+  );
+  check(
+    'two <title> tags fail',
+    compare({ html: good.replace('</head>', '<title>late</title></head>') }).some((failure) => /2 <title> tags/.test(failure))
+  );
+  check('a null expectation fails instead of passing', compareDocument({ path: '/x', status: 200, html: good, meta: null }).length > 0);
+
+  // The 404 document: right title, noindex, no canonical, og:url back at the root.
+  const notFoundMeta = { ...NOT_FOUND_META, canonical: null };
+  const notFoundHtml = applyMeta(
+    '<!doctype html><html><head><title>James Ellars | Official Hub & Policy Platform</title></head><body></body></html>',
+    notFoundMeta
+  );
+  const notFound = (overrides = {}) =>
+    compareDocument({ path: '/not-a-route', status: 404, expectedStatus: 404, html: notFoundHtml, meta: notFoundMeta, ...overrides });
+
+  check('a correct 404 produces no failures', notFound().length === 0, notFound().join(' | '));
+  check('a 404 declares no canonical', readDocumentIdentity(notFoundHtml).canonical === null);
+  check('a 404 points og:url at the site root', readDocumentIdentity(notFoundHtml).ogUrl === `${SITE_ORIGIN}/`, readDocumentIdentity(notFoundHtml).ogUrl);
+  check(
+    'a soft 404 that self-canonicalises fails',
+    notFound({ html: applyMeta(notFoundHtml, { ...NOT_FOUND_META, canonical: 'https://ellars.us.com/not-a-route' }) }).some((failure) =>
+      /canonical/.test(failure)
+    )
+  );
+  check(
+    'a 404 answered as 200 fails',
+    notFound({ status: 200 }).some((failure) => /answered 200, expected 404/.test(failure)),
+    notFound({ status: 200 }).join(' | ')
+  );
+}
+
+describe('the deployment probe measures the deployment, not itself');
+{
+  const probe = stripComments(readFileSync(new URL('./probe-production.mjs', import.meta.url), 'utf8'));
+
+  // `Accept: text/html` is what selects the middleware branch. Probing with `*/*`
+  // measures the SPA fallback and reports the site title on every route — a healthy
+  // deployment looking broken, which is exactly what happened while writing this.
+  check('the probe declares a document Accept header', probe.includes('text/html,application/xhtml+xml'));
+  check(
+    'the probe takes its expectations from the edge table',
+    /resolveMeta\(/.test(probe) && /from '\.\.\/lib\/edge\/meta\.js'/.test(probe)
+  );
+  check(
+    'the probe takes its route list from the sitemap',
+    /from '\.\.\/functions\/sitemap\.xml\.js'/.test(probe)
+  );
+  // A re-typed title is a probe that asserts yesterday's copy (the drift Sprint 2.17
+  // removed from the site itself).
+  check('the probe does not re-type a route title', !/Home \| James Ellars \| Official/.test(probe));
+  check('the probe exits non-zero when a check fails', /process\.exit\(1\)/.test(probe));
+  check('the probe compares documents through the shared comparator', /compareDocument\(/.test(probe));
+
+  const workflow = readFileSync(new URL('../.github/workflows/probe.yml', import.meta.url), 'utf8');
+  check('the probe runs after a merge', /workflow_run:/.test(workflow) && /workflows: \[verify\]/.test(workflow));
+  check('the probe runs on a schedule', /cron:/.test(workflow));
+  check('the probe can be dispatched by hand', /workflow_dispatch:/.test(workflow));
+  check('the probe does not depend on a secret', !/secrets\./.test(workflow));
+  check('the probe runs the repo script', /npm run probe/.test(workflow));
+
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  check('`npm run probe` exists', typeof pkg.scripts?.probe === 'string', pkg.scripts?.probe);
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);
