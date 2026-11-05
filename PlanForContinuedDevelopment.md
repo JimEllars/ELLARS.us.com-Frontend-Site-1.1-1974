@@ -1196,11 +1196,137 @@ three statements the code could not keep were fixed rather than smoothed over in
 
 ---
 
+## Sprint 2.24 — Nothing checked the deployment, which is where both defects lived
+
+**Branch:** `feature/post-deploy-probe` · **Base:** `9ad0fa5` (main)
+
+### Why this cycle
+
+The cycle opened with the routine production sweep, and the sweep came back clean: five document
+routes and six directives all carried their own title and self-canonical, `/platform/typo` and an
+unknown path answered `404`, `HEAD` matched `GET` on five paths, `/api/config` reported
+`configured:true` with a bare project origin, and the sitemap served **68 URLs / 57 dispatches**
+from cache with one `max-age`. There was no live defect to fix, so the cycle went to the roadmap's
+own top item — the one 2.21 and 2.22 both wrote down while bleeding:
+
+> Both defects were invisible to CI and to local runs — the pipeline executes the same code that
+> passed. A scheduled check against production would have caught both in seconds.
+
+`verify.yml` proves the artifact is correct. Nothing proved the *deployment* was. That is the whole
+gap: a build can be byte-perfect and deploy into a state no crawler can use.
+
+One measurement in this cycle's own sweep is worth recording because it nearly became a finding:
+`curl` without an `Accept` header returned the site title on every route and a `200` for a missing
+path, which reads exactly like a middleware regression. It was not — `wantsDocument()` requires
+`text/html`, and `Accept: */*` correctly falls through to the SPA. **A probe that does not declare a
+document measures the fallback instead of the site.** That is now asserted, because a monitor built
+on the wrong request would page someone about a healthy deployment.
+
+### Shipped
+
+**`lib/edge/documentIdentity.js` (new)** — the reader `applyMeta()` never had
+- `readDocumentIdentity(html)` parses a served document into the facts a crawler acts on: `<title>`,
+  `description`, `robots`, canonical, `og:title`, `og:url`, `twitter:title` — **plus the count of
+  each**. Duplication is a defect in this codebase (Sprints 2.11 and 2.17 were the same bug at two
+  layers), and a document with two `og:title` tags has no single identity whichever copy is right.
+- Decodes the five entities `escapeAttr()` emits. Without that, the dividend directive — whose title
+  contains `&` — would be the one correct page the probe reported as broken.
+- `compareDocument()` returns failures as strings with the **measured** value next to the expected
+  one. Pure: no fetch, no clock, no DOM, so the detection logic is itself testable.
+
+**`scripts/probe-production.mjs` (new, `npm run probe`)** — 29 checks, 9 groups
+- **Identity for every advertised route** (5 static + 6 directives + the two noindex surfaces):
+  status, title, description, robots, canonical, `og:url` and no duplicate keys, each compared with
+  `resolveMeta()` — the same table the middleware writes from. A copy edit cannot leave a stale probe.
+- **The 404 surface:** unknown path and unknown directive → `404` + the NotFound identity + **no**
+  canonical; missing `.png` and missing `/assets/*.js` → `404 text/plain no-store`, never the shell.
+- `robots.txt` → `200 text/plain` **with** `Accept: text/html` (the regression the file rule had).
+- `/api/config` → `configured:true`, a bare `https://<ref>.supabase.co` origin, and no `service_role`
+  key (decoded from the JWT claim, not trusted from a field name).
+- `/sitemap.xml` → XML, on-origin locs, **at least one `/articles/` URL**, no `&amp;amp;`, an explicit
+  `max-age`, **no `s-maxage`**, and an `x-sitemap-cache` state. This is 2.22's exact failure: a
+  document with the right status, type and headers that had silently lost every dispatch.
+- **Two live dispatches** sampled from that sitemap, asserted to carry their own canonical rather
+  than collapsing onto the homepage.
+- **HEAD/GET parity** on the 2.21 table — status *and* content type, and HEAD carrying no body.
+- **The shell's security headers survived the middleware rewrite** (CSP with no `connect-src 'https:'`,
+  `frame-ancestors 'none'`, HSTS, `nosniff`) and **no stale ETag** on a rewritten body.
+- **The advertised `og:image` resolves** as a real PNG on the site origin, 1 kB–300 kB.
+- `--base=` probes a preview deployment, where it flips to expecting `noindex` canonicals pointing at
+  production; `--attempts`/`--timeout` are tunable. Retries cover transport and 5xx **only** — a wrong
+  title fails on the first answer, because retrying an assertion hides it.
+
+**`.github/workflows/probe.yml` (new)** — three triggers, three failure modes
+- After every successful `verify` on `main` (a deploy is what can break), every six hours (a deploy is
+  not the only thing that can: a WordPress outage, an expired cache entry, a dashboard binding), and
+  on dispatch. It checks out the **deployed commit**, not whatever `main` has become since, runs with
+  no `npm ci` and no secret, and retries the whole suite once after 120 s so a still-publishing Pages
+  build is distinguishable from a broken one — with both runs printed.
+
+### Tests
+
+`npm test` → **321 assertions** (235 edge + 86 client; was 202 + 86), 0 failed. New:
+- The reader, against `applyMeta`'s own output: title, canonical, robots, `og:url`, one-of-each counts,
+  and the ampersand decoding.
+- **Non-vacuity, asserted rather than assumed.** Nine cases prove the comparator *fails* on: a wrong
+  status, the site title in place of the route title, a duplicated `description`, a missing canonical,
+  two `<title>` tags, a null expectation, a soft 404 that self-canonicalises, and a 404 answered as
+  `200`. A probe that cannot fail is the green gate that checks nothing, which is the shape 2.20
+  deleted from the workflow.
+- Source guards: the probe sends `Accept: text/html`, imports its expectations from `lib/edge/meta.js`
+  and its route list from `functions/sitemap.xml.js`, re-types no title, and exits non-zero; the
+  workflow exists with all three triggers, no `secrets.`, and runs `npm run probe`.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm test` 322 assertions · `npm run build` clean, precache 36
+entries, all five artifacts present · **`npm run probe` → 29/29 against production** (exit 0) ·
+**the same probe against `https://example.com` → 25/29 failed, exit 1**, so the gate is measured
+rather than asserted · **against this branch's own Pages preview → 29/29**, with one check reporting
+a note instead of a tick: `/api/config` answers `503` there because the anon key is bound for
+Production only. That is a real finding about the preview environment (open item 1c) and not a defect
+in the deployment, so a preview run reports it as measured state while a production run still fails
+on it · the workflow YAML parses with the three triggers and the `if:` guard.
+
+Two things the preview run changed in the code, both worth recording because they were the probe's
+own defects rather than the site's:
+
+- **A 503 was being retried as transient and thrown** before any check could read it, so an unbound
+  key surfaced as `failed after 3 attempts` — indistinguishable from a flaky origin. The retry layer
+  now accepts statuses an endpoint documents as meaningful (`acceptStatuses`), and the check reports
+  `answered 503, expected 200 (unbound config)`.
+- **Parity forwards the same options as the GET it compares**, so `HEAD /api/config` is still compared
+  with `GET /api/config` on a host where both answer `503`.
+
+### Known limits
+
+- **It sees what an anonymous client sees.** Login, the dashboard and the Vault are behind auth: the
+  probe can assert that `/login` and `/dashboard` serve the right document, not that a session works.
+  That needs a credential in CI, which is open item 2's territory (RLS is still unverified).
+- **It reads raw bytes, not the hydrated DOM.** A client-side regression — the 2.17 hand-off, an
+  effect that rewrites the title — passes the probe. It is the complement of the browser checks done
+  by hand, not a replacement for them.
+- **A slow Pages build can still race the post-merge run.** The single 120 s retry covers the ordinary
+  case; a genuinely stuck deploy would show as a red probe *and* a stale `cf-ray` in the log. It beats
+  the alternative (a probe that waits ten minutes to say nothing).
+- **GitHub's scheduler is not punctual.** A cron run can start minutes late, and scheduled workflows
+  stop after 60 days without repository activity — the post-merge trigger is the one that matters, and
+  the schedule is the backstop.
+- **It reports, it does not roll back.** Nothing here reverts a bad deploy; it makes the failure
+  visible within minutes instead of the next time someone opens the site.
+- **A preview deployment is a different environment, and the probe says so.** `--base=<preview>` flips
+  the expectations to `noindex` and production canonicals, and tolerates the `503` that `/api/config`
+  answers where no anon key is bound (item 1c). It does **not** tolerate that on production — a
+  production run fails on an unbound key, which is the defect Sprint 2.8 shipped for weeks.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
 |---|---|---|---|
 | 1 | **Supabase env values in the Pages project** | Cloudflare dashboard | The anon key *is* bound (verified: `/api/config` → `configured:true`), but `SUPABASE_URL` **and** `VITE_SUPABASE_URL` are set to `https://<ref>.supabase.co/rest/v1/`. Sprint 2.9 normalises it client- and edge-side; the binding should still be corrected to the bare origin so the guard becomes belt-and-braces. |
+| 1c | **`SUPABASE_ANON_KEY` is not bound for Preview** | Cloudflare dashboard | Measured 2026-11-05 against this cycle's own preview deployment: `/api/config` → `503` (`configured:false`), while production answers `200`. The binding is scoped to Production only, so **every preview deployment runs with auth dead** — `/dashboard` cannot be exercised from a PR at all, and `/login` can only show its honest "unavailable" state. Add the anon key to the Preview environment (never `service_role`); `npm run probe -- --base=<preview>` then verifies it, and removes the note that run currently prints. |
 | 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. Measured 2026-11-03: `POST /api/telemetry` → `202` with `{"kv":"unbound","d1":"unbound","analytics":"unbound"}`, i.e. **no telemetry is being stored anywhere today**. The 202 is honest, the drop is total. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. Measured 2026-11-03 with the live anon key: `ecosystem_vault` and `telemetry_logs` both answer `200` with `[]`. An empty result does **not** prove RLS is off (a table with RLS on and no policy also returns `[]`), and it does not prove it is on — this needs the service role, not a probe. **Verify before any further Vault work.** |
 | 2b | **`axim_vault` does not exist in the live project** | Database access | Measured 2026-11-03: `GET /rest/v1/axim_vault` → `PGRST205`. The live project has `ecosystem_vault` (columns `id`, `created_at`, `updated_at`; **no tenant column**) and `telemetry_logs`. So **every Vault call from the dashboard 404s in production** — list, create, update, delete — while the public site looks healthy. The client is not repointed at `ecosystem_vault` on purpose (no tenancy column). `0003_axim_vault.sql` exists only in the workspace handoff (`context/axim-vault-migration.sql`), **not in the repo**, so the schema is unversioned: copy it in, then apply it, then set `app_metadata.app_id` on the operator user. |
@@ -1210,7 +1336,7 @@ three statements the code could not keep were fixed rather than smoothed over in
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **199 assertions** in CI (plus 81 client-side in `smoke-client.mjs`) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **235 assertions** in CI (plus 86 client-side in `smoke-client.mjs`, among them the probe's non-vacuity cases) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, document-identity comparison, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
@@ -1219,6 +1345,7 @@ three statements the code could not keep were fixed rather than smoothed over in
 | 15 | **The Instagram feed endpoint does not exist** | Editorial / plugin access | Measured 2026-11-04: `GET /wp-json/spotlight/v1/instagram?feed=390` → `404 {"code":"rest_no_route"}`. The installed plugin's real namespace is **`sl-insta`**, and every route it publishes is admin CRUD behind auth (`/sl-insta/feeds`, `/sl-insta/accounts`, `/sl-insta/connect`) — there is no public read endpoint to point at. So `getSocialFeed()` fails on every `/news-media` view and renders `SOCIAL_FALLBACK`. Needs either a server-side fetch in a Pages Function or a decision to drop the surface. |
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | **Self-host the four font families** | Build change | `src/index.css` `@import`s `fonts.googleapis.com`, so every visit sends Google the caller's IP before any interaction. `/privacy` discloses it and names the fix. Self-hosting (or `@fontsource`) removes the section from the policy and the last always-on third-party request. |
+| 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
 
 ---
 
@@ -1228,15 +1355,17 @@ three statements the code could not keep were fixed rather than smoothed over in
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.24+)
+## Roadmap Milestones (Sprint 2.25+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
-- **Add a post-deploy probe.** Both defects of 2.21/2.22 were invisible to CI and to local
-  runs — the pipeline executes the same code that passed. A scheduled check against
-  production (`/sitemap.xml` contains at least one `/articles/` URL, `HEAD` matches `GET` on
-  the five paths in the 2.21 table, `/api/config` → `configured:true`) would have caught
-  both in seconds. This is the highest-value remaining item that needs no external access.
+- ~~Add a post-deploy probe~~ — **closed in 2.24**: `npm run probe` (`scripts/probe-production.mjs`)
+  plus `.github/workflows/probe.yml` asserts identity, statuses, HEAD parity, headers, config and
+  dispatches against the live origin, after every merge and every six hours. Next best use of the
+  same mechanism: a probe step that logs in and reads one Vault row, once item 2 has a policy to read.
+- **Self-host the four font families** (open item 17) is the largest remaining hardening item that
+  needs no external access: it removes the last always-on third-party request and a whole section
+  from `/privacy`.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.

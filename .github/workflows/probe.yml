@@ -1,0 +1,80 @@
+name: probe
+
+# Asks the *deployed* site the questions the build cannot answer.
+#
+# verify.yml proves the artifact is correct. It cannot see the deployment, which is
+# where the last two production defects lived: Sprint 2.21's dispatch feed had never
+# loaded (every WordPress request blocked by its own preflight) and Sprint 2.22 served
+# a sitemap with no dispatches from cache for ten minutes. Both were green in CI.
+#
+# Three triggers, for three different failure modes:
+#   - workflow_run after a successful verify on main  -> a deploy broke something
+#   - every six hours                                -> something else broke (a
+#     WordPress outage, an expired cache entry, a binding changed in the dashboard)
+#   - workflow_dispatch                              -> a human wants to know now,
+#     optionally against a preview deployment
+#
+# Public endpoints only: no secrets, no install step, so it cannot be red because a
+# token expired — the same reason Sprint 2.20 deleted the Dependabot-API gate.
+
+on:
+  workflow_run:
+    workflows: [verify]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Origin to probe
+        required: false
+        default: https://ellars.us.com
+
+permissions:
+  contents: read
+
+concurrency:
+  group: probe-production
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: probe the deployment
+    # A failed verify means main did not move (or moved broken); there is nothing new
+    # deployed to probe, and a red probe on top of a red verify only hides which one
+    # is the cause.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Probe the commit that was just deployed, not whatever main has become since.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Probe the deployment
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://ellars.us.com' }}
+        run: |
+          set -uo pipefail
+          # No `npm ci`: the probe imports nothing outside this repository and uses the
+          # platform's own fetch, so there is no install step and no token to expire.
+          #
+          # The run that follows a merge can arrive before Pages has finished publishing
+          # the new build, in which case a newly added route legitimately 404s. One retry
+          # after a pause separates "not deployed yet" from "broken"; both runs are
+          # printed, so the distinction stays visible in the log rather than being
+          # smoothed away by a passing second attempt.
+          if npm run probe -- --base="$BASE_URL"; then
+            exit 0
+          fi
+          echo "::warning::first probe failed; retrying once in 120s in case the deploy was still publishing"
+          sleep 120
+          npm run probe -- --base="$BASE_URL"
