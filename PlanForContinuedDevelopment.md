@@ -1279,10 +1279,24 @@ on the wrong request would page someone about a healthy deployment.
 
 ### Verified
 
-`eslint --max-warnings=0` clean · `npm test` 321 assertions · `npm run build` clean, precache 36
+`eslint --max-warnings=0` clean · `npm test` 322 assertions · `npm run build` clean, precache 36
 entries, all five artifacts present · **`npm run probe` → 29/29 against production** (exit 0) ·
 **the same probe against `https://example.com` → 25/29 failed, exit 1**, so the gate is measured
-rather than asserted · the workflow YAML parses with the triggers and `if:` guard above.
+rather than asserted · **against this branch's own Pages preview → 29/29**, with one check reporting
+a note instead of a tick: `/api/config` answers `503` there because the anon key is bound for
+Production only. That is a real finding about the preview environment (open item 1c) and not a defect
+in the deployment, so a preview run reports it as measured state while a production run still fails
+on it · the workflow YAML parses with the three triggers and the `if:` guard.
+
+Two things the preview run changed in the code, both worth recording because they were the probe's
+own defects rather than the site's:
+
+- **A 503 was being retried as transient and thrown** before any check could read it, so an unbound
+  key surfaced as `failed after 3 attempts` — indistinguishable from a flaky origin. The retry layer
+  now accepts statuses an endpoint documents as meaningful (`acceptStatuses`), and the check reports
+  `answered 503, expected 200 (unbound config)`.
+- **Parity forwards the same options as the GET it compares**, so `HEAD /api/config` is still compared
+  with `GET /api/config` on a host where both answer `503`.
 
 ### Known limits
 
@@ -1300,6 +1314,10 @@ rather than asserted · the workflow YAML parses with the triggers and `if:` gua
   the schedule is the backstop.
 - **It reports, it does not roll back.** Nothing here reverts a bad deploy; it makes the failure
   visible within minutes instead of the next time someone opens the site.
+- **A preview deployment is a different environment, and the probe says so.** `--base=<preview>` flips
+  the expectations to `noindex` and production canonicals, and tolerates the `503` that `/api/config`
+  answers where no anon key is bound (item 1c). It does **not** tolerate that on production — a
+  production run fails on an unbound key, which is the defect Sprint 2.8 shipped for weeks.
 
 ---
 
@@ -1308,6 +1326,7 @@ rather than asserted · the workflow YAML parses with the triggers and `if:` gua
 | # | Item | Blocker | Notes |
 |---|---|---|---|
 | 1 | **Supabase env values in the Pages project** | Cloudflare dashboard | The anon key *is* bound (verified: `/api/config` → `configured:true`), but `SUPABASE_URL` **and** `VITE_SUPABASE_URL` are set to `https://<ref>.supabase.co/rest/v1/`. Sprint 2.9 normalises it client- and edge-side; the binding should still be corrected to the bare origin so the guard becomes belt-and-braces. |
+| 1c | **`SUPABASE_ANON_KEY` is not bound for Preview** | Cloudflare dashboard | Measured 2026-11-05 against this cycle's own preview deployment: `/api/config` → `503` (`configured:false`), while production answers `200`. The binding is scoped to Production only, so **every preview deployment runs with auth dead** — `/dashboard` cannot be exercised from a PR at all, and `/login` can only show its honest "unavailable" state. Add the anon key to the Preview environment (never `service_role`); `npm run probe -- --base=<preview>` then verifies it, and removes the note that run currently prints. |
 | 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. Measured 2026-11-03: `POST /api/telemetry` → `202` with `{"kv":"unbound","d1":"unbound","analytics":"unbound"}`, i.e. **no telemetry is being stored anywhere today**. The 202 is honest, the drop is total. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. Measured 2026-11-03 with the live anon key: `ecosystem_vault` and `telemetry_logs` both answer `200` with `[]`. An empty result does **not** prove RLS is off (a table with RLS on and no policy also returns `[]`), and it does not prove it is on — this needs the service role, not a probe. **Verify before any further Vault work.** |
 | 2b | **`axim_vault` does not exist in the live project** | Database access | Measured 2026-11-03: `GET /rest/v1/axim_vault` → `PGRST205`. The live project has `ecosystem_vault` (columns `id`, `created_at`, `updated_at`; **no tenant column**) and `telemetry_logs`. So **every Vault call from the dashboard 404s in production** — list, create, update, delete — while the public site looks healthy. The client is not repointed at `ecosystem_vault` on purpose (no tenancy column). `0003_axim_vault.sql` exists only in the workspace handoff (`context/axim-vault-migration.sql`), **not in the repo**, so the schema is unversioned: copy it in, then apply it, then set `app_metadata.app_id` on the operator user. |

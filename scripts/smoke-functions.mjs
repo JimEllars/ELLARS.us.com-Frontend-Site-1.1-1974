@@ -1000,6 +1000,14 @@ describe('the deployment probe measures the deployment, not itself');
   // removed from the site itself).
   check('the probe does not re-type a route title', !/Home \| James Ellars \| Official/.test(probe));
   check('the probe exits non-zero when a check fails', /process\.exit\(1\)/.test(probe));
+  // `/api/config` answers 503 when it is unbound — a fact about the deployment, not a
+  // glitch. Without this the retry layer buries it as "failed after 3 attempts" and the
+  // reader cannot tell an unbound key from a flaky origin.
+  check(
+    'a documented 503 from /api/config is read as an answer, not retried into a transport error',
+    /acceptStatuses:\s*\[503\]/.test(probe),
+    'the retry layer must not hide the unbound-config message'
+  );
   check('the probe compares documents through the shared comparator', /compareDocument\(/.test(probe));
 
   const workflow = readFileSync(new URL('../.github/workflows/probe.yml', import.meta.url), 'utf8');

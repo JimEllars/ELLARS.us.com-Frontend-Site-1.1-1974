@@ -82,7 +82,7 @@ const quote = (value) => (value === null || value === undefined ? 'absent' : JSO
 /**
  * One request, with retries only where they cannot mask a defect.
  */
-const request = async (path, { method = 'GET', accept = DOCUMENT_ACCEPT } = {}) => {
+const request = async (path, { method = 'GET', accept = DOCUMENT_ACCEPT, acceptStatuses = [] } = {}) => {
   const url = new URL(path, BASE).toString();
   let lastError = null;
 
@@ -94,8 +94,12 @@ const request = async (path, { method = 'GET', accept = DOCUMENT_ACCEPT } = {}) 
         headers: { accept, 'user-agent': 'ellars-postdeploy-probe/1.0 (+https://ellars.us.com)' },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-      // A platform 5xx or a rate limit is transient; a 404 or a 200 is an answer.
-      if (response.status < 500 && response.status !== 429) return response;
+      // A platform 5xx or a rate limit is transient; a 404 or a 200 is an answer, and
+      // so is any status the endpoint documents as meaningful — `/api/config` answers
+      // 503 when it is unbound, which is a fact about the deployment, not a glitch to
+      // retry until it becomes an unreadable transport error.
+      const isAnswer = response.status < 500 && response.status !== 429;
+      if (isAnswer || acceptStatuses.includes(response.status)) return response;
       lastError = new Error(`HTTP ${response.status}`);
     } catch (error) {
       lastError = error;
@@ -113,10 +117,19 @@ const getDocument = async (path) => {
 
 const results = [];
 
+/**
+ * A check returns either an array of failures, or `{ failures, note }` when it has
+ * something measured to report that is not a defect (an environment-dependent state).
+ * The note prints under `ok`, so a passing check explains itself instead of hiding.
+ */
 const test = async (name, run) => {
   try {
-    const failures = (await run()) ?? [];
-    results.push({ name, failures });
+    const outcome = await run();
+    if (Array.isArray(outcome)) {
+      results.push({ name, failures: outcome });
+      return;
+    }
+    results.push({ name, failures: outcome?.failures ?? [], note: outcome?.note });
   } catch (error) {
     results.push({ name, failures: [`request failed: ${error.message}`] });
   }
@@ -247,10 +260,22 @@ await test('/robots.txt → 200 text/plain with a Sitemap directive', async () =
  * the Vault while every public page looked healthy. The project URL was the
  * PostgREST endpoint (`/rest/v1/`), which supabase-js then doubled into a 404.
  * ------------------------------------------------------------------------- */
+const CONFIG_OPTIONS = { accept: 'application/json', acceptStatuses: [503] };
+
 await test('/api/config → configured:true with a normalised project origin', async () => {
-  const response = await request('/api/config', { accept: 'application/json' });
+  const response = await request('/api/config', CONFIG_OPTIONS);
   const failures = [];
   if (response.status !== 200) {
+    // Measured 2026-11-05: the anon key is bound for Production only, so every
+    // preview deployment answers 503 here while production answers 200. That is a
+    // dashboard setting (open item 1c), not a defect in the deployment being probed
+    // — but it is exactly what this check exists to catch on production.
+    if (onPreviewHost && response.status === 503) {
+      return {
+        failures: [],
+        note: 'preview deployment: no anon key is bound here, so /api/config answers 503 by design (open item 1c) — auth is untestable from a preview',
+      };
+    }
     failures.push(`answered ${response.status}, expected 200 (unbound config)`);
     return failures;
   }
@@ -348,17 +373,24 @@ const parityProbes = [
   { path: '/platform', accept: DOCUMENT_ACCEPT, expected: 200 },
   { path: missingPath, accept: DOCUMENT_ACCEPT, expected: 404 },
   { path: missingAsset, accept: 'image/png,image/*', expected: 404 },
-  { path: '/api/config', accept: 'application/json', expected: 200 },
+  // On a preview host the expected status is whatever the environment answers (503
+  // when the anon key is unbound); HEAD must still agree with GET, which is the
+  // property this check owns.
+  { path: '/api/config', ...CONFIG_OPTIONS, expected: onPreviewHost ? null : 200 },
 ];
 
 for (const probe of parityProbes) {
   await test(`HEAD ${probe.path} matches GET`, async () => {
     const failurePrefix = `${probe.path}:`;
-    const getResponse = await request(probe.path, { accept: probe.accept });
-    const headResponse = await request(probe.path, { accept: probe.accept, method: 'HEAD' });
+    const getResponse = await request(probe.path, { accept: probe.accept, acceptStatuses: probe.acceptStatuses });
+    const headResponse = await request(probe.path, {
+      accept: probe.accept,
+      acceptStatuses: probe.acceptStatuses,
+      method: 'HEAD',
+    });
     const failures = [];
 
-    if (getResponse.status !== probe.expected) {
+    if (probe.expected !== null && getResponse.status !== probe.expected) {
       failures.push(`${failurePrefix} GET answered ${getResponse.status}, expected ${probe.expected}`);
     }
     if (headResponse.status !== getResponse.status) {
@@ -437,6 +469,7 @@ const failed = results.filter((result) => result.failures.length > 0);
 for (const result of results) {
   if (result.failures.length === 0) {
     console.log(`  ok   ${result.name}`);
+    if (result.note) console.log(`         ${result.note}`);
     continue;
   }
   console.log(`  FAIL ${result.name}`);
