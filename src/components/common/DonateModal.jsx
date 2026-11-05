@@ -10,6 +10,11 @@ const DonateModal = () => {
   const { isDonateModalOpen, setDonateModalOpen } = useAppStore();
   const [selectedTier, setSelectedTier] = useState(null);
   const [customAmount, setCustomAmount] = useState('');
+  // Resolved once. The old code fell back to 'https://example.com/donate', so an
+  // unconfigured build opened a stranger's placeholder in a new tab and called it a
+  // contribution. If no destination is configured the modal now says so and the
+  // button is disabled, rather than pretending to route somewhere.
+  const donationLink = import.meta.env.VITE_DONATION_LINK;
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -111,13 +116,13 @@ const DonateModal = () => {
     }
     const amount = selectedTier || Number(customAmount);
     if (!amount || isNaN(amount) || amount <= 0) return;
+    // Belt to the disabled button's braces: a keyboard activation or assistive-tech
+    // click must not be able to reach a placeholder destination either.
+    if (!donationLink) return;
 
     console.log(`[DonateModal] Processing contribution: $${amount}`);
     trackEvent('donation_initiated', { amount: Number(amount) });
 
-    const donationLink = import.meta.env.VITE_DONATION_LINK || 'https://example.com/donate';
-
-    // Attempting external routing
     window.open(donationLink, '_blank', 'noopener,noreferrer');
 
     // Optional: close modal after confirming
@@ -157,7 +162,7 @@ const DonateModal = () => {
                 Fund The <span className="text-yellow-electric">Vision</span>
               </h2>
               <p className="font-mono text-xs text-zinc-400 tracking-widest uppercase">
-                Support The All-American Tax Credit
+                Support The American Tax Credit
               </p>
             </div>
 
@@ -198,9 +203,9 @@ const DonateModal = () => {
 
             <button
               onClick={handleConfirm}
-              disabled={!selectedTier && !customAmount}
+              disabled={!donationLink || (!selectedTier && !customAmount)}
               className={`w-full py-4 font-editorial font-black text-lg tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 ${
-                selectedTier || customAmount
+                donationLink && (selectedTier || customAmount)
                   ? 'bg-yellow-electric text-black hover:bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
                   : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
               }`}
@@ -208,6 +213,12 @@ const DonateModal = () => {
               <span>Confirm Contribution</span>
               <SafeIcon name="ExternalLink" className="w-5 h-5 ml-2" />
             </button>
+            {!donationLink && (
+              <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-zinc-500 text-center leading-relaxed">
+                Contributions are not open. No payment destination is configured, and nothing
+                here is a solicitation.
+              </p>
+            )}
           </motion.div>
         </motion.div>
       )}

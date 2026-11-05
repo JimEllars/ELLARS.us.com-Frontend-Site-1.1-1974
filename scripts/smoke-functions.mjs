@@ -209,7 +209,16 @@ check(
   toUtcIso('2026-10-30T12:00:00+05:00')
 );
 check('unparseable timestamp -> omitted', toUtcIso('nope') === null);
-check('static route table mirrors the router', STATIC_ROUTES.length === 4, String(STATIC_ROUTES.length));
+// Assert the paths themselves rather than a count. A bare `length === 4` passes when one
+// route is swapped for another and fails when one is legitimately added — which is exactly
+// backwards. This is also the guard that would have caught /privacy being added to the
+// router without a sitemap entry, or the reverse.
+const EXPECTED_STATIC_PATHS = ['/', '/platform', '/about', '/news-media', '/privacy'];
+check(
+  'static route table mirrors the router',
+  JSON.stringify(STATIC_ROUTES.map((route) => route.path)) === JSON.stringify(EXPECTED_STATIC_PATHS),
+  STATIC_ROUTES.map((route) => route.path).join(', ')
+);
 check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length === 6, String(DIRECTIVE_SLUGS.length));
 
 // A HEAD on /sitemap.xml used to fall through `_redirects` to the SPA shell, so a
@@ -317,6 +326,29 @@ check('directive slug table mirrors DirectiveDetail', DIRECTIVE_SLUGS.length ===
   check('the sitemap declares its namespace', built.includes('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'));
   check('post entries reach the document', built.includes('<loc>https://ellars.us.com/articles/example</loc>'));
   check('every static route is present', STATIC_ROUTES.every((route) => built.includes(`<loc>https://ellars.us.com${route.path}</loc>`)));
+
+  // Two hand-maintained tables decide what a crawler can see: STATIC_ROUTES here
+  // and STATIC_ROUTES in lib/edge/meta.js. A path listed for the sitemap with no
+  // metadata entry is advertised and then answered as a 404; a noindex surface in
+  // the sitemap is a page asking not to be indexed while telling crawlers it
+  // exists. Assert the invariant rather than the two lists separately.
+  check(
+    'every sitemap route has an indexable metadata entry',
+    STATIC_ROUTES.every((route) => {
+      const meta = resolveMeta(route.path, SITE_ORIGIN);
+      return meta && meta.robots === 'index, follow' && meta.canonical === `https://ellars.us.com${route.path}`;
+    }),
+    STATIC_ROUTES.filter((route) => {
+      const meta = resolveMeta(route.path, SITE_ORIGIN);
+      return !meta || meta.robots !== 'index, follow';
+    })
+      .map((route) => route.path)
+      .join(', ')
+  );
+  check(
+    'noindex surfaces are never advertised in the sitemap',
+    ['/login', '/dashboard'].every((path) => !built.includes(`<loc>https://ellars.us.com${path}</loc>`))
+  );
 }
 
 describe('lib/edge/meta.js');

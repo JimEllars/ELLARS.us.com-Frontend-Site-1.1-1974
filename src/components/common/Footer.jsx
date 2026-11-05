@@ -215,8 +215,7 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} James Ellars. All Rights Reserved. An independent policy and advocacy initiative.
           </div>
           <div className="flex space-x-6 text-zinc-600 text-[10px] uppercase tracking-widest font-editorial font-bold">
-            <Link to="#" className="hover:text-white transition-colors" aria-label="Privacy Policy">Privacy Policy</Link>
-            <Link to="#" className="hover:text-white transition-colors" aria-label="System Logistics">System Logistics</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors" aria-label="Privacy Policy">Privacy Policy</Link>
           </div>
         </div>
 

@@ -72,7 +72,7 @@ const Platform = () => {
       icon: "Home",
       status: "Directive 01",
       color: "text-yellow-electric",
-      description: "Rebuilding the American working class as the core foundation. James brings a perspective as a worker first, contrasting with Washington D.C. oligarchs who were born into money and lack understanding of modern American struggles. We must close loopholes used by the wealthy to hoard money and dodge taxes, building a future economy by enabling those at the bottom.",
+      description: "Rebuilding the American working class as the core foundation. The platform starts where the paycheck does: Washington's economics was written by people whose income has never depended on a shift ending, and that distance is the blind spot. We must close loopholes used by the wealthy to hoard money and dodge taxes, building a future economy by enabling those at the bottom.",
       progress: 95,
       sponsor: "Economic Equity Council",
       revisions: 14
@@ -94,7 +94,7 @@ const Platform = () => {
       icon: "Cpu",
       status: "Directive 03",
       color: "text-yellow-electric",
-      description: "Implementing a Negative Income Tax system funded by returning taxes on the ultra-rich and corporations to 1950s levels, closing avoidance loopholes, and returning generated wealth as a technological dividend.",
+      description: "Advocating a Negative Income Tax funded by returning taxes on the ultra-rich and corporations to 1950s levels, closing avoidance loopholes, and returning generated wealth as a technological dividend.",
       progress: 85,
       sponsor: "Technological Advisory Board",
       revisions: 12
@@ -116,7 +116,7 @@ const Platform = () => {
       icon: "Shield",
       status: "Directive 05",
       color: "text-yellow-electric",
-      description: "Our campaign stands firmly against endless wars. We must contrast the needs of normal Americans with the power of defense contractors and war corporations, ultimately defunding those who profit from global conflict.",
+      description: "This platform stands firmly against endless wars. We must contrast the needs of normal Americans with the power of defense contractors and war corporations, ultimately defunding those who profit from global conflict.",
       progress: 75,
       sponsor: "Peace & Prosperity Coalition",
       revisions: 5
@@ -127,7 +127,7 @@ const Platform = () => {
       icon: "Home",
       status: "Directive 06",
       color: "text-yellow-electric",
-      description: "Creating extensive programs for American workers to build quality, long-lasting homes. We must address the current housing crisis through direct, working-class labor.",
+      description: "Programs for American workers to build quality, long-lasting homes. We must address the current housing crisis through direct, working-class labor.",
       progress: 65,
       sponsor: "Working Families Council",
       revisions: 3
@@ -268,7 +268,7 @@ const Platform = () => {
         <div className="deco-divider"></div>
         <div className="mt-32 pt-20">
           <div className="text-center mb-16">
-            <h2 className="font-editorial font-black text-3xl md:text-5xl text-white uppercase tracking-tight">IMPLEMENTATION ROADMAP</h2>
+            <h2 className="font-editorial font-black text-3xl md:text-5xl text-white uppercase tracking-tight">HOW IT GETS ADOPTED</h2>
           </div>
 
           <div className="relative">
@@ -277,10 +277,10 @@ const Platform = () => {
 
             <div className="grid md:grid-cols-4 gap-8">
               {[
-                { step: "01", title: "Policy Briefing", desc: "Initial stakeholder alignment and economic modeling." },
-                { step: "02", title: "Legislative Drafting", desc: "Translating models into actionable policy frameworks." },
-                { step: "03", title: "Pilot Programs", desc: "Localized testing of the American Tax Credit." },
-                { step: "04", title: "Civic Infrastructure Deployment", desc: "Full-scale rollout and continuous algorithmic monitoring." }
+                { step: "01", title: "Model It In The Open", desc: "Economic modelling published with its sources, so anyone can audit the arithmetic." },
+                { step: "02", title: "Draft The Statute", desc: "Model language any legislator or staffer can pick up and adapt." },
+                { step: "03", title: "Show A County", desc: "What it would cost and pay out in one real jurisdiction, in real numbers." },
+                { step: "04", title: "Hand It Over", desc: "Adoption belongs to people who hold office. We publish; they decide." }
               ].map((item, idx) => (
                 <div key={idx} className="relative bg-surface border border-white/10 p-6 rounded-sm z-10 md:mt-0 mt-8">
                   <div className="absolute -top-4 md:-top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
