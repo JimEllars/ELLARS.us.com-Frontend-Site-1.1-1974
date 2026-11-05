@@ -462,6 +462,28 @@ await test('og:image resolves as a real PNG on the site origin', async () => {
 });
 
 /* ---------------------------------------------------------------------------
+ * 10. The self-hosted typefaces are served from this origin.
+ *
+ * Sprint 2.25 replaced an `@import fonts.googleapis.com` with four WOFF2 files here.
+ * The failure mode is silent — the browser falls back to sans-serif and nobody notices
+ * except on a machine that has never cached the site — so the file, its content type
+ * and its magic number are asserted rather than assumed. It also proves the edge's
+ * file rule covers .woff2 (a font answered by the SPA shell would be a `text/html` 200).
+ * ------------------------------------------------------------------------- */
+for (const font of ['inter-variable.woff2', 'cinzel-variable.woff2']) {
+  await test(`/fonts/${font} → 200 font/woff2 from the origin`, async () => {
+    const response = await request(`/fonts/${font}`, { accept: 'font/woff2,*/*' });
+    const failures = [];
+    if (response.status !== 200) failures.push(`answered ${response.status}, expected 200`);
+    if (typeOf(response) !== 'font/woff2') failures.push(`content-type ${typeOf(response)}, expected font/woff2`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength < 5000) failures.push(`${bytes.byteLength} bytes, expected a real font file`);
+    if (String.fromCharCode(...bytes.subarray(0, 4)) !== 'wOF2') failures.push('body is not a WOFF2 file');
+    return failures;
+  });
+}
+
+/* ---------------------------------------------------------------------------
  * Report.
  * ------------------------------------------------------------------------- */
 const failed = results.filter((result) => result.failures.length > 0);

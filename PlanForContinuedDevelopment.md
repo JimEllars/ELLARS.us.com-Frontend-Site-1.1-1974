@@ -1321,6 +1321,118 @@ own defects rather than the site's:
 
 ---
 
+## Sprint 2.25 — Every visit called Google before it rendered a word
+
+**Branch:** `fix/self-hosted-fonts` · **Base:** `e0f193e` (main)
+
+### Why this cycle
+
+Open item 17, and the roadmap's named next hardening item. `src/index.css` began with
+`@import url('https://fonts.googleapis.com/css2?...')`, so **every** visit to **every** page
+made a request to Google before the first glyph painted — carrying the visitor's IP address,
+with no interaction required. It was the only always-on third-party request on the site, and
+the reason `/privacy` had a section titled "One thing worth being explicit about: the fonts",
+written in 2.23 to disclose a behaviour that should not have existed.
+
+The disclosure was honest and it was also an admission: a privacy notice whose longest
+paragraph is about a font request is describing a defect.
+
+### Shipped
+
+**Four families, self-hosted — `public/fonts/`, `src/fonts.css` (new)**
+- The CSS was re-derived from the same Google Fonts URL the site imported, WOFF2 user agent,
+  keeping only the `/* latin */` blocks (the site is English; a subset nobody reads should not
+  be downloaded to prove it). 4 files, **108 kB**.
+- **One `@font-face` per family, not per weight.** Google answers `wght@300;400;500;600;800`
+  with a *single variable font* and repeats its URL in each rule; downloading per weight
+  produced five byte-identical 48 kB Inter files — 351 kB of duplicates for 108 kB of
+  typeface. `font-weight: 300 800` (Inter) and `400 900` (Cinzel) download once and render
+  every weight. Caught by noticing four files with the same byte count.
+- `unicode-range` and `font-display: swap` carried over unchanged, so a page still downloads
+  nothing for characters it does not use and text still paints in the fallback face rather
+  than staying invisible.
+- `public/fonts/README.md` records provenance, versions (Inter v20, Cinzel v26, Marcellus v14,
+  VT323 v18), licence (all SIL OFL 1.1) and why `@fontsource` was not used: it would add four
+  dependencies to ship 108 kB of bytes that never change, and its versioning is separate from
+  the CSS that references them.
+
+**The CSP shrank — `public/_headers`**
+- `style-src` loses `fonts.googleapis.com`, `font-src` loses `fonts.gstatic.com`,
+  `connect-src` loses both. The policy now allows **no Google host at all**, which is two
+  fewer origins a compromise of this site can reach.
+- `/fonts/*` gets its own rule: `max-age=86400` (no `immutable` — the filenames are not
+  content-hashed) and `Content-Type: font/woff2` **pinned**, because the probe asserts that
+  type exactly and a font served as `application/octet-stream` under `nosniff` is the kind of
+  thing that renders on one browser and not another.
+
+**The service worker was caching a host that no longer exists — `vite.config.js`**
+- The `google-fonts` runtime route (`^https://fonts.(googleapis|gstatic).com`) is deleted.
+  Dead config that describes a request nobody makes is how a future reader concludes the
+  request still happens.
+- `woff2` is removed from `globPatterns` deliberately: precaching four families would put
+  108 kB in every install, including the three a given page never renders. Fonts are fetched
+  on first use and kept 30 days by the existing `image-font-cache` route. Precache stays at
+  36 entries / 998 KiB.
+
+**The policy stopped disclosing what no longer happens — `src/pages/Privacy.jsx`**
+- The "explicit about the fonts" section is gone, as its own final paragraph promised it would
+  be ("when that is done, this section is deleted"). The Google Fonts bullet is gone from the
+  sub-processor list — Google is no longer a processor of anything on this site. Version
+  **2**, same date.
+
+### Tests
+
+`npm test` → **352 assertions** (266 edge + 86 client), 0 failed. 30 new, all mechanical:
+- **No stylesheet loads a font from Google** (comment-stripped, because the fix's own comment
+  quotes the URL — the guard failed on its own documentation first, at 5 `font-display: swap`
+  for 4 faces, and was corrected rather than deleted).
+- **No active `_headers` line names a font host** (comments stripped: the note explaining the
+  removal names the host), and the parsed CSP must read `font-src 'self' data:` with no font
+  host in `style-src` or `connect-src`.
+- The service worker has no `google-fonts` route and no `woff2` in `globPatterns`.
+- `/fonts/*` pins `font/woff2` and caches for a day, not a year.
+- **The files are real**: four committed, each with the `wOF2` magic number and over 5 kB;
+  every committed file is declared and every declaration resolves; every face uses
+  `font-display: swap`; families are declared once each; the two variable families use ranges.
+- **The Tailwind tokens and the faces agree** — `font-inter`, `font-editorial`, `font-deco`,
+  `font-mono` all resolve to a family that is actually declared, in both directions.
+- The policy contains no "Google Fonts" claim and records Version 2.
+- The probe gained two checks (below), which is where the 4 assertions that are not source
+  guards land.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm test` 352 assertions · `npm run build` clean, precache
+36 entries, `dist/fonts/` carries the four files, the built CSS references all four by
+absolute `/fonts/...` URL, and **no `fonts.googleapis`/`fonts.gstatic` string survives in
+`dist/assets`, `dist/index.html` or `dist/sw.js`** (only in the `_headers` comment that
+explains their removal) · `vite preview` serves `/fonts/inter-variable.woff2` as 48,256 bytes
+with a `wOF2` header.
+
+`npm run probe` gained `/fonts/inter-variable.woff2` and `/fonts/cinzel-variable.woff2`:
+status, content type, size and magic number — so the deployment is checked, not just the
+build, and the edge's file rule is proven to cover `.woff2` (a font answered by the SPA shell
+would be a `text/html` 200). Against production **before** this merge those two checks fail
+with `404` — correct, and the cleanest demonstration yet that the probe added in 2.24 detects
+an asset that exists in the repo and not in the deployment. They go green on the merge.
+
+### Known limits
+
+- **Latin only.** A visitor whose page needs Cyrillic or Greek falls back to the system face
+  for those characters rather than downloading a subset nobody reads. Adding one means adding
+  the subset's blocks to `src/fonts.css` and its `.woff2` here; the README says so.
+- **The files are pinned, not versioned by hash.** A future font bump replaces a file at a URL
+  clients may have cached for a day. `max-age=86400` (not `immutable`) is the deliberate price
+  of keeping the paths readable, and the same rule the site already applies to images.
+- **Nothing verifies the rendered glyphs.** The guards prove the files are served and
+  declared; they cannot prove the page looks right. That remains a browser check by eye, and
+  the four families and their tokens are unchanged from before.
+- **`font-display: swap` is inherited, not re-decided.** It is the right choice for a content
+  site (no invisible text), and it is the reason a page can flash its fallback face on a cold
+  cache. Self-hosting makes that window smaller, not zero.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1336,7 +1448,7 @@ own defects rather than the site's:
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **235 assertions** in CI (plus 86 client-side in `smoke-client.mjs`, among them the probe's non-vacuity cases) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, document-identity comparison, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
+| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **266 assertions** in CI (plus 86 client-side in `smoke-client.mjs`, among them the probe's non-vacuity cases) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, document-identity comparison, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
@@ -1344,7 +1456,7 @@ own defects rather than the site's:
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
 | 15 | **The Instagram feed endpoint does not exist** | Editorial / plugin access | Measured 2026-11-04: `GET /wp-json/spotlight/v1/instagram?feed=390` → `404 {"code":"rest_no_route"}`. The installed plugin's real namespace is **`sl-insta`**, and every route it publishes is admin CRUD behind auth (`/sl-insta/feeds`, `/sl-insta/accounts`, `/sl-insta/connect`) — there is no public read endpoint to point at. So `getSocialFeed()` fails on every `/news-media` view and renders `SOCIAL_FALLBACK`. Needs either a server-side fetch in a Pages Function or a decision to drop the surface. |
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
-| 17 | **Self-host the four font families** | Build change | `src/index.css` `@import`s `fonts.googleapis.com`, so every visit sends Google the caller's IP before any interaction. `/privacy` discloses it and names the fix. Self-hosting (or `@fontsource`) removes the section from the policy and the last always-on third-party request. |
+| 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
 
 ---
@@ -1355,7 +1467,7 @@ own defects rather than the site's:
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.25+)
+## Roadmap Milestones (Sprint 2.26+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
@@ -1363,9 +1475,9 @@ own defects rather than the site's:
   plus `.github/workflows/probe.yml` asserts identity, statuses, HEAD parity, headers, config and
   dispatches against the live origin, after every merge and every six hours. Next best use of the
   same mechanism: a probe step that logs in and reads one Vault row, once item 2 has a policy to read.
-- **Self-host the four font families** (open item 17) is the largest remaining hardening item that
-  needs no external access: it removes the last always-on third-party request and a whole section
-  from `/privacy`.
+- ~~Self-host the four font families~~ — **closed in 2.25**: the site now allows no Google host at
+  all, and `/privacy` lost the section that disclosed the request instead of having to keep it
+  accurate.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.

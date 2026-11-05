@@ -42,7 +42,7 @@ const Privacy = () => {
             a template says it should.
           </p>
           <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 mb-16">
-            Last updated {LAST_UPDATED} &middot; Version 1
+            Last updated {LAST_UPDATED} &middot; Version 2
           </p>
 
           <Section title="Who this covers">
@@ -113,10 +113,6 @@ const Privacy = () => {
                 delivery, which necessarily receives your email address.
               </li>
               <li>
-                <strong className="text-white font-medium">Google Fonts</strong> &mdash; the
-                typefaces on this site.
-              </li>
-              <li>
                 <strong className="text-white font-medium">WordPress</strong> &mdash; the
                 article archive and its images.
               </li>
@@ -126,21 +122,6 @@ const Privacy = () => {
                 pages that use them.
               </li>
             </ul>
-          </Section>
-
-          <Section title="One thing worth being explicit about: the fonts">
-            <p>
-              The typefaces are served by Google&rsquo;s font service, which means Google receives
-              a request &mdash; including your IP address &mdash; when you load a page here. It is the
-              one third-party request that happens on every visit, whether or not you interact
-              with anything.
-            </p>
-            <p>
-              It is disclosed rather than hidden because a privacy notice that omits the one
-              request that always happens is not a privacy notice. The fix is to serve the
-              fonts ourselves; when that is done, this section is deleted and the date at the
-              top changes.
-            </p>
           </Section>
 
           <Section title="Cookies and local storage">

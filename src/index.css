@@ -1,5 +1,7 @@
 @import 'react-toastify/dist/ReactToastify.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Cinzel:wght@400;700;900&family=Marcellus&family=VT323&display=swap');
+/* Self-hosted, in src/fonts.css. This was @import fonts.googleapis.com, which made
+   Google the one third-party request on every visit to every page. */
+@import './fonts.css';
 
 @tailwind base;
 @tailwind components;

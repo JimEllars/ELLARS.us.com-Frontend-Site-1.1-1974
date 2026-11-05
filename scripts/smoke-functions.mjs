@@ -1021,6 +1021,124 @@ describe('the deployment probe measures the deployment, not itself');
   check('`npm run probe` exists', typeof pkg.scripts?.probe === 'string', pkg.scripts?.probe);
 }
 
+describe('the typefaces are self-hosted, and nothing asks Google for them');
+{
+  // `src/index.css` used to `@import fonts.googleapis.com`, so Google received every
+  // visitor's IP address before any interaction — the one third-party request that
+  // happened on every visit, to every page. /privacy disclosed it and named the fix.
+  // The files live in public/fonts/ now and the policy section is gone, so the guards
+  // below are what keep a future copy-paste from re-adding the import.
+  const stripCssComments = (source) =>
+    source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\n)\s*\/\/.*/g, '$1');
+
+  const cssFiles = ['../src/index.css', '../src/fonts.css'];
+  const offendingImports = cssFiles.filter((name) =>
+    /fonts\.(?:googleapis|gstatic)\.com/.test(stripCssComments(readFileSync(new URL(name, import.meta.url), 'utf8')))
+  );
+  check('no stylesheet loads a font from Google', offendingImports.length === 0, offendingImports.join(', '));
+
+  const indexCss = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  check('index.css imports the local faces', /@import\s+'\.\/fonts\.css'/.test(indexCss));
+
+  // _headers is a config file, so only active directives count: the note above the CSP
+  // names the hosts it removed, and a guard that trips on its own documentation gets
+  // deleted rather than fixed.
+  const headers = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
+  const activeHeaders = headers
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+  check('no active header points at Google Fonts', !/fonts\.(?:googleapis|gstatic)\.com/.test(activeHeaders),
+    activeHeaders.match(/fonts\.(?:googleapis|gstatic)\.com/)?.[0] ?? '');
+
+  // Pinned rather than inferred from the platform's MIME table: the probe asserts
+  // `font/woff2` exactly, and a font served as octet-stream under `nosniff` is the kind
+  // of thing that renders on one browser and not another.
+  const fontRule = headers.split(/\n\s*\n/).find((block) => block.trimStart().startsWith('/fonts/*')) ?? '';
+  check('the font rule pins its content type', /Content-Type:\s*font\/woff2/.test(fontRule), fontRule.trim().split('\n').pop());
+  check('the font rule caches for a day, not a year', /max-age=86400/.test(fontRule), fontRule.match(/max-age=\d+/)?.[0]);
+
+  const csp = headers.match(/Content-Security-Policy:\s*(.+)/)?.[1] ?? '';
+  check('font-src is the site origin only', /font-src 'self' data:;/.test(csp), csp.match(/font-src[^;]*/)?.[0]);
+  check(
+    'style-src no longer allow-lists a font host',
+    !/style-src[^;]*fonts\./.test(csp),
+    csp.match(/style-src[^;]*/)?.[0]
+  );
+  check(
+    'connect-src no longer allow-lists a font host',
+    !/connect-src[^;]*fonts\./.test(csp),
+    csp.match(/connect-src[^;]*/)?.[0]
+  );
+
+  const viteConfig = readFileSync(new URL('../vite.config.js', import.meta.url), 'utf8');
+  check('no service-worker route caches a Google font host', !/fonts\\\.\(\?:googleapis/.test(viteConfig) && !/'google-fonts'/.test(viteConfig));
+  // Precaching four families would put ~108 kB of typeface in every install, including
+  // the three a given page never renders. They are cached on first use instead.
+  check(
+    'the fonts are not precached',
+    !/globPatterns:\s*\[[^\]]*woff2/.test(viteConfig),
+    viteConfig.match(/globPatterns:\s*\[[^\]]*\]/)?.[0]
+  );
+
+  // The policy is code: a sentence claiming a request that no longer happens is as
+  // wrong as a sentence omitting one that does. Version 2 removed the disclosure.
+  const privacy = readFileSync(new URL('../src/pages/Privacy.jsx', import.meta.url), 'utf8');
+  check('the policy no longer discloses a Google Fonts request', !/Google Fonts/.test(privacy));
+  check('the policy no longer names Google as a sub-processor', !/fonts\.googleapis/.test(privacy));
+  check('the policy records the revision', /Version 2/.test(privacy));
+
+  // And the files are actually there, are actually WOFF2, and every one is declared.
+  // A @font-face whose URL 404s is silent: the browser falls back and nobody notices
+  // except on a machine that has never loaded the site.
+  const fontsDir = new URL('../public/fonts/', import.meta.url);
+  const fontFiles = readdirSync(fontsDir).filter((name) => name.endsWith('.woff2'));
+  check('four families are committed', fontFiles.length === 4, fontFiles.join(', '));
+  for (const file of fontFiles) {
+    const bytes = readFileSync(new URL(file, fontsDir));
+    check(`${file} is a WOFF2 file`, bytes.subarray(0, 4).toString() === 'wOF2', bytes.subarray(0, 4).toString('hex'));
+    check(`${file} is not empty`, bytes.length > 5000, String(bytes.length));
+  }
+
+  // Counted on the comment-stripped source: the file's own header explains that
+  // `font-display: swap` is carried over, and a guard that trips on prose is a guard
+  // that gets deleted rather than fixed.
+  const fontsCss = stripCssComments(readFileSync(new URL('../src/fonts.css', import.meta.url), 'utf8'));
+  const declared = [...fontsCss.matchAll(/src:\s*url\('\/fonts\/([^']+)'\)/g)].map((match) => match[1]);
+  check('every committed font is declared', fontFiles.every((file) => declared.includes(file)), declared.join(', '));
+  check('no declaration points at a missing file', declared.every((file) => fontFiles.includes(file)), declared.join(', '));
+  check(
+    'every face uses font-display: swap',
+    (fontsCss.match(/font-display:\s*swap/g) || []).length === declared.length,
+    `${(fontsCss.match(/font-display:\s*swap/g) || []).length} of ${declared.length}`
+  );
+
+  // One @font-face per family, not per weight: Google serves a variable font and repeats
+  // its URL, so a per-weight migration downloads five identical 48 kB Inter files.
+  const families = [...fontsCss.matchAll(/font-family:\s*'([^']+)'/g)].map((match) => match[1]);
+  check('families are declared once each', new Set(families).size === families.length, families.join(', '));
+  check(
+    'variable weights are declared as a range',
+    /font-weight:\s*300 800;/.test(fontsCss) && /font-weight:\s*400 900;/.test(fontsCss),
+    'Inter 300-800 / Cinzel 400-900'
+  );
+
+  // The Tailwind tokens are what the components actually apply; a family renamed in one
+  // place and not the other renders the fallback silently.
+  const tailwind = readFileSync(new URL('../tailwind.config.js', import.meta.url), 'utf8');
+  const tokens = ['Inter', 'Cinzel', 'Marcellus', 'VT323'];
+  check(
+    'every Tailwind family has a self-hosted face',
+    tokens.every((token) => families.includes(token)),
+    tokens.filter((token) => !families.includes(token)).join(', ')
+  );
+  check(
+    'tailwind still declares the four families',
+    tokens.every((token) => new RegExp(`'${token}'`).test(tailwind)),
+    tokens.filter((token) => !new RegExp(`'${token}'`).test(tailwind)).join(', ')
+  );
+}
+
 console.log(`\n${passed} passed, ${failures.length} failed`);
 if (failures.length) {
   console.error(failures.map((line) => ` - ${line}`).join('\n'));

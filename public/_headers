@@ -8,6 +8,10 @@
 # - frame-src must list the video origins or the rich-media renderers in
 #   ArticleDetail are blocked by the browser no matter what DOMPurify allows.
 # - api.axim.us.com is permanently gone (Bluehost 404). Do not add it back.
+# - The typefaces are self-hosted (/fonts/*.woff2) as of Sprint 2.25, so
+#   fonts.googleapis.com and fonts.gstatic.com are gone from style-src, font-src and
+#   connect-src. Do not re-add them: that request reached Google on every visit. A guard
+#   in scripts/smoke-functions.mjs fails the build if they return.
 # - script-src still carries 'unsafe-inline'. Moving to hashes/nonces is tracked
 #   in PlanForContinuedDevelopment.md; it needs the Turnstile loader and the
 #   Cloudflare Web Analytics beacon verified first.
@@ -29,7 +33,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: accelerometer=(), autoplay=(self), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), interest-cohort=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://wp.axim.us.com https://wp.ellars.us.com https://images.unsplash.com https://i.ytimg.com https://*.cloudflarestream.com; media-src 'self' blob: data: https://*.cloudflarestream.com https://play.pod.co; connect-src 'self' https://*.supabase.co https://wp.ellars.us.com https://wp.axim.us.com https://play.pod.co https://challenges.cloudflare.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://play.pod.co https://*.cloudflarestream.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://wp.axim.us.com https://wp.ellars.us.com https://images.unsplash.com https://i.ytimg.com https://*.cloudflarestream.com; media-src 'self' blob: data: https://*.cloudflarestream.com https://play.pod.co; connect-src 'self' https://*.supabase.co https://wp.ellars.us.com https://wp.axim.us.com https://play.pod.co https://challenges.cloudflare.com https://cloudflareinsights.com https://static.cloudflareinsights.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://play.pod.co https://*.cloudflarestream.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
 
 /
   Cache-Control: public, max-age=0, must-revalidate
@@ -58,6 +62,10 @@
 
 /*.png
   Cache-Control: public, max-age=86400
+
+/fonts/*
+  Cache-Control: public, max-age=86400
+  Content-Type: font/woff2
 
 /*.woff2
   Cache-Control: public, max-age=86400
