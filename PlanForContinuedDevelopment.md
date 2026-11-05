@@ -1308,7 +1308,11 @@ own defects rather than the site's:
   by hand, not a replacement for them.
 - **A slow Pages build can still race the post-merge run.** The single 120 s retry covers the ordinary
   case; a genuinely stuck deploy would show as a red probe *and* a stale `cf-ray` in the log. It beats
-  the alternative (a probe that waits ten minutes to say nothing).
+  the alternative (a probe that waits ten minutes to say nothing). **Measured on 2.25's merge
+  (2026-11-05):** the first run started 7 s after the merge, found the two new font URLs `404`, and
+  reported `29 passed, 2 failed`; the retry 120 s later found them and reported `31 passed, 0 failed`.
+  The deploy lag was ~2 minutes, and both runs are visible in the log — which is the whole point of
+  not retrying inside the assertions.
 - **GitHub's scheduler is not punctual.** A cron run can start minutes late, and scheduled workflows
   stop after 60 days without repository activity — the post-merge trigger is the one that matters, and
   the schedule is the backstop.
@@ -1414,7 +1418,9 @@ status, content type, size and magic number — so the deployment is checked, no
 build, and the edge's file rule is proven to cover `.woff2` (a font answered by the SPA shell
 would be a `text/html` 200). Against production **before** this merge those two checks fail
 with `404` — correct, and the cleanest demonstration yet that the probe added in 2.24 detects
-an asset that exists in the repo and not in the deployment. They go green on the merge.
+an asset that exists in the repo and not in the deployment. They went green on the merge, measured:
+`29 passed, 2 failed` at merge+7 s (fonts not yet published), `31 passed, 0 failed` after the probe's
+120 s retry — 2.24's deploy-propagation path exercised for real the first time it was needed.
 
 ### Known limits
 
