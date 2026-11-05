@@ -97,7 +97,7 @@ console.log('\nsrc/lib/headMeta.js');
 // The client and the edge must resolve the *same* table, or a reader's DOM and the
 // bytes a crawler receives disagree. These assert parity with lib/edge/meta.js
 // rather than re-stating the strings, so a copy edit cannot make them stale.
-for (const path of ['/', '/platform', '/about', '/news-media', '/login', '/dashboard']) {
+for (const path of ['/', '/platform', '/about', '/news-media', '/privacy', '/login', '/dashboard']) {
   const edge = resolveMeta(path, SITE_ORIGIN);
   const client = resolveRouteMeta(path);
   check(`${path} resolves client-side`, client !== null);

@@ -81,6 +81,7 @@ const STATIC_ROUTES = [
   { path: "/platform", changefreq: "weekly", priority: "0.9" },
   { path: "/about", changefreq: "monthly", priority: "0.7" },
   { path: "/news-media", changefreq: "weekly", priority: "0.6" },
+  { path: "/privacy", changefreq: "yearly", priority: "0.3" },
 ];
 
 // Mirrors the directive slugs rendered by /platform/:directiveSlug.

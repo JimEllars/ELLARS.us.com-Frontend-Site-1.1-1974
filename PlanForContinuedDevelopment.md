@@ -1090,6 +1090,112 @@ like the thing it stands in for.
 
 ---
 
+## Sprint 2.23 — A privacy policy that describes this site, and the form it depended on
+
+**Branch:** `feature/privacy-policy-and-copy-hygiene`
+
+### Why this cycle
+
+The footer's "Privacy Policy" link pointed at `#`, and the banner claimed a "STRICT PRIVACY
+PROTOCOL" that no published document backed. Meanwhile the site loads Google Fonts on
+every visit — the one third-party request that always happens — and the donation modal
+opened `https://example.com/donate` in a new tab when `VITE_DONATION_LINK` was unset and
+logged it as a contribution. A policy was written for what the code actually does, and the
+three statements the code could not keep were fixed rather than smoothed over in prose.
+
+### Shipped
+
+**`/privacy` exists as a route** — `src/pages/Privacy.jsx` (new), `src/App.jsx`
+- Lazy-loaded like every other page. Metadata is **not** declared in the component: it comes
+  from `lib/edge/meta.js` via `RouteMeta`, so the 2.17 single-writer rule holds by
+  construction.
+- `lib/edge/meta.js` gains `/privacy` (indexable, self-canonical); `functions/sitemap.xml.js`
+  gains it at `priority 0.3`, `changefreq yearly`. Sitemap is now 68 URLs.
+- `Footer.jsx`: the dead `to="#"` Privacy link points at the route. The "System Logistics"
+  pseudo-link — another `#` — was removed rather than left as decoration.
+- `PrivacyBanner.jsx`: rewrite of the claim to match the policy (first-party telemetry,
+  cookie-less analytics, bot protection, Google-served fonts), with the link to the policy,
+  suppressed on `/privacy` itself.
+
+**The policy states the font situation instead of omitting it** — `src/pages/Privacy.jsx`
+- `src/index.css` imports `fonts.googleapis.com` on every page load, so Google receives a
+  request including the caller's IP address before any interaction. That is disclosed in its
+  own section, with the fix named (self-host the four families) and the removal condition
+  written into the document. Over-disclosure, where the behaviour is real, is the honest
+  direction to err in.
+- Retention is described as it actually is rather than as a schedule nobody enforces. Same
+  reasoning, stated in the text.
+
+**The donation modal no longer routes to a placeholder** — `src/components/common/DonateModal.jsx`
+- `|| 'https://example.com/donate'` is gone. With `VITE_DONATION_LINK` unset (the current
+  state) the Confirm button is disabled, keyboard activation is refused in the handler, and
+  the modal says contributions are not open rather than opening a stranger's page in a new
+  tab and emitting `donation_initiated`.
+
+**Inquiry submissions stopped reporting success for data that was thrown away** — `src/pages/About.jsx`
+- `submitBookingInquiry` reports failure by **returning** `{ isError: true }`; it does not
+  throw. `handleBookingSubmit` ignored the return value, so with `VITE_CF_FORM_ENDPOINT`
+  unset — which is the production state — every inquiry showed `// INQUIRY TRANSMITTED`,
+  cleared the form, and discarded the message. The handler now checks the result, reports
+  `// TRANSMISSION FAILED`, and **keeps what was typed**.
+- Found while writing the policy, not before it: `/privacy` sends data-access and deletion
+  requests through that form, so a silent success was a data subject request that silently
+  vanished. This is the one defect in this cycle that was live in production.
+- The inquiry-type select gains a `Privacy request` option. The policy told readers to
+  "mark the inquiry type as Privacy" and no such option existed.
+
+**Copy that did not match the platform** — `index.html`, `About.jsx`, `Platform.jsx`, `DirectiveDetail.jsx`
+- `All-American Tax Credit` → `The American Tax Credit` everywhere; the site had used both
+  names for the same instrument. `0` occurrences of the old name remain in `src/`.
+- Homepage `description`/`og:description`/`twitter:description` now state the brand as it is
+  (citizen, public advocate, author of the $12,000/yr credit funded by the Automation
+  Dividend) instead of four keyword fragments.
+- Directive copy de-personalised: "James brings a perspective as a worker first, contrasting
+  with oligarchs who were born into money" → an argument about whose income the consensus
+  was written by. The second version is defensible and survives quotation out of context.
+- "IMPLEMENTATION ROADMAP" (a campaign-shaped promise of pilots and rollouts) → "HOW IT GETS
+  ADOPTED", which describes publishing models, statute language and a county-level
+  projection, and states plainly that adoption belongs to people who hold office.
+
+### Tests
+
+`npm test`: **288 assertions** (86 client + 202 edge), 0 failed. New:
+- `/privacy` joins the client↔edge metadata parity loop in `scripts/smoke-client.mjs`. A
+  route added to one table and not the other is a document whose DOM and whose raw bytes
+  disagree — the 2.17 defect, one route at a time.
+- The bare `STATIC_ROUTES.length === 4` sitemap assertion is replaced by an exact path list.
+  A count passes when one route is swapped for another and fails when one is legitimately
+  added — exactly backwards.
+- Two invariants replace the hand-maintained trust: **every sitemap route has an indexable
+  metadata entry with a self-canonical**, and **`/login` and `/dashboard` never appear in the
+  sitemap**. The first catches a path advertised and then answered as a 404; the second
+  catches a noindex surface telling crawlers it exists.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm run build` clean, `dist/200.html` present ·
+`wrangler pages dev dist`:
+- `GET /privacy` → `200`, `<title>Privacy Policy | James Ellars</title>`, policy description,
+  `robots: index, follow`, self-canonical — i.e. the middleware writes it into the raw bytes,
+  not only after hydration.
+- `GET /sitemap.xml` → **68 URLs**, includes `/privacy`, `max-age=3600`, `X-Sitemap-Cache: miss`;
+  `HEAD` matches `GET`.
+- `GET /platform/typo` → `404` (the soft-404 guarantee is unaffected by the new route).
+
+### Known limits
+
+- **The privacy request channel has no delivery path in production.** `/privacy` points at
+  the About form; that form now fails honestly instead of lying, but it still cannot deliver
+  until `VITE_CF_FORM_ENDPOINT` is bound (open item 7). Honest failure is the interim state,
+  not the finished one.
+- **The font disclosure is a disclosure, not a fix.** Self-hosting the four families removes
+  the section and the only always-on third-party request; it is not done here.
+- **"Cloudflare Web Analytics" is asserted from configuration, not measured.** The beacon is
+  injected by the dashboard, not by this repository; `static.cloudflareinsights.com` is in
+  `script-src` and `connect-src`, which is the evidence available from code.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1112,6 +1218,7 @@ like the thing it stands in for.
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
 | 15 | **The Instagram feed endpoint does not exist** | Editorial / plugin access | Measured 2026-11-04: `GET /wp-json/spotlight/v1/instagram?feed=390` → `404 {"code":"rest_no_route"}`. The installed plugin's real namespace is **`sl-insta`**, and every route it publishes is admin CRUD behind auth (`/sl-insta/feeds`, `/sl-insta/accounts`, `/sl-insta/connect`) — there is no public read endpoint to point at. So `getSocialFeed()` fails on every `/news-media` view and renders `SOCIAL_FALLBACK`. Needs either a server-side fetch in a Pages Function or a decision to drop the surface. |
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
+| 17 | **Self-host the four font families** | Build change | `src/index.css` `@import`s `fonts.googleapis.com`, so every visit sends Google the caller's IP before any interaction. `/privacy` discloses it and names the fix. Self-hosting (or `@fontsource`) removes the section from the policy and the last always-on third-party request. |
 
 ---
 
@@ -1121,7 +1228,7 @@ like the thing it stands in for.
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.23+)
+## Roadmap Milestones (Sprint 2.24+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.

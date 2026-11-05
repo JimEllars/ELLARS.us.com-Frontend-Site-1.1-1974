@@ -18,6 +18,7 @@ const About = React.lazy(() => import('./pages/About'));
 const ArticleDetail = React.lazy(() => import('./components/intel/ArticleDetail'));
 const Platform = React.lazy(() => import('./pages/Platform'));
 const NewsMedia = React.lazy(() => import('./pages/NewsMedia'));
+const Privacy = React.lazy(() => import('./pages/Privacy'));
 const DirectiveDetail = React.lazy(() => import('./pages/DirectiveDetail'));
 import NotFound from './pages/NotFound';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -150,6 +151,7 @@ function App() {
           <Route path="/platform" element={<Platform />} />
           <Route path="/platform/:directiveSlug" element={<DirectiveDetail />} />
           <Route path="/news-media" element={<NewsMedia />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>

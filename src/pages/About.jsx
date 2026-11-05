@@ -54,7 +54,19 @@ const About = () => {
     console.log('[Telemetry] Booking payload:', payload);
 
     try {
-      await submitBookingInquiry(payload);
+      const result = await submitBookingInquiry(payload);
+      // `submitBookingInquiry` reports failure by *returning* `{ isError: true }` —
+      // it does not throw — and this handler used to ignore the return value. On a
+      // deployment without VITE_CF_FORM_ENDPOINT (which is the production state
+      // today) every inquiry was answered with "INQUIRY TRANSMITTED", the form was
+      // cleared, and the message was discarded. /privacy routes data-access and
+      // deletion requests through this form, so a silent success here is a data
+      // subject request that vanishes. Fail loudly, and keep what was typed.
+      if (result?.isError) {
+        showToast('// TRANSMISSION FAILED');
+        console.error('[Booking] Inquiry was not delivered:', result.message);
+        return;
+      }
       showToast('// INQUIRY TRANSMITTED');
       setBookingForm({
         name: '',
@@ -127,7 +139,7 @@ const About = () => {
                 "Housing Sovereignty",
                 "Green Transportation Systems",
                 "People-First Economy",
-                "All-American Tax Credit",
+                "The American Tax Credit",
                 "Supply Chain Automation",
                 "Logistics Systems Inefficiencies",
                 "Logistics Efficiency Protocols",
@@ -452,7 +464,7 @@ const About = () => {
               "People-First Economy", James argues that progress must be
               measured by human prosperity rather than decoupled stock market
               metrics or GDP. The cornerstone of his platform is the structural
-              implementation mechanics of the All-American Tax Credit. This
+              implementation mechanics of the American Tax Credit. This
               flagship proposal establishes a $12,000 annual tax credit
               delivered in predictable $1,000 monthly installments designed to
               avoid the welfare trap.
@@ -720,6 +732,10 @@ const About = () => {
                     <option value="Interview">Interview</option>
                     <option value="Podcast">Podcast</option>
                     <option value="General">General</option>
+                    {/* The privacy policy tells readers to mark a data-access or
+                        deletion request as "Privacy". Without this option that
+                        instruction pointed at a control that did not exist. */}
+                    <option value="Privacy">Privacy request</option>
                   </select>
                 </div>
               </div>
