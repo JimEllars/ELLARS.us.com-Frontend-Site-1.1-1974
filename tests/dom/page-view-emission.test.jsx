@@ -17,10 +17,10 @@
  *    assertion would only be catching the symptom.
  *
  * What this suite cannot see: the scroll path. jsdom reports `scrollHeight` as 0, so
- * `useEngagementScoring`'s depth handler returns before it changes a signal. The
- * engagement signal is therefore dispatched directly, which is the same state
- * transition the scroll produces — and `advanceGate` is asserted on its own in
- * `npm run test:client` so the decision does not depend on any of this.
+ * the depth handler returns before it changes a signal. The engagement signal is
+ * therefore recorded directly, which is the same state transition the scroll produces
+ * — and `advanceGate` is asserted on its own in `npm run test:client` so the decision
+ * does not depend on any of this.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -30,6 +30,7 @@ import { MemoryRouter, useNavigate } from 'react-router-dom';
 
 import { useTelemetry } from '@/hooks/useTelemetry';
 import { resetPageViewGate } from '@/lib/pageViewGate';
+import { getEngagement, recordSignal, resetEngagementScoring } from '@/lib/engagementScoring';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
 const CONSENT_KEY = 'ellars_privacy_consent';
@@ -58,8 +59,12 @@ const Nav = ({ to, label }) => {
   return <button onClick={() => navigate(to)}>{label}</button>;
 };
 
-const signal = (type) =>
-  window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type } }));
+/**
+ * The real transition the score makes, through the real cell. Until Sprint 2.39 this
+ * was a CustomEvent that six hook instances each listened for; it is now a direct
+ * call, and the assertion that the score actually moved keeps the test non-vacuous.
+ */
+const signal = (type) => recordSignal(type);
 
 /**
  * Counts how many times an effect keyed on `trackEvent` runs. With a captured
@@ -90,6 +95,7 @@ beforeEach(() => {
   localStorage.setItem(CONSENT_KEY, 'true');
   sessionStorage.clear();
   resetPageViewGate();
+  resetEngagementScoring();
   identity.runs = 0;
 });
 
@@ -158,12 +164,15 @@ describe('engagement state does not produce page views', () => {
   it('a score transition adds no page view', () => {
     render(tree(2));
     expect(pageViews()).toHaveLength(1);
+    const before = getEngagement().score;
 
     // One calculator interaction: 0 → 10 points, a real score transition.
     act(() => {
       signal('calculator_interaction');
     });
 
+    // The transition has to have happened, or this proves nothing.
+    expect(getEngagement().score).toBeGreaterThan(before);
     // Before the fix this was 3: two consumers and the shared effect each re-ran.
     expect(pageViews()).toHaveLength(1);
   });
@@ -187,10 +196,12 @@ describe('engagement state does not produce page views', () => {
     // One consumer and one dependency: exactly one run, or the count is meaningless.
     expect(identity.runs).toBe(1);
 
+    const before = getEngagement().score;
     act(() => {
       signal('calculator_interaction');
     });
 
+    expect(getEngagement().score).toBeGreaterThan(before);
     expect(identity.runs).toBe(1);
   });
 });

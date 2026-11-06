@@ -2570,6 +2570,94 @@ precache 36, `dist/200.html` present · production probe 33/33 after 2.37 merged
 
 ---
 
+## Sprint 2.39 — There were six engagement scores, and they overwrote each other
+
+**Branch:** `fix/engagement-scoring-singleton` · **Base:** `ccd0dc5` (main)
+
+### Why this cycle
+
+Item 23 was recorded as a render cost. Measured, it is worse than that. `useEngagementScoring`
+was a **hook**, so every component that calls `useTelemetry()` got a complete copy of the
+scorer — its own state, `scroll` listener, `ellars_engagement_signal` listener and 60 s
+timer. Six consumers are mounted in the real app (`Navbar`'s search, donate and newsletter
+modals, plus the calculator, the playlist and the dashboard's status panel). Measured in
+jsdom with those six:
+
+| | before | after |
+|---|---|---|
+| `scroll` listeners | 6 | **1** |
+| engagement-signal listeners | 6 | **0** (the CustomEvent hop is gone) |
+| sessionStorage writes per signal | 12 (6 on mount, 6 on change) | **1** |
+| re-renders per signal | 6 | **0** |
+| `timeOnPageMs` after 61 s of reading | 6 × 61 s | **61 s** |
+| writes during ten scroll positions | 10 | **1** |
+
+The cost was the smaller half. Each copy incremented **its own** counters and then wrote the
+whole object to the same `ellars_engagement_signals` key, so the copies diverged and
+overwrote one another: "the engagement score" was not one number, it was six, and the value
+in a telemetry payload depended on which component happened to build it. The 60 s timer made
+that visible in the score itself — every instance added the **full** elapsed time, so six
+instances crossed the three-minute band at thirty seconds and scored 20 points for a
+one-minute read.
+
+### Shipped — `src/lib/engagementScoring.js`
+
+A process-wide cell with a pure core, replacing `src/hooks/useEngagementScoring.js` (deleted;
+it had no other importer).
+
+- `computeScore` / `tierFor` / `signalForEvent` — pure, so the arithmetic and the event
+  mapping cannot drift through a refactor unnoticed.
+- `recordSignal(type)` — one cell, persisted immediately. Explicit signals are low-frequency
+  and score-relevant, so they are worth the synchronous write.
+- `recordScrollDepth(depth, now)` — the in-memory peak is **exact** (the payload still reports
+  the real depth), but the write is throttled to one per second. A synchronous JSON write per
+  scroll pixel is precisely the cost this cycle exists to remove.
+- `getEngagement()` — a snapshot to read **without subscribing**, which is what keeps
+  engagement state out of the render path entirely.
+- `startEngagementTracking()` — installs the scroll listener and a `pagehide` /
+  `visibilitychange` flush, once, idempotently, with a teardown for StrictMode.
+- Time on page is **derived** from a start timestamp instead of accumulated per tick. That is
+  the fix for the multiplication: a derived clock cannot drift, and a reload inside the same
+  session continues from the stored total.
+
+### Changed — `src/hooks/useTelemetry.js`, `src/App.jsx`
+
+- `useTelemetry` no longer calls a scoring hook. It reads `getEngagement()` when it builds a
+  payload, so a scroll position no longer re-renders six components.
+- The `ellars_engagement_signal` CustomEvent hop is replaced with a direct `recordSignal`
+  call. The event existed only to carry a type to the listeners that were the problem.
+- `App` starts the tracker once, in an effect.
+
+### Verified
+
+`npm test` → **127 + 289 + 131 = 547 assertions, 0 failed** (was 532; +15 DOM) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36, `dist/200.html`
+present · production probe 33/33 after 2.38 merged.
+
+### The suite is not decorative — proved by mutation
+
+| mutation | result |
+|---|---|
+| `startEngagementTracking` loses its idempotence guard | **1 failed** — three starts registered three listeners |
+| scroll depth persisted unthrottled | **1 failed** — ten positions wrote ten times |
+| time on page no longer derived from the clock | **1 failed** — 61 s scored 0 instead of 10 |
+
+### Known limits
+
+- **The `/platform` scoring quirk is preserved on purpose.** In the chain this replaces, any
+  event on `/platform` that is not a calculator event counts as a platform exploration — so a
+  `page_view` there scores. Correcting it would change the scoring of every visit already
+  recorded, so it is carried over exactly and written down as item 25 rather than fixed
+  quietly inside a performance cycle.
+- **A killed tab loses at most one second of scroll depth.** The in-memory peak is exact for
+  that page's payloads, and `pagehide`/`visibilitychange` flush it; a process kill before the
+  next window does not.
+- **One scorer per document, not per tab.** Two tabs are two visits, which is what a visit is.
+- **`resetEngagementScoring` is exported for tests** and is never called in production; the
+  production entry point is the single `startEngagementTracking()` in `App`.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -2599,8 +2687,10 @@ precache 36, `dist/200.html` present · production probe 33/33 after 2.37 merged
 | 21 | ~~Raw search text is transmitted as telemetry~~ | **Closed in 2.38** | The middle option was taken: `{ term_length, term_words, result_count, corpus_loaded }` and no field that can hold a word of the query. 2.37 removed the amplification (one search is one event); 2.38 removed the term, waits for the archive before filing a zero, and moved `/privacy` to Version 4 with the drift guard updated to the new clauses and their negations. **What is already stored is still stored — item 24.** |
 | 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
-| 23 | **`signals` is a new object on every scroll pixel** | Render cost, not correctness | `useEngagementScoring` returns a `signals` object rebuilt whenever `maxScrollDepth` rises, so every `useTelemetry()` consumer re-renders on scroll even when the *score* has not moved. Sprint 2.37 removed the telemetry consequence (identity is stable, page views no longer amplify); the re-render remains. Fixing it means memoising the score/tier derivation apart from the signal object, or thresholding the depth signal to the 50/80 points the score actually reads — the second is cheaper and matches what the arithmetic uses. |
+| 23 | ~~`signals` churned on every scroll pixel~~ | **Closed in 2.39** | Measured before fixing, and the note had understated it: the hook gave every `useTelemetry()` consumer its own scorer — 6 scroll listeners, 6 signal listeners, 12 storage writes per signal, and **six diverging copies of a per-visit score that overwrote each other**, with the 60 s timer adding full elapsed time per instance. Now one process-wide cell (`src/lib/engagementScoring.js`), a derived clock, and a throttled scroll write; `useTelemetry` reads a snapshot instead of subscribing, so engagement no longer touches the render path at all. |
 | 24 | **Search terms already written to D1/KV** | D1 + KV access | 2.38 stopped the collection; it did not retract what earlier deploys collected. Rows written before that deploy still carry raw queries in the payload column, with no expiry on the D1 side (KV expires at 30 days; D1 does not). Needs a one-off statement nulling the `query` key in stored payloads — the same shape as `0002`'s raw-IP backfill — applied through `migrations/` so it is versioned rather than run by hand. |
+| 25 | **Every event on `/platform` scores as a platform exploration** | Product decision | `signalForEvent` carries this over verbatim from the chain it replaced: the `/platform` clause is an `else if` sibling of `platform_click`, so a `page_view`, a `search_execution` or a failed request on `/platform` all increment `platformExplorations` (5 points each, capped at 10). Preserved in 2.39 because correcting it silently would change the meaning of every score already recorded. The fix is one line — drop the `|| pathname === '/platform'` clause — but it should be a deliberate reset of the scoring baseline, announced in the same breath as any analytics derived from it. |
+| 26 | **The raw engagement counters travel, and the policy implies they do not** | Editorial / privacy | `lead_score_payload` is `{ score, tier, signals }`, so `timeOnPageMs`, `maxScrollDepth` and the five counters leave the browser with every event. `/privacy` says the counters are "turned into a numeric score and a tier, and that score travels with each telemetry event" — a reader infers the score is what leaves. Either send `{ score, tier }` and drop the counters (minimum data, and the score is derived from them anyway), or disclose that the counters travel too. Not changed in 2.39 because it alters the telemetry contract and belongs with the policy edit, not inside a render cycle. |
 ---
 
 ## Accomplishments (Sprint 2.1)
@@ -2644,6 +2734,10 @@ precache 36, `dist/200.html` present · production probe 33/33 after 2.37 merged
   zero while the corpus is still in flight. **Next:** item 24, the rows already stored, and
   the same treatment for the calculator's entered figures, which remain disclosed but not
   minimised.
+- ~~Make the engagement score one number per visit~~ — **closed in 2.39**: the scorer is a
+  module, not a hook, so six consumers share one cell, one scroll listener and one derived
+  clock. **Next:** item 25 (the `/platform` clause, which needs a deliberate baseline reset)
+  and item 26 (the counters that travel while the policy implies only the score does).
 - **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
   either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).

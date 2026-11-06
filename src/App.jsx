@@ -25,6 +25,7 @@ import { useNetworkStatus } from './hooks/useNetworkStatus';
 import OfflineScreen from './components/common/OfflineScreen';
 
 import { getSupabase } from './lib/supabase';
+import { startEngagementTracking } from './lib/engagementScoring';
 import { useAppStore } from './store/useAppStore';
 import { verifySession } from './lib/api';
 
@@ -51,6 +52,14 @@ function App() {
   const setIsAuthChecking = useAppStore(state => state.setIsAuthChecking);
   const clearAuth = useAppStore(state => state.clearAuth);
 
+
+  /**
+   * One engagement scorer for the document. It used to be a hook, so every
+   * `useTelemetry()` consumer started its own scroll listener and kept its own copy
+   * of the counters — six of them, overwriting each other in sessionStorage. Started
+   * here, once, so the score is per visit rather than per component.
+   */
+  useEffect(() => startEngagementTracking(), []);
 
   useEffect(() => {
     const initializeSession = async () => {
