@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useEngagementScoring } from './useEngagementScoring';
+import { getEngagement, signalForEvent, recordSignal } from '@/lib/engagementScoring';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import {
   recordKey,
@@ -97,7 +97,6 @@ export const useTelemetry = () => {
   const location = useLocation();
   const { pathname } = location;
   const isOnline = useNetworkStatus();
-  const { score, tier, signals } = useEngagementScoring();
 
   /**
    * The volatile half of a payload, read **at call time** rather than captured.
@@ -111,12 +110,12 @@ export const useTelemetry = () => {
    * reading them when a payload is actually built makes the three callbacks stable
    * for the life of the hook instance, which is what their callers already assumed.
    */
-  const liveRef = useRef({ pathname, isOnline, score, tier, signals });
+  const liveRef = useRef({ pathname, isOnline });
 
   // Declared before the effects that read it, so it is current by the time they run.
   useEffect(() => {
-    liveRef.current = { pathname, isOnline, score, tier, signals };
-  }, [pathname, isOnline, score, tier, signals]);
+    liveRef.current = { pathname, isOnline };
+  }, [pathname, isOnline]);
 
   // Implement an in-memory boolean flag locker ('isFlushing') directly within the hook layer.
   const isFlushing = useRef(false);
@@ -330,13 +329,10 @@ export const useTelemetry = () => {
   }, [flushQueue]);
 
   const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
-    const {
-      pathname: currentRoute,
-      isOnline: online,
-      score: currentScore,
-      tier: currentTier,
-      signals: currentSignals,
-    } = liveRef.current;
+    const { pathname: currentRoute, isOnline: online } = liveRef.current;
+    // Read, not subscribed: engagement state changes on every scroll position and
+    // must not re-render the telemetry path. See `src/lib/engagementScoring.js`.
+    const { score: currentScore, tier: currentTier, signals: currentSignals } = getEngagement();
     // Strip sensitive data
     const safeMetadata = { ...metadata };
     delete safeMetadata.password;
@@ -389,20 +385,11 @@ export const useTelemetry = () => {
   }, [location, pathname, dispatchTelemetry, createTelemetryPayload]);
 
   const trackEvent = useCallback((eventName, eventData = {}, severity = 'MEDIUM', componentOrigin = 'UI_INTERACTION', errorMessage = "", stackTrace = "") => {
-    // Dispatch engagement signals based on known event names
-    if (typeof window !== 'undefined') {
-      if (eventName === 'calculator_interaction' || eventName === 'calculator_update') {
-        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'calculator_interaction' } }));
-      } else if (eventName === 'platform_click' || eventName === 'platform_exploration' || liveRef.current.pathname === '/platform') {
-        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'platform_click' } }));
-      } else if (eventName === 'newsletter_activation' || eventName === 'newsletter_modal_open') {
-        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'newsletter_activation' } }));
-      } else if (eventName === 'newsletter_submission' || eventName === 'newsletter_success') {
-        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'newsletter_submission' } }));
-      } else if (eventName === 'article_completion' || eventName === 'article_read') {
-        window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'article_completion' } }));
-      }
-    }
+    // Recorded directly against the one scorer. The hop this replaces was a
+    // CustomEvent that six hook instances each listened for, which is how six copies
+    // of a "per-visit" score came to exist.
+    const signal = signalForEvent(eventName, liveRef.current.pathname);
+    if (signal) recordSignal(signal);
     try {
       // Isolate telemetry from UI thread execution
       const payload = createTelemetryPayload(eventName, severity, componentOrigin, errorMessage, stackTrace, { data: eventData });
