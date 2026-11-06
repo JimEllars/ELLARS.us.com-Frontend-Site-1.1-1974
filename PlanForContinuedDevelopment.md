@@ -1827,6 +1827,96 @@ present · production probe unaffected (**31/31**, 2026-11-06).
 
 ---
 
+## Sprint 2.30 — Seven writes with no timeout, and no way to hear them fail
+
+**Branch:** `fix/supabase-write-policy` · **Base:** `53ea081` (main)
+
+### Why this cycle
+
+2.29 put one failure policy in one place, `fetchWithRetry`, and left a note: the direct
+`fetch` calls still file nothing. This cycle followed the note.
+
+Seven functions bypassed it — `publishVaultItem`, `uploadMediaAsset`, `fetchUploadedMedia`,
+`deleteUploadedMedia` and the four Vault row-state operations. Reading what that cost, rather
+than guessing:
+
+- **No telemetry.** The queue only ever saw `fetchWithRetry`, so a refused publish, a rejected
+  upload and a failed delete were reported in the console of whoever had devtools open.
+- **No timeout.** `MediaUploads` and `DispatchPublisher` both clear their in-flight state in a
+  `finally`. A bare `fetch` to a stalled endpoint is a promise that never settles, so the
+  button stayed disabled with no route back except a reload — on the two surfaces a member
+  uses to publish.
+- **Hand-written headers.** Every one of the seven sent `X-AXiM-Tenant` and
+  `X-Client-Telemetry` to `*.supabase.co` by hand. `requestHeaders.js` strips exactly those
+  from a third-party target because nothing reads them; seven copies were re-adding them one
+  function at a time.
+
+### Shipped — `supabaseWrite()` and `vaultRowWrite()`
+
+One envelope for every Supabase write, built on the 2.29 policy: per-target headers, one event
+per failure, `auth_rejected` clears the session. The public contracts are unchanged, because
+the components depend on them — `publishVaultItem` still returns a boolean, the row-state
+operations still return `{ isError, message }`.
+
+Three decisions worth recording:
+
+- **The timeout is now per-call.** It was hard-coded at 5 s inside `fetchWithRetry`, which is
+  right for a JSON read and wrong for the one request whose duration is the member's uplink.
+  `supabaseWrite` takes `timeoutMs`; uploads get 120 s, everything else 5 s. Proved both ways
+  with fake timers: a read aborts at 5 s, an upload that takes 30 s succeeds.
+- **Writes are not retried.** A 429 on a read is free to retry; a POST that may already have
+  been applied is the caller's decision to repeat. `client_idempotency_key` makes the repeat
+  safe, and that belongs where the key is minted, not in a transport policy. Pinned: a 429 on
+  a publish is **one** attempt and one event, where a read gets four.
+- **`update` / `archive` / `restore` / `delete` are one function.** Four copies of a request
+  that differed by a verb and a body literal is how they drifted — two of them sent
+  `X-Client-Telemetry`, two did not, and none of them reported anything.
+
+Deliberately left off the path, with the reason in the code: **`loginUser`** (a wrong password
+is the expected outcome of a typo and must never become an incident; the 5xx that reads as
+"invalid credentials" is item 20), and **`subscribeToNewsletter`** (its endpoint does not exist
+yet, so routing it would file one MEDIUM per subscriber against a 50-record queue with no sink
+— item 7 builds the route, and this function joins the policy in that cycle).
+
+### The suite is not decorative — proved by mutation
+
+`tests/dom/api-write-policy.test.jsx` (16 cases). Each behaviour reverted individually:
+
+| mutation | failing cases |
+|---|---|
+| the write path calls `fetch` directly again (the pre-2.30 shape) | 7 |
+| uploads inherit the 5 s read timeout | 1 |
+| writes retried like reads | 1 |
+| an unreadable 2xx body treated as success | 1 |
+| **the hand-written tenant header put back** | **0** |
+
+The last row is an honest negative: `buildRequestHeaders` already strips it for a third-party
+target, so re-adding it by hand changes nothing. That is the right outcome — one owner of the
+decision instead of seven — and the case is written to assert the outcome, not the mechanism.
+
+### Verified
+
+`npm test` → **102 + 268 + 52 = 422 assertions, 0 failed** (52 DOM cases, up from 36) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36, `dist/200.html` present ·
+production probe **31/31** (2026-11-06).
+
+### Known limits
+
+- **Still nothing at the sink.** Item 1b: `kv`/`d1`/`analytics` are all unbound, so every event
+  this and the last cycle made honest is dropped on arrival. The queue is now correct; it is
+  not yet read.
+- **`fetchUploadedMedia` is a read wearing a POST**, and it keeps the read policy (3 retries).
+  Its status codes, not its verb, are what distinguish it from a write; recorded because it is
+  the one place where "writes are not retried" is not literally true.
+- **No write is covered end-to-end.** Every case here stubs `fetch`; there is no live Supabase
+  project in CI (item 1c), so the row-shape contract with `axim_vault` is still unverified —
+  and the table itself does not exist in the live project (item 2b).
+- **The components' own behaviour is untested.** These cases pin the API contract the dashboard
+  relies on; they do not mount `MediaUploads` or `DispatchPublisher`, so whether the button
+  re-enables is asserted only by reading their `finally` blocks.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1852,6 +1942,7 @@ present · production probe unaffected (**31/31**, 2026-11-06).
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
+| 20 | **A 5xx from the auth endpoint reads as "invalid credentials"** | `loginUser` decision | `loginUser` maps every non-ok response to the server's message, and a 500 from `/auth/v1/token` carries none, so the member is told their password is wrong while the outage is filed nowhere. Sprint 2.30 deliberately kept login off the write policy (a typo must never be an incident). The narrow fix: report **only** `status >= 500` from this one call, as `failure_kind: "http_server"`, and show "Sign-in is temporarily unavailable" instead. Pinned by 2.28's cases, so the change needs one new case there. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
 
 ---
@@ -1881,9 +1972,10 @@ present · production probe unaffected (**31/31**, 2026-11-06).
   `/dashboard` are covered (13 cases), and 2.6's transient-session defect is now pinned by a
   test that fails if it returns. Next: the dashboard's Vault and publisher states, once item
   2b gives them a row shape to assert against.
-- **Put the direct `fetch` calls under the same policy** — the Vault writes, media uploads and
-  newsletter subscribe bypass `fetchWithRetry`, so a failed publish is still silent (2.29's
-  first limit). The classifier is already written and tested; the work is routing, not policy.
+- ~~Put the direct `fetch` calls under the same policy~~ — **closed in 2.30** for the Vault
+  writes and media; `loginUser` and `subscribeToNewsletter` are excluded on purpose and carry
+  the reason in the code. Next: item 20's narrow auth-outage report, and the newsletter once
+  item 7 gives it an endpoint.
 - **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
   either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
