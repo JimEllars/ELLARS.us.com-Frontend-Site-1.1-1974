@@ -1984,6 +1984,91 @@ and picking the one that blames the user.
 
 ---
 
+## Sprint 2.32 — The privacy policy did not mention the profile it attaches to every event
+
+**Branch:** `fix/privacy-telemetry-parity` · **Base:** `d0cf3dc` (main)
+
+### Why this cycle
+
+2.29–2.31 changed *what leaves the browser*: a failure event now carries the failed request's
+origin and path, a `failure_kind`, a status, an attempt count and a request id. `/privacy` is a
+published statement about exactly that, so this cycle read it against the payloads.
+
+It was wrong in both directions, and the omissions were older than this session:
+
+| what is actually recorded | Version 2 of the policy |
+|---|---|
+| `lead_score_payload: { score, tier, signals }` on **every** event | not mentioned |
+| a salted, truncated IP hash **and** country, per record, server-side | not mentioned |
+| the raw text typed into the site search box | not mentioned |
+| calculator figures + a per-visit random id | not mentioned |
+| the address of a copied "share" link | not mentioned |
+| the counters behind the score | **disclosed as local only** — "cleared when you close the tab" |
+
+That last row is the sharpest one. The policy told a reader those counters are theirs, in
+session storage, gone when the tab closes, which is true of the counters and false of the score
+computed from them. A page whose opening claim is *"it describes what this site actually does
+rather than what a template says it should"* cannot leave the transmission out.
+
+### Shipped — `/privacy` Version 3
+
+The telemetry paragraph now names the score, the IP hash and country, the search term, the
+calculator figures, and the share link — as a list, because prose is where they were lost. Two
+sentences carry the corrections a reader is owed: that the score *does* leave the browser, and
+that the raw counters do not. The cookie section cross-references the score instead of implying
+the counters are the end of it, and the retention paragraph now separates what is enforced (the
+KV copy expires at 30 days) from what is not (**the queryable rows have no expiry** — stated as a
+gap rather than smoothed over).
+
+Nothing was removed from what the site collects. This cycle makes the site say what it does.
+
+### Shipped — `tests/dom/privacy-policy.test.jsx` (9 cases)
+
+The client half is mechanical, not a copy: the test calls the **real**
+`buildApiFailurePayload()`, walks its leaves, and requires the policy to name each one. A new
+field in the builder therefore fails the suite until the policy follows.
+
+### The suite is not decorative — proved by mutation
+
+| mutation | failing cases |
+|---|---|
+| revert to the Version 2 telemetry sentence | 4 |
+| drop the IP-hash disclosure | 1 |
+| restore "no fixed retention schedule is claimed" | 1 |
+| **add a payload field the policy does not name** | 1 |
+
+That last row is the whole point: the guard is derived from the code, not from a list of things
+somebody remembered to write down.
+
+### Also fixed — a guard that passed for the wrong reason
+
+`smoke-functions.mjs` asserted `/Version 2/` appeared in `Privacy.jsx`. It kept passing after
+this cycle's bump to Version 3 — because the new prose mentions Version 2 while explaining what
+it left out. It now asserts the version in the header line a reader actually sees, and was
+verified to fail when that line is stripped. A guard satisfiable by an accident is not a guard.
+
+### Verified
+
+`npm test` → **102 + 268 + 72 = 442 assertions, 0 failed** (72 DOM cases, up from 63) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36 · production probe
+**31/31** (2026-11-06).
+
+### Known limits
+
+- **The hook-level fields are a maintained list.** `createTelemetryPayload` lives inside a hook
+  and cannot be imported and executed here, so its fields (`current_route`, `network_status`,
+  `lead_score_payload`, `data`) are asserted from an explicit list. Adding a field there still
+  requires remembering this file; the automatic half covers only the API payloads. Recorded,
+  not hidden.
+- **The policy now describes collecting raw search text. That is a decision to revisit** (item
+  21): disclosure is the minimum, and a search query is the one field here that can carry
+  something a reader did not intend to publish.
+- **Version 3 is not announced yet.** The page's own "Changes" section promises material changes
+  go out in the newsletter and in Discord `#announcements`. This one is material and has not
+  been sent anywhere — that is a publication step for Mr. Ellars, not a commit.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -2009,6 +2094,7 @@ and picking the one that blames the user.
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
+| 21 | **Raw search text is transmitted as telemetry** | Editorial / product decision | `SearchOverlay` sends `{ query }` verbatim on every debounced search, and it is stored in D1's payload column with an unbounded lifetime. Sprint 2.32 disclosed it in `/privacy` Version 3, which is the minimum. A search box is the one field here that can carry something a reader did not mean to publish — an email address pasted into the wrong box, a name, a medical question. Options, in ascending strictness: keep and disclose (today); record only the term's length and whether it returned results; stop sending it. Recommend the middle: the content gap is what the data is for, and the term itself is not needed for that. |
 | 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
 
