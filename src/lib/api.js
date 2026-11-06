@@ -550,7 +550,8 @@ export async function loginUser(email, password) {
       };
     }
 
-    const response = await fetch(`${await supabaseUrl()}/auth/v1/token?grant_type=password`, {
+    const url = `${await supabaseUrl()}/auth/v1/token?grant_type=password`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -562,7 +563,30 @@ export async function loginUser(email, password) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      // A 5xx or a 429 is the auth *service* failing, not a verdict on the
+      // password. It used to be read from the same `error_description` field as a
+      // rejection — which a 500 does not carry, so the member was told "Invalid
+      // login credentials" during an outage and nothing anywhere recorded that the
+      // outage happened. A typo stays silent (it is the expected outcome of one);
+      // an outage gets one event and an honest sentence.
+      if (response.status >= 500 || response.status === 429) {
+        reportApiFailure({
+          url,
+          status: response.status,
+          carriedSession: false,
+          message: `Authentication service answered ${response.status}`,
+        });
+        return {
+          success: false,
+          unavailable: true,
+          message: 'Sign-in is temporarily unavailable. The authentication service did not respond. Please try again in a moment.',
+        };
+      }
+
+      // The body is read defensively: a gateway error page is HTML, and
+      // `response.json()` throwing here turned a server fault into a parse error
+      // reported as the member's fault.
+      const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error_description || errorData.msg || 'Invalid login credentials');
     }
 
@@ -589,9 +613,29 @@ export async function loginUser(email, password) {
     return { success: true, data };
   } catch (error) {
     console.error("[AXiM Core: Auth Error]", error);
+
+    // A thrown fetch here is a transport failure — the auth server was never
+    // reached. Echoing the platform's own wording ("Failed to fetch") told the
+    // member nothing, so it is reported once and replaced with a sentence a person
+    // can act on.
+    const classic = !error?.status && error instanceof TypeError;
+    if (classic) {
+      reportApiFailure({ url: `${await supabaseUrlSafe()}/auth/v1/token`, transport: 'network', message: error.message });
+      return { success: false, message: 'A connection error occurred. Please try again.' };
+    }
+
     return { success: false, message: error.message };
   }
 }
+
+/** `supabaseUrl` that cannot throw — for a message written while something else is failing. */
+const supabaseUrlSafe = async () => {
+  try {
+    return await supabaseUrl();
+  } catch {
+    return 'https://supabase.invalid';
+  }
+};
 
 export async function fetchSavedVaultItems(page = 1, limit = 20) {
   const token = useAppStore.getState().userToken;
