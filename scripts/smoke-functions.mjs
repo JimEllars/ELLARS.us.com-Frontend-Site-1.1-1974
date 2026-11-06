@@ -1093,6 +1093,22 @@ describe('lib/edge/telemetrySinks.js — a 202 is not proof of storage');
     'a bound-but-failing sink is a failure',
     /if \(verdict\.broken\.length > 0\)/.test(probe)
   );
+  // Every advertised URL must resolve. The sitemap is generated live from WordPress, so
+  // an article it lists and WordPress has since dropped is advertised and broken at the
+  // same time — and a crawler finds it before anybody does.
+  check(
+    'the probe resolves every URL the sitemap advertises',
+    /every URL the sitemap advertises answers 200/.test(probe) && /sitemapLocs, 5,/.test(probe)
+  );
+  check(
+    'the advertised-URL check does not retry a 404',
+    /No retries here: a 404 on an advertised URL is a fact/.test(probe)
+  );
+  check(
+    'the advertised-URL check reports how many it checked',
+    /advertised URLs answered 200/.test(probe)
+  );
+
   check(
     'the probe labels its synthetic record so it is findable in the table',
     /probe_binding_check/.test(probe) && /idempotency_key: `probe-\$\{Date\.now\(\)\}`/.test(probe)
