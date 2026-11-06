@@ -1552,6 +1552,101 @@ Instagram route and the CSP-blocked placeholder video).
 
 ---
 
+## Sprint 2.27 — A DOM test harness, for the invariants that only exist after hydration
+
+**Branch:** `test/dom-head-harness` · **Base:** `a6d7257` (main)
+
+### Why this cycle
+
+Three defects in three cycles lived in the same blind spot. `scripts/smoke-client.mjs`
+asserts the head dedupe **plan** and never mounts a component; `npm run probe` fetches the
+deployment **before JavaScript runs**. Between them sat everything that happens after
+hydration:
+
+- 2.26's canonical tags, written by both the edge and the client and never reconciled;
+- 2.26's one-shot reconciliation, which ran before a data-driven `<Helmet>` existed, so a
+  dispatch carried two `description`, two `robots` and two `og:image`;
+- the two `observe()` calls that replaced each other's options, so `childList` was never
+  watched — caught in a local browser harness only because a human looked.
+
+Each was found by driving a browser by hand. That is not a gate, and the plan has said so
+for four cycles ("those want `vitest` as a real dependency"). This cycle writes it.
+
+### Shipped
+
+**The runner** — `vitest.config.js`, `package.json`
+- `vitest` 5.1 + `jsdom` 31 + `@testing-library/react` 16, dev-scope. Deliberately **not**
+  the project's `vite.config.js`: that one loads the PWA plugin, which generates a service
+  worker and a precache manifest at build time. A test runner has no business doing either,
+  and importing it would make the suite depend on build output. The alias table is one line
+  and is duplicated.
+- `pretendToBeVisual: true` (jsdom), because react-helmet-async commits inside a
+  `requestAnimationFrame` and `<HeadOwnership>` reconciles on the frame after a mutation.
+  Without it the suite would assert against a head that had not been written yet and pass
+  by timing.
+- `test:dom` sets `NODE_ENV=test` itself. An ambient `NODE_ENV=production` — which this
+  sandbox sets, the same trap 2.20 documented — resolves React's production build, whose
+  `act` is a no-op, and every `render()` throws.
+- `npm test` now runs all three suites, so the existing CI step picks it up. The step's
+  comment says which suite covers what and why a DOM suite exists at all.
+
+**The tests** — `tests/dom/head-ownership.test.jsx`, 8 cases
+- The jsdom document starts as the edge middleware leaves it: shell `<title>`,
+  `description`, `robots`, `og:*`, `twitter:*`, the card's size hints, and an unowned
+  `<link rel="canonical">`.
+- **The real `<RouteMeta>` and `<HeadOwnership>`** are mounted; the real `<ArticleDetail>`
+  is mounted with **only its network call mocked** — and that call is a gate the test opens,
+  not a timer, because a two-phase assertion (loading state vs loaded state) cannot race a
+  sleep on a loaded runner.
+- Cases: shell canonical superseded on the entry route; canonical moves on navigation; the
+  edge canonical survives when nothing competes (the no-JavaScript fallback); the client
+  owns the card on routes it owns; a `<Helmet>` written **after** mount still supersedes the
+  shell; the dispatch canonicalises to its own URL **while loading**; the loaded dispatch has
+  one of each and its own image with the stale hints gone; navigating away from a dispatch
+  restores the card and its four hints.
+
+### The harness is not decorative — proved, one regression at a time
+
+Each fix was reverted alone and the suite re-run:
+
+| reverted | failing tests |
+|---|---|
+| `readHeadTags` back to `meta` only | 4 |
+| `HeadOwnership` back to a one-shot frame | 2 |
+| `ArticleDetail` without its own identity | 2 |
+| `RouteMeta` without the `SITE_CARD` declaration | 2 |
+
+Two assertions were **strengthened** because the first version passed against broken code:
+"the card is present" is satisfied by the shell's copy, so it now asserts the card is
+*owned* (`data-rh`), which is what makes a route able to hand it back.
+
+### Verified
+
+`npm test` → **102 + 268 + 8 = 378 assertions, 0 failed** · `eslint --max-warnings=0` clean ·
+`npm run build` clean, precache 36 entries · `npm ci --include=dev` from scratch, then the
+DOM suite, to prove the lockfile installs the way CI will.
+
+**Incidental, recorded because 2.20 set the number:** the dev-scope advisory backlog fell
+from 16 to **6** (2 low, 4 moderate) as a side effect of the install lifting transitive
+`minimatch`/`glob`. The runtime gate is unchanged: `npm audit --omit=dev --audit-level=high`
+→ 0.
+
+### Known limits
+
+- **Eight cases, one surface.** This covers the head because that is where three defects
+  lived; the dashboard, the Vault, the audio player and the modals have no DOM coverage at
+  all. The harness is the prerequisite for those, not a substitute for them.
+- **`ArticleDetail` is mounted with a mocked `@/lib/api`.** That is deliberate — the unit
+  under test is the head lifecycle, not the fetch — but it means the suite would not catch a
+  change to `getPostBySlug`'s contract.
+- **jsdom is not a browser.** It has no layout, no real `requestAnimationFrame` timing under
+  load, and no CSP. The local `wrangler pages dev` + real Firefox harness remains the only
+  way to check rendering, and it is manual.
+- **No coverage threshold**, deliberately: a number that can be satisfied by asserting
+  trivia is worse than no number. Scope is guarded by the table above instead.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1567,7 +1662,7 @@ Instagram route and the CSP-blocked placeholder video).
 | 6 | **`script-src 'unsafe-inline'`** | Security review | Retained deliberately in `_headers` with a comment. Removing it requires verifying the Turnstile loader and the Cloudflare Web Analytics beacon against nonces. |
 | 7 | **Newsletter funnel** | `axim-passport-api` route | `VITE_CF_FORM_ENDPOINT` and `VITE_TURNSTILE_SITE_KEY` are unset at build time. `subscribeToNewsletter` posts to `/api/v1/subscribe`, which has no Pages Function, so the UI errors honestly. Needs the passport-api form route, then the env var and `https://passport.axim.us.com` in `connect-src`. |
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
-| 9 | **No unit-test floor (partly closed)** | This branch's successor | `scripts/smoke-functions.mjs` is now **266 assertions** in CI (plus 86 client-side in `smoke-client.mjs`, among them the probe's non-vacuity cases) (config resolution, sitemap entities/zones, asset 404s, middleware metadata/404s, the router drift guard, single-owner metadata, document-identity comparison, `_headers` merge rules, the social card). Covered without a runner. Still uncovered: telemetry sink independence, vault row-shape mapping, and anything that needs a DOM (the 2.17 head hand-off is asserted as a pure plan and then verified by hand in a browser) — those want `vitest` as a real dependency. |
+| 9 | ~~No unit-test floor~~ | **Closed in 2.27** | Three suites now gate CI: `smoke-client` (**102**, pure decisions — SW update policy, the head dedupe plan, the request-header policy), `smoke-functions` (**268**, edge handlers — config resolution, sitemap entities/zones/cache, asset 404s, middleware statuses, `_headers` rules, the social card, the probe's own non-vacuity), and `tests/dom/` (**8**, vitest + jsdom, mounting the real `<RouteMeta>`, `<HeadOwnership>` and `<ArticleDetail>`). **378 assertions, no runner dependency beyond the dev deps.** Still uncovered, which is the honest remaining gap: telemetry sink independence, vault row-shape mapping, the dashboard/player/modals in the DOM, and rendering itself — jsdom has no layout, so a real browser check stays manual. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
@@ -1586,7 +1681,7 @@ Instagram route and the CSP-blocked placeholder video).
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.27+)
+## Roadmap Milestones (Sprint 2.28+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
@@ -1597,11 +1692,13 @@ Instagram route and the CSP-blocked placeholder video).
 - ~~Self-host the four font families~~ — **closed in 2.25**: the site now allows no Google host at
   all, and `/privacy` lost the section that disclosed the request instead of having to keep it
   accurate.
-- **Give the client head invariants a DOM test.** 2.26's defect lived entirely after
-  hydration: `npm test` has no DOM and `npm run probe` reads bytes before JavaScript runs, so
-  the 370 assertions covered the planner and the mounted document was checked by hand. One
-  `vitest` + `jsdom` case that mounts the router, navigates twice and counts head tags closes
-  the largest remaining hole in the gate.
+- ~~Give the client head invariants a DOM test~~ — **closed in 2.27**: `tests/dom/` mounts the
+  real components, and each of the four fixes it covers was reverted one at a time to prove
+  the suite fails. Next use of the same harness: the dashboard's Vault states and the audio
+  player, which have no coverage at all.
+- **Extend the DOM suite past the head.** The harness exists; the dashboard, the Vault list
+  states and the audio player do not. Those are the surfaces where a regression is a logged-in
+  user's problem rather than a crawler's.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
