@@ -120,10 +120,14 @@ const Footer = () => {
                   >
                     <Honeypot value={botValue} onChange={(e) => setBotValue(e.target.value)} />
                     <div className="relative">
+                      {/* The placeholder is not an accessible name: without
+                          aria-label a screen reader announces an unnamed edit field
+                          on every page of the site. The visible design is unchanged. */}
                       <input
                         type="email"
                         id="footer-email"
                         name="email"
+                        aria-label="Email address for the newsletter"
                         autoComplete="email"
                         autoCapitalize="off"
                         spellCheck="false"
