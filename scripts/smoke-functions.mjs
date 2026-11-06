@@ -31,6 +31,7 @@ import {
   wantsDocument,
 } from '../lib/edge/meta.js';
 import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
+import { sinkNote, sinkVerdict } from '../lib/edge/telemetrySinks.js';
 import { MANAGED_KEYS, compareDocument, readDocumentIdentity } from '../lib/edge/documentIdentity.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -1036,6 +1037,93 @@ describe('the deployment probe measures the deployment, not itself');
 
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   check('`npm run probe` exists', typeof pkg.scripts?.probe === 'string', pkg.scripts?.probe);
+}
+
+describe('lib/edge/telemetrySinks.js — a 202 is not proof of storage');
+{
+  // The handler has answered `202 {"success":true}` since it was written, and for most
+  // of the site's life every sink behind it was unbound: accepted, stored nowhere.
+  const verdictOf = (sinks) => sinkVerdict(sinks);
+
+  check('every sink stored is live', verdictOf({ kv: 'ok', d1: 'ok', analytics: 'ok' }).live.length === 3);
+  check(
+    'no sink live is degraded',
+    verdictOf({ kv: 'unbound', d1: 'unbound', analytics: 'unbound' }).degraded === true
+  );
+  check(
+    'one live sink is not degraded',
+    verdictOf({ kv: 'ok', d1: 'unbound', analytics: 'unbound' }).degraded === false
+  );
+  check(
+    'a bound sink that errors is broken, not merely unbound',
+    verdictOf({ kv: 'error', d1: 'unbound', analytics: 'unbound' }).broken.includes('kv')
+  );
+  check(
+    'a partial D1 batch counts as broken',
+    verdictOf({ kv: 'unbound', d1: 'partial:7', analytics: 'unbound' }).broken.includes('d1')
+  );
+  check(
+    'unbound is reported as unbound, never as broken',
+    verdictOf({ kv: 'unbound', d1: 'unbound', analytics: 'unbound' }).broken.length === 0
+  );
+  check(
+    'the note names the unbound sinks and the open item',
+    /kv, d1, analytics unbound/.test(sinkNote(verdictOf({ kv: 'unbound', d1: 'unbound', analytics: 'unbound' }))) &&
+      /item 1b/.test(sinkNote(verdictOf({ kv: 'unbound', d1: 'unbound', analytics: 'unbound' })))
+  );
+  check(
+    'the note names what is storing the batch',
+    sinkNote(verdictOf({ kv: 'ok', d1: 'unbound', analytics: 'unbound' })) === 'stored by kv'
+  );
+  check('an empty sink object is degraded, not an error', verdictOf({}).degraded === true);
+
+  const probe = stripComments(readFileSync(new URL('./probe-production.mjs', import.meta.url), 'utf8'));
+  check(
+    'the probe asks the telemetry endpoint where a batch went',
+    /'\/api\/telemetry'/.test(probe) && /sinkVerdict\(/.test(probe)
+  );
+  // The load-bearing distinction: an external binding gap must not turn every merge
+  // red, and a *failing* binding must. Both are asserted from the source, because the
+  // only other way to observe them is against a deployment with a broken binding.
+  check(
+    'a degraded sink is a note, not a failure',
+    /return \{ failures, note: sinkNote\(verdict\) \};/.test(probe)
+  );
+  check(
+    'a bound-but-failing sink is a failure',
+    /if \(verdict\.broken\.length > 0\)/.test(probe)
+  );
+  check(
+    'the probe labels its synthetic record so it is findable in the table',
+    /probe_binding_check/.test(probe) && /idempotency_key: `probe-\$\{Date\.now\(\)\}`/.test(probe)
+  );
+}
+
+describe('the bindings runbook names the bindings the handler reads');
+{
+  // A runbook that names a binding differently from the code sends the reader to create
+  // a variable the handler never reads — and they will believe it, because a `202` comes
+  // back either way. The names are extracted from the handler, so a rename fails here.
+  const handler = stripComments(readFileSync(new URL('../functions/api/telemetry.js', import.meta.url), 'utf8'));
+  const runbook = readFileSync(new URL('../docs/telemetry-and-vault-bindings.md', import.meta.url), 'utf8');
+
+  const envNames = [...new Set([...handler.matchAll(/env\.([A-Z][A-Z0-9_]*)/g)].map((m) => m[1]))].sort();
+  check('the handler reads at least three bindings', envNames.length >= 3, envNames.join(', '));
+
+  const missing = envNames.filter((name) => !runbook.includes(`\`${name}\``));
+  check('the runbook names every binding the handler reads', missing.length === 0, missing.join(', '));
+
+  // The table name is what the reader is told to query, and `telemetry` is what 0001
+  // creates. Asserted against the migration, not against the sentence.
+  const migration = readFileSync(new URL('../migrations/0001_create_telemetry_table.sql', import.meta.url), 'utf8');
+  const table = migration.match(/CREATE TABLE IF NOT EXISTS\s+(\w+)/)?.[1];
+  check('the runbook queries the table the migration creates', Boolean(table) && runbook.includes(`FROM ${table}`), table);
+
+  check('the runbook says a 202 is not proof of storage', /202/.test(runbook) && /stored nowhere|storage/.test(runbook));
+  check(
+    'the runbook names the item each step closes',
+    ['1b', '2b', '2'].every((item) => runbook.includes(item))
+  );
 }
 
 describe('the typefaces are self-hosted, and nothing asks Google for them');
