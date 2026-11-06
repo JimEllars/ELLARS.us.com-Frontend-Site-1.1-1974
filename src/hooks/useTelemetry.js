@@ -9,6 +9,7 @@ import {
   dropStale,
   mergeForUnload,
 } from '@/lib/telemetryQueue';
+import { claimPageView } from '@/lib/pageViewGate';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
 const MAX_RETRIES = 3;
@@ -93,9 +94,29 @@ export const enqueuePayload = (payload) => {
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const useTelemetry = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const isOnline = useNetworkStatus();
   const { score, tier, signals } = useEngagementScoring();
+
+  /**
+   * The volatile half of a payload, read **at call time** rather than captured.
+   *
+   * The callbacks below used to close over `pathname`, `isOnline`, `score`, `tier`
+   * and `signals`, so their identities changed whenever the engagement score moved —
+   * which is on every scroll position deeper than the last. `trackEvent` therefore
+   * changed identity too, and every effect that listed it in its dependencies re-ran
+   * with it: the page view effect fired a page view per scroll tick, and
+   * `SearchOverlay` re-sent its query per tick. Keeping the values in a ref and
+   * reading them when a payload is actually built makes the three callbacks stable
+   * for the life of the hook instance, which is what their callers already assumed.
+   */
+  const liveRef = useRef({ pathname, isOnline, score, tier, signals });
+
+  // Declared before the effects that read it, so it is current by the time they run.
+  useEffect(() => {
+    liveRef.current = { pathname, isOnline, score, tier, signals };
+  }, [pathname, isOnline, score, tier, signals]);
 
   // Implement an in-memory boolean flag locker ('isFlushing') directly within the hook layer.
   const isFlushing = useRef(false);
@@ -264,18 +285,14 @@ export const useTelemetry = () => {
   }, []);
 
   useEffect(() => {
-    if (isOnline) {
-      // Trigger a retry when network is recovered
-      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length > 0 && !isFlushing.current) {
-        flushQueue();
-      }
-      if (!isFlushing.current) {
-        flushQueue();
-      }
+    // One flush on connect is enough: `flushQueue` sets its lock synchronously, so
+    // the second call this effect used to make could only ever be a no-op.
+    if (isOnline && !isFlushing.current) {
+      flushQueue();
     }
 
-    // Auto flush every 30 seconds
+    // Auto flush every 5 seconds — the interval the queue's settlement logic is
+    // written against, and the one the previous comment contradicted.
     const interval = setInterval(() => {
       if (isOnline && !isFlushing.current) {
         flushQueue();
@@ -306,13 +323,20 @@ export const useTelemetry = () => {
     // Flush immediately if buffer reaches 10 events
     try {
       const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length >= 10 && isOnline && !isFlushing.current) {
+      if (queue.length >= 10 && liveRef.current.isOnline && !isFlushing.current) {
         flushQueue();
       }
     } catch(e) { /* silent */ }
-  }, [flushQueue, isOnline]);
+  }, [flushQueue]);
 
   const createTelemetryPayload = useCallback((eventType, severity, componentOrigin, errorMessage = "", stackTrace = "", metadata = {}) => {
+    const {
+      pathname: currentRoute,
+      isOnline: online,
+      score: currentScore,
+      tier: currentTier,
+      signals: currentSignals,
+    } = liveRef.current;
     // Strip sensitive data
     const safeMetadata = { ...metadata };
     delete safeMetadata.password;
@@ -320,7 +344,7 @@ export const useTelemetry = () => {
     delete safeMetadata.authorization;
     delete safeMetadata.credentials;
 
-    const lead_score_payload = { score, tier, signals };
+    const lead_score_payload = { score: currentScore, tier: currentTier, signals: currentSignals };
     return {
       telemetry_envelope: {
         project_id: 'ELLARS_FRONTEND',
@@ -336,16 +360,22 @@ export const useTelemetry = () => {
         error_message: errorMessage,
         stack_trace: stackTrace,
         metadata: {
-          current_route: pathname,
-          network_status: isOnline ? 'online' : 'offline',
+          current_route: currentRoute,
+          network_status: online ? 'online' : 'offline',
           ...safeMetadata,
           lead_score_payload
         }
       }
     };
-  }, [pathname, isOnline, score, tier, signals]);
+  }, []);
 
   useEffect(() => {
+    // One page view per history entry, claimed by whichever consumer runs first.
+    // Without the gate every component that calls this hook emitted its own, so a
+    // single navigation produced three page views from `Navbar` alone. See
+    // `src/lib/pageViewGate.js` for the measurement and the rule.
+    if (!claimPageView(location)) return;
+
     const sendTelemetry = async () => {
       try {
         const payload = createTelemetryPayload('page_view', 'LOW', 'ROUTER', '', '', { path: pathname });
@@ -356,14 +386,14 @@ export const useTelemetry = () => {
     // Background isolation
     sendTelemetry();
     return () => {};
-  }, [pathname, dispatchTelemetry, createTelemetryPayload]);
+  }, [location, pathname, dispatchTelemetry, createTelemetryPayload]);
 
   const trackEvent = useCallback((eventName, eventData = {}, severity = 'MEDIUM', componentOrigin = 'UI_INTERACTION', errorMessage = "", stackTrace = "") => {
     // Dispatch engagement signals based on known event names
     if (typeof window !== 'undefined') {
       if (eventName === 'calculator_interaction' || eventName === 'calculator_update') {
         window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'calculator_interaction' } }));
-      } else if (eventName === 'platform_click' || eventName === 'platform_exploration' || pathname === '/platform') {
+      } else if (eventName === 'platform_click' || eventName === 'platform_exploration' || liveRef.current.pathname === '/platform') {
         window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'platform_click' } }));
       } else if (eventName === 'newsletter_activation' || eventName === 'newsletter_modal_open') {
         window.dispatchEvent(new CustomEvent('ellars_engagement_signal', { detail: { type: 'newsletter_activation' } }));
