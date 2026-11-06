@@ -150,6 +150,7 @@ const Newsletter = () => {
                     type="email"
                     id="email"
                     name="email"
+                    aria-label="Email address for the newsletter"
                     autoComplete="email"
                     autoCapitalize="off"
                     spellCheck="false"

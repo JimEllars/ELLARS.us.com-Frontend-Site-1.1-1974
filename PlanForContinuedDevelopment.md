@@ -2145,6 +2145,72 @@ carries its idempotency key — a loss is not).
 
 ---
 
+## Sprint 2.34 — Two defects a screenshot cannot see
+
+**Branch:** `fix/form-a11y-ids` · **Base:** `4cb4347` (main)
+
+### Why this cycle
+
+A live pass over production (`/`, `/about`, `/login`) with a duplicate-id and
+accessible-name probe, rather than by eye. Two findings, both real, neither visible in a
+screenshot:
+
+| route | finding |
+|---|---|
+| `/` | **`#bot_field` twice** — the honeypot's DOM id *was* its `name`, and the homepage renders two forms (newsletter section + footer) |
+| every route | **`#footer-email` had no accessible name**; neither did the newsletter section's field |
+| `/login` | scored correctly — which is what made this a footer defect rather than a systematic one |
+
+A duplicate id is invalid HTML and makes `label[for]` and `getElementById` resolve to
+whichever element the browser met first. A placeholder is not an accessible name: the
+site-wide conversion control announced itself as an unnamed edit field.
+
+### Shipped
+
+- **`Honeypot` uses `useId()`** for its DOM id while `name` stays `bot_field`. The trap's
+  behaviour is unchanged — every submit handler and the spam check read component state,
+  never the DOM — so this is a correctness fix with no behavioural surface. It also covers
+  `NewsletterModal`, `DonateModal`, `DispatchPublisher` and `AccountSettings` automatically.
+- **Both email fields carry `aria-label`.** The visible design is untouched: the placeholder
+  is still `YOUR EMAIL ADDRESS`, and a case asserts exactly that so a future "cleanup" cannot
+  trade the accessible name for the visible one.
+
+### Shipped — `tests/dom/form-accessibility.test.jsx` (4 cases)
+
+Mounted against the **real** `Footer` and `Newsletter` together, which is the only
+configuration that reproduces the duplicate. The checks are general — no id may repeat, every
+field must have an announceable name — so the next form added to either component is covered
+without editing the file.
+
+### The suite is not decorative — proved by mutation
+
+| mutation | failing cases |
+|---|---|
+| honeypot id = name again (the duplicate) | 2 |
+| footer email loses its accessible name | 2 |
+| newsletter field loses its accessible name | 2 |
+
+### Verified
+
+`npm test` → **102 + 268 + 101 = 471 assertions, 0 failed** (101 DOM cases, up from 97) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36 · production probe
+**31/31** (2026-11-06).
+
+### Known limits
+
+- **Not audited beyond forms.** The probe covered ids, accessible names, `img[alt]` and
+  nameless buttons on three routes. Contrast ratios, focus order, live-region announcements
+  and keyboard traps in the modals are untouched — and jsdom has no layout, so contrast
+  cannot be asserted there at all. A real audit needs a browser and a proper checklist.
+- **`/dashboard` was not probed** — it is behind auth, and preview deployments have no
+  Supabase key (item 1c), so its forms have no measured accessibility baseline.
+- **Two implementations of "subscribe to the newsletter" remain**: `Footer` imports
+  `subscribeToNewsletter` from `@/lib/email` and `Newsletter` imports it from `@/lib/api`.
+  Found while reading both components; not changed here, because reconciling them changes
+  behaviour on a form whose endpoint does not exist yet (item 7). Recorded as item 22.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -2170,6 +2236,7 @@ carries its idempotency key — a loss is not).
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
+| 22 | **Two `subscribeToNewsletter` implementations** | Reconcile with item 7 | `src/lib/email.js` and `src/lib/api.js` each export one, and the two components on the same page use different ones (`Footer` → `lib/email`, `Newsletter` → `lib/api`). Whichever is used, the endpoint does not exist yet (item 7), so neither path can be verified end to end. Reconciling them before the route exists would change behaviour that cannot be tested; the right order is route first, then one implementation. |
 | 21 | **Raw search text is transmitted as telemetry** | Editorial / product decision | `SearchOverlay` sends `{ query }` verbatim on every debounced search, and it is stored in D1's payload column with an unbounded lifetime. Sprint 2.32 disclosed it in `/privacy` Version 3, which is the minimum. A search box is the one field here that can carry something a reader did not mean to publish — an email address pasted into the wrong box, a name, a medical question. Options, in ascending strictness: keep and disclose (today); record only the term's length and whether it returned results; stop sending it. Recommend the middle: the content gap is what the data is for, and the term itself is not needed for that. |
 | 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
