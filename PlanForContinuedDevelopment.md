@@ -2069,6 +2069,82 @@ verified to fail when that line is stripped. A guard satisfiable by an accident 
 
 ---
 
+## Sprint 2.33 — The telemetry transport could lose a batch three ways
+
+**Branch:** `fix/telemetry-transport` · **Base:** `bc5380a` (main)
+
+### Why this cycle
+
+Four cycles of this session made the events correct and complete. None of them checked
+whether the events **arrive**. Reading `useTelemetry.js` against the edge handler it talks
+to — `functions/api/telemetry.js`, `MAX_RECORDS = 50`, `MAX_BODY_BYTES = 64 * 1024` — found
+three defects in the transport:
+
+1. **The flush cleared the entire queue on a 2xx.** The response was never matched to the
+   batch that produced it, so anything enqueued *while* the POST was open — the next page
+   view, an API failure from the same second — was wiped without ever being sent.
+2. **Every rejection was retried.** Only 429 and 5xx were excluded, so a `413` was resent
+   with the identical oversized body three times, abandoned, and repeated on the next
+   five-second tick. A queue that grew past 64 KB stopped delivering **forever**, one
+   doomed request every five seconds for the life of the browser profile.
+3. **The unload path cleared the queue whether or not the platform accepted it.**
+   `sendBeacon` returns `false` above its own 64 KiB limit, and the code wiped storage
+   anyway — the largest queues were the ones silently discarded on exit.
+
+### Shipped — `src/lib/telemetryQueue.js` (pure)
+
+- `selectBatch()` — builds the largest body that fits, newest first, always ≤ 50 records and
+  under 60 KB. The client no longer sends a body the edge is documented to refuse.
+- `settleBatch()` — maps a response to a queue state: `2xx` removes exactly what was sent,
+  `429`/`5xx`/transport keep everything and retry, `413` drops the older half and retries
+  smaller, any other `4xx` is a verdict on the payload and settles the batch once. A single
+  record that alone exceeds the cap is dropped rather than retried forever.
+- `dropStale()` (48 h) and `mergeForUnload()` — the unload batch is bounded by the same
+  rule, and an in-flight record is not duplicated into it.
+
+### Shipped — the wiring
+
+`flushQueue` now settles against the queue *as it is at response time*, and **re-selects the
+batch on every attempt** — my own first draft held one fixed batch, which meant the `413`
+halving changed the queue and nothing else, and the identical oversized body went out again.
+The unload path sends the bounded batch, clears only what a `sendBeacon` accepted, and keeps
+the queue when the beacon is refused (a duplicate next visit is harmless — every record
+carries its idempotency key — a loss is not).
+
+### The suite is not decorative — proved by mutation
+
+23 cases across `tests/dom/telemetry-queue.test.jsx` (pure decisions) and
+`tests/dom/telemetry-flush.test.jsx` (the real hook, mounted under a router).
+
+| mutation | failing cases |
+|---|---|
+| clear the whole queue on a 2xx (the original race) | 3 |
+| retry every rejection (the original 413 loop) | 5 |
+| send the whole queue, no byte budget | 3 |
+| unload clears without knowing the beacon was accepted | 1 |
+| reuse one fixed batch across retries (this cycle's own first draft) | 1 |
+
+### Verified
+
+`npm test` → **102 + 268 + 97 = 467 assertions, 0 failed** (97 DOM cases, up from 72) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36 · production probe
+**31/31** (2026-11-06).
+
+### Known limits
+
+- **Still nothing at the sink.** Item 1b: all three bindings are unbound, so a correctly
+  bounded, correctly settled batch is accepted with `202` and stored nowhere. This cycle makes
+  the transport trustworthy the moment the binding exists; it does not make the data exist.
+- **The unload `keepalive` fallback is unobservable.** When the beacon is refused, the queue is
+  kept and the request's fate is unknown, so a record can be sent twice. Deduplication is the
+  server's job by `idempotency_key`, and `functions/api/telemetry.js` writes that key as the row
+  id — but the D1 table has never received a duplicate to prove it (item 1b again).
+- **The five-second interval is unchanged**, and its comment still says thirty seconds. Left as
+  found: changing the cadence is a product decision about load, not a defect, and it is now
+  recorded rather than quietly "fixed".
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
