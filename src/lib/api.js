@@ -180,7 +180,23 @@ function reportFeedFallback(source, response) {
   }
 }
 
-async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
+/**
+ * A read has five seconds to answer before the caller is told it failed.
+ *
+ * The timeout is per-call now, not global: it was hard-coded at 5 s inside this
+ * function, which is right for a JSON read and wrong for the one request that
+ * legitimately takes longer — a media upload. Every write used to bypass this
+ * function entirely, so the constant had never been asked the question.
+ */
+const REQUEST_TIMEOUT_MS = 5000;
+
+/**
+ * A media upload is bounded by the file size and the member's uplink, not by our
+ * patience: 5 s would abort a 20 MB file on a phone on purpose.
+ */
+const UPLOAD_TIMEOUT_MS = 120000;
+
+async function fetchWithRetry(url, options = {}, { retries = 3, attempt = 1, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
   // Whether this request carried a session decides how its 401 is read: a rejected
   // token (the member must be logged out) or a request that had no credential to
   // begin with (not our session's problem).
@@ -188,7 +204,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     // Headers are built per *target*, not once for everything. The vendor
     // provenance headers were previously attached to every request regardless of
@@ -228,7 +244,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
         const backoffMs = (2 ** attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         // Headers are rebuilt by the recursion, which is why only `options` travels.
-        return fetchWithRetry(url, options, retries - 1, attempt + 1);
+        return fetchWithRetry(url, options, { retries: retries - 1, attempt: attempt + 1, timeoutMs });
       }
       console.error(`[API Error] HTTP ${response.status} from ${url}`);
       const requestId = reportApiFailure({
@@ -382,6 +398,90 @@ export async function getSocialFeed(limit = 10) {
   }
 }
 
+/**
+ * One Supabase write, under the same policy as every read.
+ *
+ * Seven functions used to call `fetch` directly: `publishVaultItem`,
+ * `uploadMediaAsset`, `fetchUploadedMedia`, and the four row-state operations.
+ * That cost three things, none of them theoretical:
+ *
+ *  - **No telemetry.** Sprint 2.29 put the failure policy in `fetchWithRetry`, and
+ *    these calls never reached it — so a failed publish, a rejected upload and a
+ *    refused delete filed nothing at all and reported themselves only in the
+ *    console of whoever happened to have devtools open.
+ *  - **No timeout.** A stalled request left the dashboard's button disabled in
+ *    `pending` forever, because nothing ever settled the promise. Measured by
+ *    reading the components: `MediaUploads` and `DispatchPublisher` both clear
+ *    their in-flight state in a `finally`, which a promise that never settles
+ *    never reaches.
+ *  - **Headers that should not leave the origin.** These calls sent
+ *    `X-AXiM-Tenant` and `X-Client-Telemetry` to `*.supabase.co` by hand.
+ *    `requestHeaders.js` deliberately strips exactly those from a third-party
+ *    target, because they are ours and nobody reads them; the hand-written copies
+ *    were re-adding them one function at a time.
+ *
+ * Writes are **not** retried. A 429 on a read can be retried for free; a POST or
+ * PATCH that may already have been applied is the caller's decision to repeat, not
+ * a transport policy's. `client_idempotency_key` makes a retry safe for a dispatch
+ * draft, and that decision stays where the key is minted.
+ */
+async function supabaseWrite({
+  path,
+  method = 'POST',
+  token,
+  headers = {},
+  body,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+  parse = false,
+}) {
+  const response = await fetchWithRetry(
+    `${await supabaseUrl()}${path}`,
+    {
+      method,
+      headers: {
+        'apikey': await supabaseApiKey(),
+        'Authorization': `Bearer ${token}`,
+        ...headers,
+      },
+      ...(body === undefined ? {} : { body }),
+    },
+    { retries: 0, timeoutMs }
+  );
+
+  if (response.isError) {
+    return { isError: true, status: response.status, message: response.message, data: null };
+  }
+
+  if (!parse) return { isError: false, status: response.status, data: null };
+
+  try {
+    return { isError: false, status: response.status, data: await response.json() };
+  } catch (error) {
+    // A 2xx whose body is not JSON is a failure the dashboard must be told about.
+    reportApiFailure({ url: path, transport: 'parse', message: error?.message, carriedSession: true });
+    return { isError: true, status: 502, message: 'Response body was not usable JSON', data: null };
+  }
+}
+
+/**
+ * The Vault row-state operations, which were four copies of one request.
+ *
+ * `updateVaultItem`, `archiveVaultItem`, `restoreVaultItem` and `deleteVaultItem`
+ * differed in a verb and a body literal. Copying a request four times is how the
+ * four of them drifted: two sent `X-Client-Telemetry`, two did not, and all four
+ * reported failure as a status number interpolated into a sentence with no
+ * telemetry behind it.
+ */
+async function vaultRowWrite({ itemId, method, body, prefer, token }) {
+  return supabaseWrite({
+    path: `/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`,
+    method,
+    token,
+    headers: prefer ? { 'Prefer': prefer } : {},
+    body,
+  });
+}
+
 export async function publishVaultItem(payload) {
   const token = useAppStore.getState().userToken;
   if (!token) {
@@ -389,47 +489,47 @@ export async function publishVaultItem(payload) {
      return false;
   }
 
-  try {
-    const finalPayload = {
-      ...payload,
-      app_id: "ellars.us.com",
-      client_idempotency_key: payload.client_idempotency_key || generateUUID()
-    };
-    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Prefer': 'return=minimal',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      },
-      body: JSON.stringify(finalPayload)
-    });
+  const finalPayload = {
+    ...payload,
+    app_id: "ellars.us.com",
+    client_idempotency_key: payload.client_idempotency_key || generateUUID()
+  };
 
-    if (!response.ok) {
-      console.error("[AXiM Core] Failed to save to vault", response.status);
-      return false;
-    }
+  const result = await supabaseWrite({
+    path: '/rest/v1/axim_vault',
+    method: 'POST',
+    token,
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(finalPayload),
+  });
 
-    // No cache purge is attempted here. This used to POST /api/v1/cache/purge-tag
-    // fire-and-forget; the endpoint does not exist (the /api/[[path]] catch-all
-    // answered {"error":"not_found"}), so every publish produced one guaranteed
-    // 404 in the network panel and in telemetry, and a poisoned edge entry still
-    // had no eviction route. Restoring tag invalidation means building the Function
-    // and binding CF_ZONE_ID/CF_PURGE_TOKEN first — see open item 12 in
-    // PlanForContinuedDevelopment.md. A failing request that nobody reads is not a
-    // purge strategy.
-
-    return true;
-  } catch (error) {
-    console.error("[AXiM Core: Save Error]", error);
+  if (result.isError) {
+    console.error("[AXiM Core] Failed to save to vault", result.status);
     return false;
   }
+
+  // No cache purge is attempted here. This used to POST /api/v1/cache/purge-tag
+  // fire-and-forget; the endpoint does not exist (the /api/[[path]] catch-all
+  // answered {"error":"not_found"}), so every publish produced one guaranteed
+  // 404 in the network panel and in telemetry, and a poisoned edge entry still
+  // had no eviction route. Restoring tag invalidation means building the Function
+  // and binding CF_ZONE_ID/CF_PURGE_TOKEN first — see open item 12 in
+  // PlanForContinuedDevelopment.md. A failing request that nobody reads is not a
+  // purge strategy.
+
+  return true;
 }
 
 /**
+ * Sign-in is deliberately NOT on the write path.
+ *
+ * A rejected credential is the expected outcome of a typo, and it must never
+ * become an error event: the 2.28 suite pins the exact message the form shows, and
+ * a wrong password that filed `API_FETCH_ERROR` would make every member's typo an
+ * incident. The one failure here that *is* worth reporting — a 5xx from the auth
+ * endpoint, which currently reads to the member as "invalid credentials" — is
+ * recorded as open item 20 rather than half-solved here.
+ *
  * Session states are deliberately distinguishable. A 'transient' failure means we
  * could not reach the auth server (timeout, offline, 5xx) and MUST NOT be read as
  * "the user is logged out" — clearing auth on a slow network was one of the three
@@ -552,6 +652,16 @@ export async function fetchSavedVaultItems(page = 1, limit = 20) {
 }
 
 
+/**
+ * The newsletter form is also off this path, for a reason that expires.
+ *
+ * `VITE_CF_FORM_ENDPOINT` is unset and `/api/v1/subscribe` has no Pages Function
+ * (open item 7), so every attempt today answers 404 by design. Routing it through
+ * the policy now would file one MEDIUM event per subscriber against a queue that
+ * holds 50 and has no sink — drowning real failures to restate a known gap. Item 7
+ * builds the route; this function joins `supabaseWrite`'s policy in the same cycle
+ * that gives it an endpoint to talk to.
+ */
 export async function subscribeToNewsletter(email, turnstileToken) {
   const url = import.meta.env.VITE_CF_FORM_ENDPOINT || '/api/v1/subscribe';
   try {
@@ -630,31 +740,27 @@ export async function uploadMediaAsset(file) {
   const token = useAppStore.getState().userToken;
   if (!token) return { data: null, isError: true, message: 'No active session' };
 
-  try {
-    const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const url = `${await supabaseUrl()}/storage/v1/object/ellars-media/${filename}`;
+  const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Content-Type': file.type || 'application/octet-stream'
-      },
-      body: file
-    });
+  // The binary body goes straight through: `fetch` accepts a `File`, and reading
+  // it into memory first would double the peak for no benefit.
+  const result = await supabaseWrite({
+    path: `/storage/v1/object/ellars-media/${filename}`,
+    method: 'POST',
+    token,
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+    // The one request whose duration is the member's uplink, not our patience.
+    timeoutMs: UPLOAD_TIMEOUT_MS,
+    parse: true,
+  });
 
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return { data, isError: false };
-  } catch (error) {
-    console.error("[AXiM Core: Storage Error] Failed to upload media:", error);
-    return { data: null, isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Storage Error] Failed to upload media:", result.message);
+    return { data: null, isError: true, message: result.message };
   }
+
+  return { data: result.data, isError: false };
 }
 
 export async function fetchUploadedMedia() {
@@ -663,63 +769,51 @@ export async function fetchUploadedMedia() {
     return { data: [], isError: true, message: 'No active session' };
   }
 
-  try {
-    const response = await fetch(`${await supabaseUrl()}/storage/v1/object/list/ellars-media`, {
-      method: 'POST',
-      headers: {
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prefix: '',
-        limit: 100,
-        offset: 0,
-        sortBy: { column: 'created_at', order: 'desc' }
-      })
-    });
+  // A POST that reads, so it keeps the read policy: a retry is free and the body
+  // is small. Only the envelope's status codes tell it apart from a write.
+  const result = await supabaseWrite({
+    path: '/storage/v1/object/list/ellars-media',
+    method: 'POST',
+    token,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prefix: '',
+      limit: 100,
+      offset: 0,
+      sortBy: { column: 'created_at', order: 'desc' }
+    }),
+    parse: true,
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch media: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Resolve the base URL once, outside the map: `supabaseUrl()` is async and a
-    // map callback is not.
-    const baseUrl = await supabaseUrl();
-    const mappedData = data.map(item => ({
-      ...item,
-      url: `${baseUrl}/storage/v1/object/public/ellars-media/${item.name}`
-    }));
-
-    return { data: mappedData, isError: false };
-  } catch (error) {
-    console.error("[AXiM Core: Storage Error] Failed to fetch media:", error);
-    return { data: [], isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Storage Error] Failed to fetch media:", result.message);
+    return { data: [], isError: true, message: result.message };
   }
+
+  const rows = Array.isArray(result.data) ? result.data : [];
+
+  // Resolve the base URL once, outside the map: `supabaseUrl()` is async and a
+  // map callback is not.
+  const baseUrl = await supabaseUrl();
+  const mappedData = rows.map(item => ({
+    ...item,
+    url: `${baseUrl}/storage/v1/object/public/ellars-media/${item.name}`
+  }));
+
+  return { data: mappedData, isError: false };
 }
 
 export async function deleteUploadedMedia(filename) {
   const token = useAppStore.getState().userToken;
   if (!token) return false;
 
-  try {
-    const response = await fetch(`${await supabaseUrl()}/storage/v1/object/ellars-media/${filename}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL'
-      }
-    });
+  const result = await supabaseWrite({
+    path: `/storage/v1/object/ellars-media/${filename}`,
+    method: 'DELETE',
+    token,
+  });
 
-    return response.ok;
-  } catch (error) {
-    console.error("[AXiM Core: Storage Error] Failed to delete media:", error);
-    return false;
-  }
+  return !result.isError;
 }
 
 
@@ -729,116 +823,72 @@ export async function updateVaultItem(itemId, payload) {
   const token = useAppStore.getState().userToken;
   if (!token) return { isError: true, message: 'No active session' };
 
-  try {
-    const finalPayload = { ...payload, app_id: 'ellars.us.com' };
-    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Prefer': 'return=representation',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      },
-      body: JSON.stringify(finalPayload)
-    });
+  const result = await vaultRowWrite({
+    itemId,
+    method: 'PATCH',
+    token,
+    prefer: 'return=representation',
+    body: JSON.stringify({ ...payload, app_id: 'ellars.us.com' }),
+  });
 
-    if (!response.ok) {
-      console.error("[AXiM Core: Vault Error] Failed to update item", response.status);
-      return { isError: true, message: `Failed to update item with status ${response.status}` };
-    }
-
-    return { isError: false, message: 'Item updated successfully' };
-  } catch (error) {
-    console.error("[AXiM Core: Vault Error] Exception updating item:", error);
-    return { isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Vault Error] Failed to update item", result.status);
+    return { isError: true, message: `Failed to update item with status ${result.status}` };
   }
+
+  return { isError: false, message: 'Item updated successfully' };
 }
 
 export async function deleteVaultItem(itemId) {
   const token = useAppStore.getState().userToken;
   if (!token) return { isError: true, message: 'No active session' };
 
-  try {
-    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      }
-    });
+  const result = await vaultRowWrite({ itemId, method: 'DELETE', token });
 
-    if (!response.ok) {
-      console.error("[AXiM Core: Vault Error] Failed to delete item", response.status);
-      return { isError: true, message: `Failed to delete item with status ${response.status}` };
-    }
-
-    return { isError: false, message: 'Item deleted successfully' };
-  } catch (error) {
-    console.error("[AXiM Core: Vault Error] Exception deleting item:", error);
-    return { isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Vault Error] Failed to delete item", result.status);
+    return { isError: true, message: `Failed to delete item with status ${result.status}` };
   }
+
+  return { isError: false, message: 'Item deleted successfully' };
 }
 
 export async function archiveVaultItem(itemId) {
   const token = useAppStore.getState().userToken;
   if (!token) return { isError: true, message: 'No active session' };
 
-  try {
-    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Prefer': 'return=minimal',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      },
-      body: JSON.stringify({ status: 'archived' })
-    });
+  const result = await vaultRowWrite({
+    itemId,
+    method: 'PATCH',
+    token,
+    prefer: 'return=minimal',
+    body: JSON.stringify({ status: 'archived' }),
+  });
 
-    if (!response.ok) {
-      console.error("[AXiM Core: Vault Error] Failed to archive item", response.status);
-      return { isError: true, message: `Failed to archive item with status ${response.status}` };
-    }
-
-    return { isError: false, message: 'Item archived successfully' };
-  } catch (error) {
-    console.error("[AXiM Core: Vault Error] Exception archiving item:", error);
-    return { isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Vault Error] Failed to archive item", result.status);
+    return { isError: true, message: `Failed to archive item with status ${result.status}` };
   }
+
+  return { isError: false, message: 'Item archived successfully' };
 }
 
 export async function restoreVaultItem(itemId) {
   const token = useAppStore.getState().userToken;
   if (!token) return { isError: true, message: 'No active session' };
 
-  try {
-    const response = await fetch(`${await supabaseUrl()}/rest/v1/axim_vault?id=eq.${itemId}&app_id=eq.ellars.us.com`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': await supabaseApiKey(),
-        'Authorization': `Bearer ${token}`,
-        'X-AXiM-Tenant': 'ELLARS_PERSONAL',
-        'Prefer': 'return=minimal',
-        'X-Client-Telemetry': 'AXiM-Frontend-v1'
-      },
-      body: JSON.stringify({ status: 'published' })
-    });
+  const result = await vaultRowWrite({
+    itemId,
+    method: 'PATCH',
+    token,
+    prefer: 'return=minimal',
+    body: JSON.stringify({ status: 'published' }),
+  });
 
-    if (!response.ok) {
-      console.error("[AXiM Core: Vault Error] Failed to restore item", response.status);
-      return { isError: true, message: `Failed to restore item with status ${response.status}` };
-    }
-
-    return { isError: false, message: 'Item restored successfully' };
-  } catch (error) {
-    console.error("[AXiM Core: Vault Error] Exception restoring item:", error);
-    return { isError: true, message: error.message };
+  if (result.isError) {
+    console.error("[AXiM Core: Vault Error] Failed to restore item", result.status);
+    return { isError: true, message: `Failed to restore item with status ${result.status}` };
   }
+
+  return { isError: false, message: 'Item restored successfully' };
 }
