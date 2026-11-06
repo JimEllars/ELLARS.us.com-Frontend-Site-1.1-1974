@@ -14,8 +14,11 @@ import {
 import {
   NOT_FOUND_META,
   planHeadDedupe,
+  readHeadTags,
+  reconcileHead,
   resolveRouteMeta,
   ogUrlFor,
+  routeCanonicalPath,
 } from '../src/lib/headMeta.js';
 import { DIRECTIVE_META, resolveMeta, SITE_ORIGIN } from '../lib/edge/meta.js';
 import { buildRequestHeaders, isFirstPartyUrl } from '../src/lib/requestHeaders.js';
@@ -266,6 +269,116 @@ check('an unparseable target is treated as first-party', isFirstPartyUrl('http:/
   });
   check('a third-party POST keeps Content-Type', post['Content-Type'] === 'application/json');
   check('a third-party POST drops the vendor headers', !('X-Client-Telemetry' in post));
+}
+
+
+console.log('\nsrc/lib/headMeta.js — canonical ownership');
+
+/**
+ * The canonical was the one head tag the reconciliation never considered, because
+ * `readHeadTags` looked at `meta` only. Measured in production on 2026-11-05, in a
+ * real browser, after the release that introduced this file:
+ *
+ *   load /                 -> two identical canonicals (`/` from the edge, `/[rh]`)
+ *   home -> news-media     -> `/` plus `/news-media`
+ *   news-media -> article  -> `/` and nothing else, i.e. every dispatch reached by
+ *                             clicking told a crawler it duplicates the homepage
+ *
+ * These build the same head shapes in memory and assert the outcome of a reconcile
+ * pass, so the sequence is covered without a browser.
+ */
+{
+  const link = (href, owned = false) => ({
+    tagName: 'LINK',
+    attrs: { rel: 'canonical', href, ...(owned ? { 'data-rh': 'true' } : {}) },
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attrs, name) ? this.attrs[name] : null;
+    },
+    hasAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attrs, name);
+    },
+    remove() {
+      this.removed = true;
+    },
+  });
+  const meta = (key, content, owned = false) => ({
+    tagName: 'META',
+    attrs: { ...(key.startsWith('og:') ? { property: key } : { name: key }), content, ...(owned ? { 'data-rh': 'true' } : {}) },
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attrs, name) ? this.attrs[name] : null;
+    },
+    hasAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attrs, name);
+    },
+    remove() {
+      this.removed = true;
+    },
+  });
+  // Only the two selectors the module asks for, so the fake cannot accidentally
+  // "pass" by answering a selector the real document would answer differently.
+  const fakeHead = (elements) => ({
+    querySelectorAll(selector) {
+      if (selector === 'meta, link[rel="canonical"]') return elements;
+      if (selector === 'meta') return elements.filter((e) => e.tagName === 'META');
+      throw new Error(`unexpected selector: ${selector}`);
+    },
+  });
+  const live = (elements) => elements.filter((e) => !e.removed);
+  // Links only: a `<meta>` has no href, and a helper that counts one would make the
+  // "exactly one canonical" assertions pass for the wrong reason.
+  const canonicals = (elements) => live(elements).filter((e) => e.tagName === 'LINK').map((e) => e.attrs.href);
+
+  check('routeCanonicalPath builds an article path', routeCanonicalPath('a-b') === '/articles/a-b', routeCanonicalPath('a-b'));
+  check('routeCanonicalPath strips a trailing slash', routeCanonicalPath('/a-b/') === '/articles/a-b', routeCanonicalPath('/a-b/'));
+  check('routeCanonicalPath drops query and hash', routeCanonicalPath('a-b?utm=x#top') === '/articles/a-b');
+  check('an empty slug yields no path (the edge keeps its own answer)', routeCanonicalPath('') === null);
+  check('a missing slug yields no path', routeCanonicalPath(undefined) === null);
+
+  // readHeadTags must see the canonical at all — the actual defect.
+  {
+    const elements = [meta('description', 'shell'), link(`${SITE_ORIGIN}/about`)];
+    const tags = readHeadTags(fakeHead(elements));
+    const canonical = tags.find((t) => t.key === 'canonical');
+    check('readHeadTags reports the canonical as a key', Boolean(canonical), JSON.stringify(tags.map((t) => t.key)));
+    check('the canonical carries its href as content', canonical?.content === `${SITE_ORIGIN}/about`, canonical?.content);
+    check('the shell canonical is not owned', canonical?.owned === false);
+  }
+
+  // 1. First load of `/`: the edge's canonical plus Helmet's identical one.
+  {
+    const elements = [meta('description', 'shell'), link(`${SITE_ORIGIN}/`), link(`${SITE_ORIGIN}/`, true)];
+    reconcileHead(fakeHead(elements));
+    check('an identical client canonical still supersedes the edge copy', canonicals(elements).length === 1, JSON.stringify(canonicals(elements)));
+    check('the survivor is the client-owned one', live(elements).find((e) => e.tagName === 'LINK')?.hasAttribute('data-rh') === true);
+  }
+
+  // 2. Article opened directly: the client writes its own; the edge's is dropped.
+  {
+    const path = '/articles/whatever-the-count-brings';
+    const elements = [link(`${SITE_ORIGIN}${path}`), link(`${SITE_ORIGIN}${path}`, true), meta('description', 'shell', false), meta('description', 'dispatch', true)];
+    reconcileHead(fakeHead(elements));
+    check('an article keeps exactly one canonical', canonicals(elements).length === 1, JSON.stringify(canonicals(elements)));
+    check('and drops the shell description', live(elements).filter((e) => e.tagName === 'META').length === 1);
+  }
+
+  // 3. The navigation that published the homepage as every dispatch's canonical.
+  {
+    const elements = [
+      link(`${SITE_ORIGIN}/articles/whatever-the-count-brings`), // stale, from the entry page
+      link(`${SITE_ORIGIN}/about`, true), // the client, after navigating
+    ];
+    reconcileHead(fakeHead(elements));
+    check('an article canonical does not survive navigation', canonicals(elements).length === 1, JSON.stringify(canonicals(elements)));
+    check('the surviving canonical is the current route', canonicals(elements)[0] === `${SITE_ORIGIN}/about`, canonicals(elements)[0]);
+  }
+
+  // 4. A route which writes no canonical of its own keeps the edge's answer.
+  {
+    const elements = [link(`${SITE_ORIGIN}/articles/late-render`)];
+    reconcileHead(fakeHead(elements));
+    check('a shell canonical survives when nothing competes', canonicals(elements).length === 1, JSON.stringify(canonicals(elements)));
+    check('reconciling twice changes nothing', reconcileHead(fakeHead(elements)) === 0);
+  }
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

@@ -48,6 +48,23 @@ export const resolveRouteMeta = (pathname) => {
   return resolveMeta(path, SITE_ORIGIN) || NOT_FOUND_META;
 };
 
+/**
+ * The canonical path for a dispatch, from the slug alone.
+ *
+ * `/articles/:slug` is the one route with no `RouteMeta` writer, so the page
+ * component builds its own identity. Building it here rather than in the component
+ * keeps the rule testable without a browser and in one place: trailing slashes,
+ * query and fragment are stripped exactly as `normalizePath` strips them, and an
+ * empty slug returns `null` so the caller keeps the edge's answer instead of
+ * inventing `/articles`.
+ */
+export const routeCanonicalPath = (slug) => {
+  const clean = String(slug ?? '')
+    .split(/[?#]/)[0]
+    .replace(/^\/+|\/+$/g, '');
+  return clean ? `/articles/${clean}` : null;
+};
+
 /** The og:url a document advertises. Same fallback the middleware applies. */
 export const ogUrlFor = (meta) => (meta && meta.canonical) || `${SITE_ORIGIN}/`;
 
@@ -63,8 +80,10 @@ const OG_IMAGE_HINTS = new Set(['og:image:type', 'og:image:width', 'og:image:hei
  * Two rules, both mechanical:
  *
  *  1. A tag the client manages (react-helmet-async marks its output `data-rh`)
- *     supersedes the shell's copy of the same key. Until such a copy exists the
- *     shell's tag stays, so a document that never hydrates keeps its metadata.
+ *     supersedes the shell's copy of the same key — `<meta>` or `<link
+ *     rel="canonical">`. Until such a copy exists the shell's tag stays, so a
+ *     document that never hydrates keeps its metadata, and a route whose page does
+ *     not declare a field is not left blank.
  *  2. If the client's `og:image` names a different image than the shell's, the
  *     shell's `og:image:*` hints are dropped too — they size an image that is no
  *     longer declared. This is the article case: a dispatch shares its featured
@@ -92,15 +111,40 @@ export const planHeadDedupe = (tags = []) => {
   return [...removable];
 };
 
-/** The head as records the planner understands. Only `<meta>` carries this metadata. */
+/**
+ * The head as records the planner understands.
+ *
+ * `<link rel="canonical">` is included, and it is the reason this selector is not
+ * just `meta`. The shell's canonical is written by the edge middleware (so a
+ * crawler that never runs JavaScript gets one); react-helmet then writes the
+ * client's own. Nothing removed the shell's, so:
+ *
+ *   - `/` carried **two identical** canonicals after hydration;
+ *   - an article reached by clicking from the archive carried the **homepage**
+ *     canonical and nothing else, because `/articles/:slug` has no `RouteMeta`
+ *     writer and the previous route's tag was never replaced. That tells a search
+ *     engine every dispatch is a duplicate of `/`;
+ *   - an article opened directly carried the site card's `og:image:width/height`
+ *     next to the dispatch's own `og:image`.
+ *
+ * One rule, applied to both: a client-owned tag supersedes the shell's copy of the
+ * same key. The canonical is a key like any other.
+ */
+export const HEAD_TAG_SELECTOR = 'meta, link[rel="canonical"]';
+
 export const readHeadTags = (head) => {
   if (!head || typeof head.querySelectorAll !== 'function') return [];
-  return [...head.querySelectorAll('meta')].map((element) => ({
-    element,
-    key: element.getAttribute('property') || element.getAttribute('name') || '',
-    content: element.getAttribute('content') || '',
-    owned: element.hasAttribute('data-rh'),
-  }));
+  return [...head.querySelectorAll(HEAD_TAG_SELECTOR)].map((element) => {
+    const isCanonical = element.tagName === 'LINK' || element.getAttribute('rel') === 'canonical';
+    return {
+      element,
+      // The canonical's "key" is the string the client writer also uses, so the
+      // supersede rule applies without a special case.
+      key: isCanonical ? 'canonical' : element.getAttribute('property') || element.getAttribute('name') || '',
+      content: isCanonical ? element.getAttribute('href') || '' : element.getAttribute('content') || '',
+      owned: element.hasAttribute('data-rh'),
+    };
+  });
 };
 
 /**
