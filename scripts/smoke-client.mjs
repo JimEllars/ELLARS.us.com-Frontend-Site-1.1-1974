@@ -23,6 +23,7 @@ import {
 import { DIRECTIVE_META, resolveMeta, SITE_ORIGIN } from '../lib/edge/meta.js';
 import { buildRequestHeaders, isFirstPartyUrl } from '../src/lib/requestHeaders.js';
 import { INITIAL_GATE, advanceGate, navigationKey } from '../src/lib/pageViewGate.js';
+import { parseSearchTerm, summarizeSearch } from '../src/lib/searchTelemetry.js';
 
 /**
  * WordPress only allows `Authorization, X-WP-Nonce, Content-Disposition,
@@ -420,6 +421,47 @@ console.log('\nsrc/lib/pageViewGate.js');
   const nothing = advanceGate(INITIAL_GATE, null);
   check('a null key never emits', nothing.emit === false);
   check('and leaves the gate untouched', nothing.gate === INITIAL_GATE);
+}
+
+
+console.log('\nsrc/lib/searchTelemetry.js');
+
+// The search box used to send its contents verbatim, stored with no expiry. The
+// payload's shape is the guarantee, so it is asserted as a closed set of four keys
+// rather than field by field: a fifth field added later has to be a deliberate edit
+// here, not a quiet extension of what leaves a reader's browser.
+{
+  const payload = summarizeSearch({ term: 'siphon economy', resultCount: 1, corpusLoaded: true });
+  check(
+    'the payload carries exactly four fields',
+    Object.keys(payload).sort().join(',') === 'corpus_loaded,result_count,term_length,term_words',
+    Object.keys(payload).sort().join(',')
+  );
+  check('the term is measured, not copied', payload.term_length === 14 && payload.term_words === 2, JSON.stringify(payload));
+  check('no value contains any part of the term', !JSON.stringify(payload).includes('siphon'));
+
+  const trimmed = summarizeSearch({ term: '  working   class  ', resultCount: 0 });
+  check('leading and repeated whitespace is not counted as content', trimmed.term_length === 13 && trimmed.term_words === 2, JSON.stringify(trimmed));
+
+  const empty = summarizeSearch({ term: '', resultCount: 0 });
+  check('an empty term has no words', empty.term_words === 0 && empty.term_length === 0);
+
+  const missing = summarizeSearch({ term: undefined, resultCount: 0 });
+  check('a missing term does not throw', missing.term_length === 0);
+
+  check('a miss is reported as a miss', summarizeSearch({ term: 'x', resultCount: 0 }).result_count === 0);
+  check('a negative or non-numeric count cannot be reported', summarizeSearch({ term: 'x', resultCount: -4 }).result_count === 0);
+  check('and neither can NaN', summarizeSearch({ term: 'x', resultCount: NaN }).result_count === 0);
+  check('a fractional count is truncated to an integer', summarizeSearch({ term: 'x', resultCount: 2.9 }).result_count === 2);
+
+  // The ambiguity the field exists to remove: a zero from a failed archive is not a
+  // content gap, and must not read as one.
+  check('corpus_loaded defaults to true', summarizeSearch({ term: 'x', resultCount: 0 }).corpus_loaded === true);
+  check('a failed archive is marked unloaded', summarizeSearch({ term: 'x', resultCount: 0, corpusLoaded: false }).corpus_loaded === false);
+  check('corpus_loaded is strictly boolean', summarizeSearch({ term: 'x', corpusLoaded: 'yes' }).corpus_loaded === false);
+
+  const parsed = parseSearchTerm('  a   b ');
+  check('the parser is exported and agrees with the payload', parsed.length === 3 && parsed.words === 2, JSON.stringify(parsed));
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

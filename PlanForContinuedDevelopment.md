@@ -2460,6 +2460,116 @@ worth measuring rather than trusting the green.
 
 ---
 
+## Sprint 2.38 — The search box reported what was typed, and never needed to
+
+**Branch:** `fix/search-telemetry-minimisation` · **Base:** `cbc8338` (main)
+
+### Why this cycle
+
+Item 21, and it became affordable because of 2.37. `SearchOverlay` sent
+`{ query: debouncedQuery }` verbatim with every `search_execution` event, and the
+edge stores the payload with **no expiry** — a search box is the one field on this
+site that can carry something a reader did not mean to publish: an address pasted
+into the wrong box, a name, a medical question. Sprint 2.32 disclosed it in
+`/privacy` Version 3, which was the minimum, not a fix.
+
+What 2.37 changed: the effect that files the event listed `trackEvent` in its
+dependencies, and `trackEvent`'s identity used to churn with the engagement score, so
+every score transition re-sent the raw term. That is gone, so "one search, one event"
+now actually holds — and with the amplification removed, removing the field itself is
+a small, verifiable change instead of a change to a stream of unknown size.
+
+### The decision — measure the question, not the words
+
+The stated purpose was finding content gaps: which questions the archive fails to
+answer. That is fully answered by **how long the term was, how many words it had, and
+how many results came back**. The words were never load-bearing.
+
+`{ term_length, term_words, result_count, corpus_loaded }` — and nothing else. No
+field in the shape can hold a word of what was typed, which is the property that
+survives a future edit; a redaction filter would not.
+
+`term_words` is kept because it is not derivable from `term_length`, and a three-word
+query that misses is a different editorial signal from a one-word query that misses.
+`corpus_loaded` is kept because **a zero is otherwise ambiguous** — between "nothing
+matched" and "the archive had not answered yet" — and the zeros are exactly what the
+data is read for.
+
+### Shipped — `src/lib/searchTelemetry.js` (pure, no imports)
+
+- `parseSearchTerm(term)` — trims, collapses internal whitespace, returns
+  `{ length, words }`. A missing term is `{ 0, 0 }`, not a throw.
+- `summarizeSearch({ term, resultCount, corpusLoaded })` — the payload, with the count
+  truncated to a non-negative integer (`NaN`, `-4` and `2.9` all handled) and
+  `corpus_loaded` strictly boolean.
+
+### Shipped — `src/components/common/SearchOverlay.jsx`
+
+- The raw term is gone from `trackEvent`.
+- **Nothing is recorded until the corpus settles.** `corpusStatus` now tracks
+  `idle → loading → ready | failed` around the archive fetch (previously a failure was
+  only a `console.error`), and the effect returns while a fetch is in flight. On a
+  cold load the common order is *type, then the archive arrives* — so the event is
+  filed once, when the count means something.
+- `recordedTerm` keeps a later `setArticles` from re-filing the same search when the
+  memo recomputes.
+- A failed archive is filed with `corpus_loaded: false` rather than as a gap.
+
+### Shipped — `/privacy` Version 4
+
+The clause now says the site records how long the term was, how many words it had and
+how many results it returned — **not the term itself** — and that this is why a search
+that finds nothing matters and the words do not. The old warning ("do not type
+anything into the search box that you would not put in a public comment") is removed
+because it is no longer true.
+
+### The drift guard moved with it
+
+`tests/dom/privacy-policy.test.jsx` asserted `'the term is recorded'` — the sentence
+was pinned, so the policy could not have been corrected without the suite failing. It
+now asserts the new three clauses **and their negation**, plus a static guard that
+`SearchOverlay` calls `summarizeSearch` and contains neither a literal payload nor
+`query: debouncedQuery`. The static half is labelled as static: the end-to-end proof
+is in `search-telemetry.test.jsx`, and the static guard covers a second call site
+added later elsewhere.
+
+### The suite is not decorative — proved by mutation
+
+| mutation | result |
+|---|---|
+| payload reverted to `{ query: debouncedQuery, results }` | **4 failed** — the shape, the miss, the in-flight case and the failed-archive case |
+| corpus-settlement guard removed | **1 failed** — `records nothing while the archive is still in flight` |
+| once-per-term guard removed | **1 failed** — `does not file the same search twice when the memo recomputes` |
+
+The end-to-end suite mounts the **real** component (only the network and the hook are
+mocked), types into the real input, advances past the 300 ms debounce, and asserts on
+the object that reached `trackEvent`.
+
+### Verified
+
+`npm test` → **127 + 289 + 116 = 532 assertions, 0 failed** (was 511; +14 pure, +6
+overlay, +1 policy) · `eslint --max-warnings=0` clean · `npm run build` clean,
+precache 36, `dist/200.html` present · production probe 33/33 after 2.37 merged.
+
+### Known limits
+
+- **This stops collection; it does not retract what is already stored.** Rows written
+  before this deploy contain raw queries in D1's payload column and in KV, with no
+  expiry on the D1 side. `0002` nulled raw IP addresses in a backfill; nothing nulls
+  stored search terms. Recorded as item 24 — the honest follow-through, and it needs
+  D1 access rather than code.
+- **Length and word count are a weak fingerprint of a short query.** A one-word,
+  four-character search narrows what was asked. It is the minimum that still answers
+  the question, but it is not zero, and the policy says so by describing exactly what
+  is kept rather than claiming nothing is.
+- **The calculator still records the figures entered**, and the payload builder still
+  carries a per-visit random id. Both are disclosed in the same clause and both are
+  unchanged here.
+- **The probe cannot see this.** It would have to post a telemetry batch and then read
+  the sink back, which is item 1b's blocker.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -2486,12 +2596,11 @@ worth measuring rather than trusting the green.
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
 | 22 | **Two `subscribeToNewsletter` implementations** | Reconcile with item 7 | `src/lib/email.js` and `src/lib/api.js` each export one, and the two components on the same page use different ones (`Footer` → `lib/email`, `Newsletter` → `lib/api`). Whichever is used, the endpoint does not exist yet (item 7), so neither path can be verified end to end. Reconciling them before the route exists would change behaviour that cannot be tested; the right order is route first, then one implementation. |
-| 21 | **Raw search text is transmitted as telemetry** | Editorial / product decision | `SearchOverlay` sends `{ query }` verbatim on every debounced search, and it is stored in D1's payload column with an unbounded lifetime. Sprint 2.32 disclosed it in `/privacy` Version 3, which is the minimum. **2.37 removed the amplification** — the effect no longer re-fires on every engagement-score change, so one search is one event — but the term itself is still transmitted, which is what this item is about. A search box is the one field here that can carry something a reader did not mean to publish — an email address pasted into the wrong box, a name, a medical question. Options, in ascending strictness: keep and disclose (today); record only the term's length and whether it returned results; stop sending it. Recommend the middle: the content gap is what the data is for, and the term itself is not needed for that. |
+| 21 | ~~Raw search text is transmitted as telemetry~~ | **Closed in 2.38** | The middle option was taken: `{ term_length, term_words, result_count, corpus_loaded }` and no field that can hold a word of the query. 2.37 removed the amplification (one search is one event); 2.38 removed the term, waits for the archive before filing a zero, and moved `/privacy` to Version 4 with the drift guard updated to the new clauses and their negations. **What is already stored is still stored — item 24.** |
 | 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
-
 | 23 | **`signals` is a new object on every scroll pixel** | Render cost, not correctness | `useEngagementScoring` returns a `signals` object rebuilt whenever `maxScrollDepth` rises, so every `useTelemetry()` consumer re-renders on scroll even when the *score* has not moved. Sprint 2.37 removed the telemetry consequence (identity is stable, page views no longer amplify); the re-render remains. Fixing it means memoising the score/tier derivation apart from the signal object, or thresholding the depth signal to the 50/80 points the score actually reads — the second is cheaper and matches what the arithmetic uses. |
-
+| 24 | **Search terms already written to D1/KV** | D1 + KV access | 2.38 stopped the collection; it did not retract what earlier deploys collected. Rows written before that deploy still carry raw queries in the payload column, with no expiry on the D1 side (KV expires at 30 days; D1 does not). Needs a one-off statement nulling the `query` key in stored payloads — the same shape as `0002`'s raw-IP backfill — applied through `migrations/` so it is versioned rather than run by hand. |
 ---
 
 ## Accomplishments (Sprint 2.1)
@@ -2530,6 +2639,11 @@ worth measuring rather than trusting the green.
   evicted by them. **Next best use of the same harness:** the queue's eviction order, which
   is currently oldest-first and therefore drops an `api_failure` at the same age as a
   page view.
+- ~~Stop transmitting the text typed into the search box~~ — **closed in 2.38**: the event now
+  reports the term's shape and the archive's answer, nothing else, and refuses to file a
+  zero while the corpus is still in flight. **Next:** item 24, the rows already stored, and
+  the same treatment for the calculator's entered figures, which remain disclosed but not
+  minimised.
 - **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
   either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).

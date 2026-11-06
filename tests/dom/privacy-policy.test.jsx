@@ -124,10 +124,24 @@ describe('the four things Version 2 left out', () => {
     expect(mentions('user-agent string is')).toBe(true);
   });
 
-  it('discloses that what is typed into the search box is recorded', () => {
+  it('discloses the shape of a search, and that the term itself is not kept', () => {
     expect(mentions('search box')).toBe(true);
-    expect(mentions('the term is recorded')).toBe(true);
+    expect(mentions('how long the term was')).toBe(true);
+    expect(mentions('how many results it returned')).toBe(true);
     expect(mentions('figures you entered')).toBe(true);
+    // Version 3 said the term was recorded, which was true then and is not now. The
+    // sentence has to move with the code, not stay as a hedge that is merely dark.
+    expect(mentions('the term is recorded')).toBe(false);
+  });
+
+  it('the search overlay sends no part of what was typed', () => {
+    // Static, and stated as static: the overlay is exercised end to end in
+    // `search-telemetry.test.jsx`, but this guard covers a second call site later
+    // added elsewhere, which that suite would not see.
+    const overlay = readFileSync(resolve(ROOT, 'src/components/common/SearchOverlay.jsx'), 'utf8');
+    expect(overlay).toContain('summarizeSearch(');
+    expect(overlay).not.toMatch(/trackEvent\(\s*'search_execution'\s*,\s*\{/);
+    expect(overlay).not.toMatch(/query:\s*debouncedQuery/);
   });
 
   it('discloses the copied share link', () => {
