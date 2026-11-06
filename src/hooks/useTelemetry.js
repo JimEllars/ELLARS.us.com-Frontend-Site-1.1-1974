@@ -2,6 +2,13 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useEngagementScoring } from './useEngagementScoring';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import {
+  recordKey,
+  selectBatch,
+  settleBatch,
+  dropStale,
+  mergeForUnload,
+} from '@/lib/telemetryQueue';
 
 const QUEUE_KEY = 'ellars_telemetry_queue';
 const MAX_RETRIES = 3;
@@ -101,48 +108,41 @@ export const useTelemetry = () => {
     const handleUnload = () => {
       try {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-        const inFlight = inFlightPayloads.current;
-        const allPending = [...queue];
+        // Bounded here for the same reason the flush is: `sendBeacon` returns false
+        // over its 64 KiB limit, and the old code cleared the queue whether or not
+        // the platform accepted the payload — so a large queue was discarded on
+        // unload rather than delivered or kept for next visit.
+        const batch = mergeForUnload(queue, inFlightPayloads.current);
+        if (batch.length === 0) return;
 
-        for (const item of inFlight) {
-          if (!allPending.find(p => p.telemetry_envelope.idempotency_key === item.telemetry_envelope.idempotency_key)) {
-            allPending.push(item);
-          }
+        let beaconSent = false;
+        if (navigator.sendBeacon) {
+          const blob = new Blob([JSON.stringify(batch)], { type: 'application/json' });
+          beaconSent = navigator.sendBeacon(TELEMETRY_ENDPOINT, blob);
         }
 
-        if (allPending.length > 0) {
-          const freshQueue = allPending.filter(payload => {
-              const now = Date.now();
-              return (now - (payload.timestamp || 0)) <= 172800000;
-          });
-          const prunedQueue = prunePayloadArray(freshQueue);
-          if (prunedQueue.length > 50) prunedQueue.splice(0, prunedQueue.length - 50);
-
-          if (prunedQueue.length > 0) {
-            let beaconSent = false;
-            if (navigator.sendBeacon) {
-                const blob = new Blob([JSON.stringify(prunedQueue)], { type: 'application/json' });
-                beaconSent = navigator.sendBeacon(TELEMETRY_ENDPOINT, blob);
-            }
-
-            if (!beaconSent) {
-                fetch(TELEMETRY_ENDPOINT, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Project-Scope': 'ELLARS_FRONTEND'
-                  },
-                  body: JSON.stringify(prunedQueue),
-                  keepalive: true
-                }).catch(() => {});
-            }
-
-            localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
-          } else {
-             localStorage.setItem(QUEUE_KEY, JSON.stringify(prunedQueue));
-          }
+        if (!beaconSent) {
+          // `keepalive` is the only transport left during unload. Its outcome cannot
+          // be observed, so the queue is kept rather than cleared: a duplicate on the
+          // next visit is harmless (every record carries its own idempotency key) and
+          // a loss is not.
+          fetch(TELEMETRY_ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Project-Scope': 'ELLARS_FRONTEND'
+            },
+            body: JSON.stringify(batch),
+            keepalive: true
+          }).catch(() => {});
+          return;
         }
+
+        // The beacon was accepted, so remove exactly what was handed to it.
+        const sentKeys = new Set(batch.map(recordKey));
+        const remaining = queue.filter((payload) => !sentKeys.has(recordKey(payload)));
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
       } catch (e) {
         // Silent
       }
@@ -176,33 +176,52 @@ export const useTelemetry = () => {
       const hasConsented = localStorage.getItem('ellars_privacy_consent');
       if (hasConsented !== 'true') return;
 
-      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      if (queue.length === 0) return;
+      const readQueue = () => {
+        try {
+          return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+        } catch {
+          return [];
+        }
+      };
+      const writeQueue = (next) => {
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(next));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ellars_telemetry_updated'));
+        }
+      };
 
-      const now = Date.now();
-      const freshQueue = queue.filter(payload => {
-          return (now - (payload.timestamp || 0)) <= 172800000;
-      });
+      const stored = readQueue();
+      if (stored.length === 0) return;
 
-      if (freshQueue.length !== queue.length) {
-          localStorage.setItem(QUEUE_KEY, JSON.stringify(freshQueue));
-      }
+      const fresh = dropStale(stored);
+      if (fresh.length !== stored.length) writeQueue(fresh);
+      if (fresh.length === 0) return;
 
-      if (freshQueue.length === 0) return;
-
-      const prunedQueue = prunePayloadArray(freshQueue);
-      if (prunedQueue.length > 50) prunedQueue.splice(0, prunedQueue.length - 50);
+      // Never build a body the edge is documented to refuse. This is the fix for the
+      // permanent 413 loop: an oversized queue used to be resent verbatim every five
+      // seconds, for the life of the profile, and never delivered anything.
+      if (selectBatch(fresh).length === 0) return;
 
       let attempt = 0;
-      let success = false;
+      let retry = true;
 
-      // Register the payloads we're about to send as "in-flight" in case of unload
-      inFlightPayloads.current = [...prunedQueue];
+      while (attempt < MAX_RETRIES && retry) {
+        attempt += 1;
 
-      while (attempt < MAX_RETRIES && !success) {
+        // Re-selected every attempt, from the queue as it is now. A retry after a 413
+        // must send a *smaller* body; holding one fixed batch meant the halving in
+        // `settleBatch` changed the queue and nothing else, and the identical
+        // oversized payload went out again.
+        const batch = selectBatch(dropStale(readQueue()));
+        if (batch.length === 0) break;
+
+        // Register the payloads we're about to send as "in-flight" in case of unload
+        inFlightPayloads.current = [...batch];
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
+        let status = null;
         try {
           const response = await fetch(TELEMETRY_ENDPOINT, {
             method: 'POST',
@@ -211,40 +230,35 @@ export const useTelemetry = () => {
               'Accept': 'application/json',
               'X-Project-Scope': 'ELLARS_FRONTEND'
             },
-            body: JSON.stringify(prunedQueue), // Single array payload block
+            body: JSON.stringify(batch), // Single array payload block
             signal: controller.signal,
             keepalive: true,
           });
-
-          // Resetting it to false only after a definitive HTTP server resolution code clears or drops the local array queue.
-          if (response.status === 429 || response.status >= 500) {
-            throw new Error('Rate limit or server error: ' + response.status);
-          }
-          if (response.status === 200 || response.ok || response.status === 202 || response.status === 204) {
-            // Safely clear the local browser persistent array cache upon verified gateway reception
-            localStorage.setItem(QUEUE_KEY, JSON.stringify([]));
-            if (typeof window !== 'undefined') { window.dispatchEvent(new CustomEvent('ellars_telemetry_updated')); }
-            success = true;
-            inFlightPayloads.current = []; // Clear in-flight payloads on success
-          } else {
-             throw new Error('Non-200 response');
-          }
-        } catch (error) {
-          // If a failure occurs, increment attempt and wait exponentially
-          attempt++;
-          if (attempt < MAX_RETRIES) {
-            const delay = Math.min(30000, BASE_BACKOFF_MS * Math.pow(2, attempt));
-            const jitter = Math.random() * 1000;
-            await wait(delay + jitter);
-          }
+          status = response.status;
+        } catch {
+          status = null; // transport failure: the settlement decides whether to retry
         } finally {
           clearTimeout(timeoutId);
         }
+
+        // Settle against the queue *as it is now*, not as it was when the batch was
+        // selected: records enqueued during the flight were never in this batch.
+        const decision = settleBatch({ status, sent: batch, queue: readQueue() });
+        writeQueue(decision.queue);
+        retry = decision.retry;
+
+        if (retry && attempt < MAX_RETRIES) {
+          const delay = Math.min(30000, BASE_BACKOFF_MS * Math.pow(2, attempt));
+          const jitter = Math.random() * 1000;
+          await wait(delay + jitter);
+        }
       }
+
+      inFlightPayloads.current = [];
     } catch (e) {
       // Silently fail
     } finally {
-      // Resetting it to false only when a successful transmission is verified or the backoff ceiling is completely exhausted
+      // Reset the lock when the batch is settled or the backoff ceiling is exhausted
       isFlushing.current = false;
     }
   }, []);
