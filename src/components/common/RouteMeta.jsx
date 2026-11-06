@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { ogUrlFor, resolveRouteMeta } from '@/lib/headMeta';
+import { SITE_CARD, siteCardUrl } from '../../../lib/edge/meta.js';
 
 /**
  * The single client writer for route-level document metadata.
@@ -37,6 +38,19 @@ const RouteMeta = () => {
       <meta property="og:url" content={ogUrlFor(meta)} />
       <meta name="twitter:title" content={meta.title} />
       <meta name="twitter:description" content={meta.description} />
+      {/* The site card, declared by the client on every route it owns.
+          <HeadOwnership /> deletes the shell's copy of any key the client has
+          claimed, so a route that claims `og:image` and then hands the head to a
+          route that does not would leave the document with no share image at all.
+          Stating it here keeps ownership total, and ArticleDetail's featured image
+          still supersedes it on a dispatch (its size hints go with it). */}
+      <meta property="og:image" content={siteCardUrl} />
+      <meta property="og:image:type" content={SITE_CARD.type} />
+      <meta property="og:image:width" content={SITE_CARD.width} />
+      <meta property="og:image:height" content={SITE_CARD.height} />
+      <meta property="og:image:alt" content={SITE_CARD.alt} />
+      <meta name="twitter:image" content={siteCardUrl} />
+      <meta name="twitter:image:alt" content={SITE_CARD.alt} />
       {meta.canonical ? <link rel="canonical" href={meta.canonical} /> : null}
     </Helmet>
   );

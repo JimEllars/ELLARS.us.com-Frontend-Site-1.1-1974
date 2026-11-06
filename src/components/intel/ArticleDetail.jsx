@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { subscribeToNewsletter } from '@/lib/email';
 import { useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { SITE_ORIGIN, routeCanonicalPath } from '@/lib/headMeta';
 
 const sanitizeConfig = {
   ADD_TAGS: ['iframe'],
@@ -254,10 +255,34 @@ const ArticleDetail = () => {
     };
   }, [slug]);
 
+  // The route's identity, declared before any of the three states below.
+  //
+  // `/articles/:slug` has no <RouteMeta> writer: the title, description and share
+  // image come from WordPress, so this component owns that route's head. The URL,
+  // however, is known from the parameter on the first render — and it is the one
+  // thing the edge middleware already asserts when it serves the shell, so the
+  // client must assert it too or the two disagree.
+  //
+  // Without this, the canonical was a casualty of navigation: clicking a dispatch
+  // from the archive left the *previous* route's canonical in place (measured: an
+  // article carried `https://ellars.us.com/` and nothing else), which tells a search
+  // engine the article is a duplicate of the homepage. Declaring it here — above the
+  // loading and error returns — means loading, failed and loaded all canonicalise to
+  // the article's own URL, the same one the edge wrote.
+  const canonicalPath = routeCanonicalPath(slug);
+  const canonicalUrl = canonicalPath ? `${SITE_ORIGIN}${canonicalPath}` : null;
+  const routeIdentity = canonicalUrl ? (
+    <Helmet>
+      <link rel="canonical" href={canonicalUrl} />
+      <meta property="og:url" content={canonicalUrl} />
+    </Helmet>
+  ) : null;
+
   // Loading Intercept
   if (loading) {
     return (
       <div className="pt-40 min-h-screen flex flex-col items-center justify-center space-y-4 bg-grid">
+        {routeIdentity}
         <div className="w-12 h-12 border-4 border-yellow-electric/30 border-t-yellow-electric rounded-full animate-spin"></div>
         <div className="text-center font-mono text-yellow-electric animate-pulse">DECRYPTING TRANSMISSION...</div>
       </div>
@@ -268,6 +293,7 @@ const ArticleDetail = () => {
   if (fallbackMode || !post) {
     return (
       <div className="pt-40 min-h-screen flex flex-col items-center justify-center p-6 bg-grid relative">
+        {routeIdentity}
         <Helmet>
           <title>Transmission Error | James Ellars</title>
           <meta name="robots" content="noindex" />
@@ -338,6 +364,7 @@ const ArticleDetail = () => {
 
   return (
     <div className="pt-24 min-h-screen bg-grid">
+      {routeIdentity}
       <Helmet>
         <meta name="robots" content="index, follow" />
         <title>{title} | James Ellars Official</title>

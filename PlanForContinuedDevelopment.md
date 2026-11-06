@@ -1439,6 +1439,119 @@ an asset that exists in the repo and not in the deployment. They went green on t
 
 ---
 
+## Sprint 2.26 — The head handed out canonical tags the client never took back
+
+**Branch:** `fix/canonical-ownership` · **Base:** `8aae850` (main)
+
+### Why this cycle
+
+A sweep of client-side behaviour in a real browser — the class of defect `npm run probe`
+cannot see, because the probe reads bytes before JavaScript runs. 2.17 introduced one client
+writer for route metadata and a reconciliation pass (`HeadOwnership`) that deletes the
+shell's copy of any key the client has claimed. `readHeadTags` looked at `<meta>` only.
+
+`<link rel="canonical">` is written twice: by the edge middleware (so a crawler that never
+runs JavaScript gets one) and by `<RouteMeta>` after hydration. Nothing removed the first.
+Measured against production, 2026-11-05:
+
+| state | canonicals before |
+|---|---|
+| load `/` | **two identical** (`/` from the edge, `/[rh]` from Helmet) |
+| home → `/news-media` | `/` **and** `/news-media` |
+| `/news-media` → a dispatch | **`/` and nothing else** |
+| direct load of a dispatch | one, but beside **two** `description`, **two** `robots`, **two** `og:image` and the site card's `og:image:width/height` describing a different picture |
+
+Row 3 is the worst of them. Every dispatch reached by clicking — the archive is the normal
+way in — advertised **the homepage as its canonical**. That is not a missing signal; it is a
+positive instruction to a search engine that the article is a duplicate of `/`.
+
+Row 4 is a second, independent defect: `ArticleDetail` renders `<Helmet>` only after its
+WordPress fetch resolves, and `HeadOwnership` reconciled **once**, one frame after the mount.
+For a route whose head is written asynchronously, a one-shot snapshot runs before there is
+anything to reconcile.
+
+### Shipped
+
+**The canonical is a head key like any other** — `src/lib/headMeta.js`
+- `readHeadTags` reads `meta, link[rel="canonical"]`, and a canonical is reported with
+  `key: 'canonical'`, `content: href`. The supersede rule ("a client-owned tag removes the
+  shell's copy of the same key") then applies with no special case for links.
+- `routeCanonicalPath(slug)` builds a dispatch's path from the parameter alone — trailing
+  slash, query and hash stripped exactly as `normalizePath` strips them, `null` for an empty
+  slug so the caller keeps the edge's answer instead of inventing `/articles`.
+
+**Ownership is continuous, not a snapshot** — `src/components/common/HeadOwnership.jsx`
+- A `MutationObserver` on `document.head` reconciles on the next frame after anything is
+  added or re-contented, coalesced onto one frame and idempotent, so it settles after one
+  pass. This covers the data-driven route and any future component that writes head tags
+  after mount.
+- The first version of this used **two** `observe()` calls — one for `childList`, one for
+  attributes. A second call on the same target *replaces* that target's options rather than
+  merging them, so insertions stopped being observed and the article page kept every
+  duplicate. Caught in a local browser harness, not by a test; the comment now records why.
+
+**The article route declares its own identity before it loads** — `src/components/intel/ArticleDetail.jsx`
+- `<link rel="canonical">` and `og:url` are rendered above the loading and error returns,
+  from the slug alone, matching the URL the edge already wrote. Loading, failed and loaded
+  all canonicalise to the article's own URL.
+
+**The client now owns the site card too** — `lib/edge/meta.js`, `src/components/common/RouteMeta.jsx`
+- Deleting the shell's copy of a key is permanent. After visiting a dispatch and navigating
+  to `/about`, the document advertised **no `og:image` at all** — the shell's had been
+  removed on the article, and `RouteMeta` never declared one. `SITE_CARD` is now exported
+  from the table and declared by the client on every route it owns, so ownership is total and
+  `ArticleDetail`'s featured image still supersedes it.
+
+### Tests
+
+- **`scripts/smoke-client.mjs`: +16 assertions (86 → 102).** A fake head answers only the two
+  selectors the module actually uses, so it cannot pass by answering a selector the real
+  document would answer differently. The three measured states are reconstructed in memory —
+  double canonical on `/`, the stale article canonical after navigation, and the direct-load
+  article — plus `routeCanonicalPath` normalisation and reconcile idempotence.
+- **`scripts/smoke-functions.mjs`: +2 assertions (266 → 268).** `SITE_CARD` must equal the
+  card `index.html` declares, and describe it exactly (type, width, height, alt), asserted
+  against the shell's bytes rather than against a copy of the constant.
+
+### Verified
+
+`eslint --max-warnings=0` clean · `npm test` **102 + 268 = 370 assertions, 0 failed** ·
+`npm run build` clean · `npm run probe` **31/31 against production**.
+
+In a real Firefox session against a local `wrangler pages dev` of the built artifact — with a
+local WordPress proxy and a locally patched CSP so the dispatch fetch resolves, which is the
+only way this can be exercised outside production:
+
+| state | canonicals | description | robots | og:image | stale size hints |
+|---|---|---|---|---|---|
+| `/` | 1 | 1 | 1 | card | 4 |
+| `/platform`, `/about`, `/news-media`, `/privacy`, `/login` | 1 | 1 | 1 | card | 4 |
+| dispatch (direct and via archive) | 1 | 1 | 1 | featured | **0** |
+| dispatch → `/about` | 1 | 1 | 1 | card restored | 4 |
+
+Console is clean on every route except the two already-logged production items (the missing
+Instagram route and the CSP-blocked placeholder video).
+
+### Known limits
+
+- **This is a client-side invariant and no CI gate sees it.** `npm run probe` fetches bytes
+  before JavaScript runs, and `npm test` has no DOM. The 370 assertions cover the planner, not
+  the mounted document; the table above was measured by hand. A `vitest` + `jsdom` harness
+  (open item 9) or a headless probe step is what closes that gap.
+- **`twitter:image` is still the site card on dispatches.** `ArticleDetail` supersedes
+  `og:image` but declares no `twitter:image`, so a dispatch shares the card on Twitter/X and
+  its featured image everywhere else. Pre-existing, unchanged here, and now the most visible
+  remaining asymmetry in the article head.
+- **The observer reconciles the whole head on every mutation.** Cheap here (a dozen tags,
+  coalesced per frame), but it is a global listener on `document.head`; if a future third-party
+  script mutates the head continuously this should move to a targeted list.
+- **`/articles/<unknown>` carries a self-canonical with `noindex`.** The article URL exists as
+  a route, so the URL is a defensible answer; the `noindex` is what keeps it from being
+  indexed. Serving it as a real 404 would need the edge to ask WordPress, which is not on the
+  critical path today.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1459,7 +1572,7 @@ an asset that exists in the repo and not in the deployment. They went green on t
 | 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
 | 14 | ~~A returning client may still run the previous deploy's bundle~~ | **Closed in 2.19** | Measured with two real builds: the handshake fires on a returning visit, reloads once and lands on the new build in **3,102 ms**, with no loop on the next navigation. The 2.17 observation was taken at ~0.9 s and cancelled by the next navigation — a measurement artifact, not a defect. The prompt's dead `SKIP_WAITING` post and ignored `reload(true)` argument were removed in the same cycle. See Sprint 2.19. |
-| 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. |
+| 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17, with a gap closed in 2.26** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. **The seven routes did not include a direct load of a dispatch**, whose `<Helmet>` renders only after its WordPress fetch — measured 2026-11-05: two `description`, two `robots`, two `og:image`, and a canonical that third of the site's normal journeys left pointing at the homepage. Sprint 2.26 made the reconciliation continuous and taught it about `<link rel="canonical">`. |
 | 15 | **The Instagram feed endpoint does not exist** | Editorial / plugin access | Measured 2026-11-04: `GET /wp-json/spotlight/v1/instagram?feed=390` → `404 {"code":"rest_no_route"}`. The installed plugin's real namespace is **`sl-insta`**, and every route it publishes is admin CRUD behind auth (`/sl-insta/feeds`, `/sl-insta/accounts`, `/sl-insta/connect`) — there is no public read endpoint to point at. So `getSocialFeed()` fails on every `/news-media` view and renders `SOCIAL_FALLBACK`. Needs either a server-side fetch in a Pages Function or a decision to drop the surface. |
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
@@ -1473,7 +1586,7 @@ an asset that exists in the repo and not in the deployment. They went green on t
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.26+)
+## Roadmap Milestones (Sprint 2.27+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
@@ -1484,6 +1597,11 @@ an asset that exists in the repo and not in the deployment. They went green on t
 - ~~Self-host the four font families~~ — **closed in 2.25**: the site now allows no Google host at
   all, and `/privacy` lost the section that disclosed the request instead of having to keep it
   accurate.
+- **Give the client head invariants a DOM test.** 2.26's defect lived entirely after
+  hydration: `npm test` has no DOM and `npm run probe` reads bytes before JavaScript runs, so
+  the 370 assertions covered the planner and the mounted document was checked by hand. One
+  `vitest` + `jsdom` case that mounts the router, navigates twice and counts head tags closes
+  the largest remaining hole in the gate.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.

@@ -21,11 +21,13 @@ import { onRequest as middleware } from '../functions/_middleware.js';
 import {
   DIRECTIVE_SLUGS as META_DIRECTIVE_SLUGS,
   NOT_FOUND_META,
+  SITE_CARD,
   SITE_ORIGIN,
   applyMeta,
   canonicalOriginFor,
   isPreviewHost,
   resolveMeta,
+  siteCardUrl,
   wantsDocument,
 } from '../lib/edge/meta.js';
 import { isFileRequest, isReservedPath, isStaticFileRequest } from '../lib/edge/assets.js';
@@ -882,6 +884,21 @@ describe('index.html social card');
 
   const twitterImage = html.match(/<meta name="twitter:image" content="([^"]+)"/i)?.[1] || '';
   check('twitter:image matches og:image', twitterImage === ogImage, twitterImage);
+
+  // The client now declares this card on every route it owns, because <HeadOwnership>
+  // deletes the shell's copy of any key the client has claimed: a route that claimed
+  // `og:image` and handed the head to one that did not would leave the document with
+  // no share image. Two declarations of the same card is the only way that works, so
+  // they must agree — asserted against the shell's bytes, not against a copy.
+  check('SITE_CARD is the card the shell declares', siteCardUrl === ogImage, `${siteCardUrl} vs ${ogImage}`);
+  check(
+    'SITE_CARD describes the shell card exactly',
+    html.includes(`property="og:image:width" content="${SITE_CARD.width}"`) &&
+      html.includes(`property="og:image:height" content="${SITE_CARD.height}"`) &&
+      html.includes(`property="og:image:type" content="${SITE_CARD.type}"`) &&
+      html.includes(`property="og:image:alt" content="${SITE_CARD.alt}"`),
+    JSON.stringify(SITE_CARD)
+  );
 }
 
 describe('lib/edge/documentIdentity.js — the probe reads what a crawler reads');
