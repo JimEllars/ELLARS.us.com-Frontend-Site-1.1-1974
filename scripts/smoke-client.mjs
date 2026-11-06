@@ -22,6 +22,7 @@ import {
 } from '../src/lib/headMeta.js';
 import { DIRECTIVE_META, resolveMeta, SITE_ORIGIN } from '../lib/edge/meta.js';
 import { buildRequestHeaders, isFirstPartyUrl } from '../src/lib/requestHeaders.js';
+import { INITIAL_GATE, advanceGate, navigationKey } from '../src/lib/pageViewGate.js';
 
 /**
  * WordPress only allows `Authorization, X-WP-Nonce, Content-Disposition,
@@ -379,6 +380,46 @@ console.log('\nsrc/lib/headMeta.js — canonical ownership');
     check('a shell canonical survives when nothing competes', canonicals(elements).length === 1, JSON.stringify(canonicals(elements)));
     check('reconciling twice changes nothing', reconcileHead(fakeHead(elements)) === 0);
   }
+}
+
+
+console.log('\nsrc/lib/pageViewGate.js');
+
+// One navigation, one page view. The defect: the effect that emitted it was keyed on
+// callbacks rebuilt whenever the engagement score moved, and every component that
+// called `useTelemetry()` ran its own copy — so a page view arrived per consumer and
+// per scroll tick. The decision is asserted here because jsdom has no layout and
+// cannot produce a scroll that moves the score.
+{
+  const first = advanceGate(INITIAL_GATE, 'entry-1');
+  check('the first claim for an entry emits', first.emit === true);
+  check('and carries that entry forward', first.gate.key === 'entry-1');
+
+  const second = advanceGate(first.gate, 'entry-1');
+  check('a second consumer on the same entry is refused', second.emit === false);
+  check('without moving the gate', second.gate.key === 'entry-1');
+
+  const navigated = advanceGate(second.gate, 'entry-2');
+  check('a new navigation emits', navigated.emit === true);
+
+  const back = advanceGate(navigated.gate, 'entry-1');
+  check('going back to an entry emits again — it is a second visit', back.emit === true);
+
+  // A location with no key (older router, hand-built test location) must still refuse
+  // to emit per consumer, which is the half of the defect that has nothing to do with
+  // scroll.
+  const noKey = { pathname: '/platform' };
+  const a = advanceGate(INITIAL_GATE, navigationKey(noKey));
+  const b = advanceGate(a.gate, navigationKey(noKey));
+  check('a keyless location falls back to its path', navigationKey(noKey) === 'path:/platform');
+  check('the first keyless claim emits', a.emit === true);
+  check('and its second consumer is refused', b.emit === false);
+
+  // A missing location is not an entry: emitting for it would reintroduce the flood
+  // on any render where the router has not resolved yet.
+  const nothing = advanceGate(INITIAL_GATE, null);
+  check('a null key never emits', nothing.emit === false);
+  check('and leaves the gate untouched', nothing.gate === INITIAL_GATE);
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

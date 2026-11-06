@@ -2347,6 +2347,119 @@ Not a green tick taken on trust — the check was made to fail on demand:
 
 ---
 
+## Sprint 2.37 — A page view per scroll tick, and one per component
+
+**Branch:** `fix/page-view-amplification` · **Base:** `d7b41d1` (main)
+
+### Why this cycle
+
+The probe was 33/33 and the suites were green, so this defect had to be *measured*
+rather than read. `useTelemetry` emitted `page_view` from an effect keyed on the
+identities of `createTelemetryPayload` and `dispatchTelemetry`. Both were rebuilt
+whenever the engagement score moved, because `createTelemetryPayload` closed over
+`score`, `tier` and `signals` — and `signals` is a **fresh object for every scroll
+position deeper than the last**. So the effect re-ran on scroll.
+
+Two multipliers sat on top of that:
+
+- **Every consumer ran its own copy.** Six components call `useTelemetry()`:
+  `DonateModal`, `NewsletterModal` and `SearchOverlay` (all three mounted by `Navbar`
+  on every page), plus `AutomationCalculator`, `MediaPlaylist` and the dashboard's
+  `TelemetryStatus`. One navigation produced one page view *per consumer*.
+- **It is the queue's eviction policy.** The client queue is bounded at 50 records
+  (`telemetryQueue.js`). A page-view flood does not merely inflate a count — it
+  displaces the records that carry information, `api_failure` above all, which is
+  the one event class the last six cycles exist to make visible.
+
+The second-order defect is the same cause: `SearchOverlay` lists `trackEvent` in an
+effect's dependencies, so every score transition re-sent `search_execution`, and
+every one of those carries the raw query (item 21).
+
+### Shipped — `src/lib/pageViewGate.js` (pure decision + one shared cell)
+
+A page view belongs to a **history entry**, not to a component and not to a render.
+React Router stamps every entry with a `key` that is stable across re-renders and
+across consumers, and different for a navigation — including a navigation *back* to a
+page already visited, which is a second look and so a second page view.
+
+- `navigationKey(location)` — the entry key, falling back to `path:<pathname>` for a
+  location without one (older router, hand-built test location). The fallback is
+  weaker — per path rather than per visit — but still refuses per consumer.
+- `advanceGate(gate, key)` — pure: `{ gate, emit }`. A null key never emits.
+- `claimPageView(location)` / `resetPageViewGate()` — the process-wide cell. Module
+  scope is the narrowest lifetime shared by every consumer on the page, and it is not
+  persisted: a reload is a new document and a new page view.
+
+### Changed — `src/hooks/useTelemetry.js`
+
+- **Volatile state in a ref, read at call time.** `pathname`, `isOnline`, `score`,
+  `tier` and `signals` moved into `liveRef`, so `createTelemetryPayload`,
+  `dispatchTelemetry` and `trackEvent` are now stable for the life of the hook. That
+  is the root-cause fix: callers already assumed stable identity, and two of them
+  (`SearchOverlay`, and this hook's own page-view effect) were dependent on it.
+- The page-view effect claims the entry first and returns if it loses, so exactly one
+  consumer emits per navigation.
+- **Two honest cleanups in the same function** rather than a separate cycle: the
+  flush comment said "every 30 seconds" over a 5000 ms interval (the queue's
+  settlement logic and its own docstring are both written against 5 s); and the
+  `online` branch called `flushQueue()` twice, where the second call could only ever
+  be a no-op because the first sets its lock synchronously. The unused
+  `queue.length > 0` read went with it.
+
+### Measured, not assumed
+
+Against the **unfixed** hook, in jsdom, with a consenting session:
+
+| scenario | page views before | after |
+|---|---|---|
+| 4 consumers, one navigation | 4 | 1 |
+| 2 consumers, 1 calculator interaction | 3 | 1 |
+| 2 consumers, 6 score-affecting signals | 6 | 1 |
+| 3 consumers, consent withheld | 0 | 0 |
+
+The scroll path itself could not be modelled: jsdom reports `scrollHeight` as 0, so
+`useEngagementScoring`'s depth handler returns before it changes a signal. The
+engagement signal is dispatched directly in the DOM suite — the same state
+transition the scroll produces — and the decision is asserted standalone in
+`test:client`, which is where a layout-free invariant belongs.
+
+### The suite is not decorative — proved by mutation
+
+| mutation | result |
+|---|---|
+| gate dropped at the call site (`claimPageView(location);` without the `return`) | **5 failed** — every count assertion, from 4 consumers down to the 6-signal case |
+| the captured closure restored (`[pathname, isOnline, score, tier, signals]`) | **1 failed** — `trackEvent keeps its identity across a score transition` |
+
+That second row is the interesting one: with the gate in place the *count* stays
+correct even when the closure churns, so the count tests alone would let the root
+cause return. The identity probe is what holds it — and it is the same property that
+stops `SearchOverlay` re-sending its query.
+
+### Verified
+
+`npm test` → **113 + 289 + 109 = 511 assertions, 0 failed** (was 492; +11 pure,
++8 DOM) · `eslint --max-warnings=0` clean · `npm run build` clean, precache 36 ·
+production probe **33/33** at the start of the cycle, which is what made the defect
+worth measuring rather than trusting the green.
+
+### Known limits
+
+- **The gate is per document, not per tab.** Two tabs are two documents and two page
+  views, which is what a visit is. It deliberately does not attempt cross-tab
+  coordination.
+- **A page view is emitted by whichever consumer mounts first**, so its
+  `component_origin` is `ROUTER` regardless of which component won. That was already
+  the case; the payload is app-level and carries the route, not the component.
+- **`useEngagementScoring` still allocates a new `signals` object on every deeper
+  scroll pixel.** It is now harmless to telemetry identity, but it still re-renders
+  every consumer of the hook — a render-cost issue, not a correctness one, and
+  changing it would mean touching the score's own arithmetic. Recorded as item 23
+  rather than folded into this cycle.
+- **Nothing here proves delivery**, only emission. The sinks remain unbound
+  (item 1b), so the queue is still the end of the line.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -2373,9 +2486,11 @@ Not a green tick taken on trust — the check was made to fail on demand:
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
 | 22 | **Two `subscribeToNewsletter` implementations** | Reconcile with item 7 | `src/lib/email.js` and `src/lib/api.js` each export one, and the two components on the same page use different ones (`Footer` → `lib/email`, `Newsletter` → `lib/api`). Whichever is used, the endpoint does not exist yet (item 7), so neither path can be verified end to end. Reconciling them before the route exists would change behaviour that cannot be tested; the right order is route first, then one implementation. |
-| 21 | **Raw search text is transmitted as telemetry** | Editorial / product decision | `SearchOverlay` sends `{ query }` verbatim on every debounced search, and it is stored in D1's payload column with an unbounded lifetime. Sprint 2.32 disclosed it in `/privacy` Version 3, which is the minimum. A search box is the one field here that can carry something a reader did not mean to publish — an email address pasted into the wrong box, a name, a medical question. Options, in ascending strictness: keep and disclose (today); record only the term's length and whether it returned results; stop sending it. Recommend the middle: the content gap is what the data is for, and the term itself is not needed for that. |
+| 21 | **Raw search text is transmitted as telemetry** | Editorial / product decision | `SearchOverlay` sends `{ query }` verbatim on every debounced search, and it is stored in D1's payload column with an unbounded lifetime. Sprint 2.32 disclosed it in `/privacy` Version 3, which is the minimum. **2.37 removed the amplification** — the effect no longer re-fires on every engagement-score change, so one search is one event — but the term itself is still transmitted, which is what this item is about. A search box is the one field here that can carry something a reader did not mean to publish — an email address pasted into the wrong box, a name, a medical question. Options, in ascending strictness: keep and disclose (today); record only the term's length and whether it returned results; stop sending it. Recommend the middle: the content gap is what the data is for, and the term itself is not needed for that. |
 | 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
+
+| 23 | **`signals` is a new object on every scroll pixel** | Render cost, not correctness | `useEngagementScoring` returns a `signals` object rebuilt whenever `maxScrollDepth` rises, so every `useTelemetry()` consumer re-renders on scroll even when the *score* has not moved. Sprint 2.37 removed the telemetry consequence (identity is stable, page views no longer amplify); the re-render remains. Fixing it means memoising the score/tier derivation apart from the signal object, or thresholding the depth signal to the 50/80 points the score actually reads — the second is cheaper and matches what the arithmetic uses. |
 
 ---
 
@@ -2408,6 +2523,13 @@ Not a green tick taken on trust — the check was made to fail on demand:
   writes and media; `loginUser` and `subscribeToNewsletter` are excluded on purpose and carry
   the reason in the code. Next: item 20's narrow auth-outage report, and the newsletter once
   item 7 gives it an endpoint.
+- ~~One page view per navigation, not per consumer and per scroll tick~~ — **closed in 2.37**:
+  the page-view effect was keyed on callbacks rebuilt by the engagement score, and every
+  `useTelemetry()` consumer ran its own copy. Measured 4 consumers → 4 page views per
+  navigation, now 1, and the six-record queue that diagnostics depend on is no longer
+  evicted by them. **Next best use of the same harness:** the queue's eviction order, which
+  is currently oldest-first and therefore drops an `api_failure` at the same age as a
+  page view.
 - **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
   either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
