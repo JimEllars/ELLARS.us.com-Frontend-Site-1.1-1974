@@ -1732,6 +1732,101 @@ clean, precache 36 entries · production probe unaffected (**31/31**).
 
 ---
 
+## Sprint 2.29 — One failed request, one event (it was filing two, or none)
+
+**Branch:** `fix/api-failure-telemetry` · **Base:** `4fd7815` (main)
+
+### Why this cycle
+
+Item 11 has been on the list since 2.15 with the note "confirm the reduced redirect logic does
+not double-report". Nobody had done the confirming, so this cycle measured it: stub `fetch`,
+call the real functions, read the real queue out of `localStorage`. The result inverted the
+assumption behind the item.
+
+| failure | events filed before this cycle |
+|---|---|
+| transport (fetch threw) | `API_FETCH_ERROR` (**HIGH**) + `wp_feed_fallback_served` (LOW) |
+| HTTP 500 | `wp_feed_fallback_served` (LOW) — **no error at all** |
+| HTTP 401 on the Vault | **nothing** |
+| timeout (our own abort) | `API_FETCH_ERROR` (**HIGH**) + `wp_feed_fallback_served` (LOW) |
+
+`logApiErrorToTelemetry` had exactly one call site: the `catch`. Every non-ok response
+returned from the `!ok` branch *above* it, so the entire HTTP failure class — the 500 on the
+feed, the 503 on the config endpoint, the 401 that logs a member out — was invisible while the
+transport class was billed twice, once by the utility and again by the caller that then served
+fallback dispatches. An error dashboard built on this queue would have shown one incident for
+every dropped connection and zero for every broken server.
+
+### Shipped — `src/lib/apiFailure.js` (pure, no imports, no globals)
+
+- **`classifyApiFailure()`** — the decision, as a table rather than as branches scattered
+  across a retry loop. Severity follows meaning: `http_server`/`timeout`/`network`/`parse` are
+  HIGH, `throttled`/`auth_rejected`/`http_client` are MEDIUM, `offline` is **LOW** (a client
+  with no connection is an expected condition, not a production incident — it used to be
+  HIGH).
+- **`buildApiFailurePayload()`** — the envelope `functions/api/telemetry.js` already accepts,
+  with `failure_kind`, `http_status`, `attempt`, `network_status` and `request_id` in metadata.
+- **`scrubUrl()`** — origin + path, never the query string. Nothing puts a credential in a
+  query today; the point is that nothing has to notice on the day something does.
+- **`isTelemetryEndpoint()`** — the loop guard, now a decision the caller can be *tested*
+  against instead of an `if` inside a logger.
+
+### Changed — `src/lib/api.js`
+
+- `fetchWithRetry` reports from **both** failure paths and from nowhere else, so one request
+  produces exactly one error. The 429 retry recursion reports only its final attempt, with the
+  attempt number attached (measured: 4 calls to `fetch`, one event).
+- The failure object now carries `status` on the HTTP path as well. It was `undefined` there
+  while the catch path set it, so a caller could not tell a 404 from a 500 without guessing.
+- The degradation event (`wp_feed_fallback_served`) stays — serving cached dispatches is a
+  different fact from the request failing — but it now carries `metadata.request_id`, the
+  cause's idempotency key, so the pair is **joinable**: one request, one error, one
+  consequence. Five copies of the same 20-line envelope literal collapsed into
+  `reportFeedFallback()`.
+- A `200` whose body is not JSON used to be swallowed by the callers' `catch`. It is now one
+  `failure_kind: "parse"` event: the server answered, and the answer was unusable.
+- `telemetry_error_flag` is gone. It was written when the telemetry endpoint failed and read
+  by nothing in this repository — a broken sink that looked like it had a recovery mechanism.
+- The session-clear check parses the hostname (`isSupabaseUrl`) instead of searching the whole
+  URL for `.supabase.co`, which also matched `supabase.co.example.net`.
+
+### The suite is not decorative — proved by mutation
+
+`tests/dom/api-failure-telemetry.test.jsx` (15 cases) asserts against the real queue, not a
+mock of it. Each behaviour was reverted one at a time:
+
+| mutation | failing cases |
+|---|---|
+| report from the `catch` only (the pre-2.29 shape) | 7 |
+| correlation id dropped from the degradation event | 1 |
+| offline reported as HIGH again | 2 |
+| the raw URL logged instead of the scrubbed one | 1 |
+| the telemetry loop guard removed | 1 |
+
+### Verified
+
+`npm test` → **102 + 268 + 36 = 406 assertions, 0 failed** (36 DOM cases, up from 21) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36 entries, `dist/200.html`
+present · production probe unaffected (**31/31**, 2026-11-06).
+
+### Known limits
+
+- **Nothing is watching the queue.** The fix makes the events correct and complete; item 1b
+  means every one of them is still dropped at the sink (`kv/d1/analytics: unbound`), so this
+  cycle's value is that the *next* binding is trustworthy. A queue with no sink is a diary.
+- **The direct `fetch` calls are still unreported.** `publishVaultItem`, `updateVaultItem`,
+  `deleteVaultItem`, `uploadMediaAsset`, `fetchUploadedMedia`, `loginUser` and
+  `subscribeToNewsletter` bypass `fetchWithRetry` entirely, so their failures file nothing.
+  A rejected login should stay quiet; a failed Vault *write* should not. Next cycle's natural
+  target.
+- **A 429 that recovers is still invisible.** The retry succeeds, nothing is filed, so
+  WordPress throttling that we waited out cannot be seen in aggregate.
+- **`FALLBACK_POSTS` is still invented content** (item 8). This cycle only made the *fact* that
+  it was served reportable; a reader still gets three dispatches that do not exist, and the
+  degradation event is now the only thing that says so.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1749,7 +1844,7 @@ clean, precache 36 entries · production probe unaffected (**31/31**).
 | 8 | **Phantom content** | Editorial decision | `FALLBACK_POSTS` in `api.js` renders three fully-formed dispatches that do not exist in WordPress, and `NewsMedia.jsx` hard-codes four episodes against Unsplash thumbnails and a sample Cloudflare Stream video. Measured 2026-11-04: the WordPress preflight failure (Sprint 2.21) meant this fallback was **the only content the homepage and archive had ever rendered** — the invented dispatches were not a degraded mode, they were the product. The feed is fixed; the content is still invented. Either label it as an offline cache or empty it — a journalist clicking one hits a stub. |
 | 9 | ~~No unit-test floor~~ | **Closed in 2.27** | Three suites now gate CI: `smoke-client` (**102**, pure decisions — SW update policy, the head dedupe plan, the request-header policy), `smoke-functions` (**268**, edge handlers — config resolution, sitemap entities/zones/cache, asset 404s, middleware statuses, `_headers` rules, the social card, the probe's own non-vacuity), and `tests/dom/` (**8**, vitest + jsdom, mounting the real `<RouteMeta>`, `<HeadOwnership>` and `<ArticleDetail>`). **378 assertions, no runner dependency beyond the dev deps.** Still uncovered, which is the honest remaining gap: telemetry sink independence, vault row-shape mapping, the dashboard/player/modals in the DOM, and rendering itself — jsdom has no layout, so a real browser check stays manual. |
 | 10 | ~~Repo hygiene~~ | **Closed in 2.18** | `build.sourcemap` was turned off in 2.15 (0 `.map` files). The remaining 1.9 MB of root PNGs, `commit_message.txt` and the tracked `test-results/` artifact are gone, with three guards so they cannot come back. |
-| 11 | **Duplicate Supabase 401 handling** | Reviewed next cycle | `fetchWithRetry` still logs `logApiErrorToTelemetry` for every failure path; confirm the reduced redirect logic does not double-report. |
+| 11 | ~~Duplicate Supabase 401 handling~~ | **Closed in 2.29** | Measured rather than reviewed, and the note was half right: one transport failure filed **two** events (the utility's HIGH error plus the caller's LOW degradation), while every HTTP failure filed **none** — the `!ok` branch returned above the only logger call site. `fetchWithRetry` now reports once per request from both paths, severity follows meaning, and the degradation event carries the cause's `request_id`. 15 DOM cases, 5 mutations proved. Remaining: the direct `fetch` calls (Vault writes, media, login, newsletter) still file nothing — see 2.29's limits. |
 | 12 | **No cache purge path exists** | `CF_ZONE_ID` + `CF_PURGE_TOKEN` | `POST /api/v1/cache/purge-tag` → `{"error":"not_found"}` from the `/api/[[path]]` catch-all. The dead client call was **removed** in 2.15, so a publish no longer emits a guaranteed 404 — but the capability is still absent: until the Function exists, a bad edge cache entry cannot be evicted. |
 | 14 | ~~A returning client may still run the previous deploy's bundle~~ | **Closed in 2.19** | Measured with two real builds: the handshake fires on a returning visit, reloads once and lands on the new build in **3,102 ms**, with no loop on the next navigation. The 2.17 observation was taken at ~0.9 s and cancelled by the next navigation — a measurement artifact, not a defect. The prompt's dead `SKIP_WAITING` post and ignored `reload(true)` argument were removed in the same cycle. See Sprint 2.19. |
 | 13 | ~~`og:title` and `description` are declared twice per document~~ | **Closed in 2.17, with a gap closed in 2.26** | Both candidate fixes were taken, in the order that removes the cause rather than the symptom: route metadata now has one client writer fed by the edge's own table (`RouteMeta`), and `HeadOwnership` hands the shell's copy over once. Verified 0 duplicates on seven routes including a client-side navigation; 64 new assertions hold it. **The seven routes did not include a direct load of a dispatch**, whose `<Helmet>` renders only after its WordPress fetch — measured 2026-11-05: two `description`, two `robots`, two `og:image`, and a canonical that third of the site's normal journeys left pointing at the homepage. Sprint 2.26 made the reconciliation continuous and taught it about `<link rel="canonical">`. |
@@ -1786,6 +1881,9 @@ clean, precache 36 entries · production probe unaffected (**31/31**).
   `/dashboard` are covered (13 cases), and 2.6's transient-session defect is now pinned by a
   test that fails if it returns. Next: the dashboard's Vault and publisher states, once item
   2b gives them a row shape to assert against.
+- **Put the direct `fetch` calls under the same policy** — the Vault writes, media uploads and
+  newsletter subscribe bypass `fetchWithRetry`, so a failed publish is still silent (2.29's
+  first limit). The classifier is already written and tested; the work is routing, not policy.
 - **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
   either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).

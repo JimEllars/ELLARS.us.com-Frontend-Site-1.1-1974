@@ -1,5 +1,6 @@
 import { getSupabase, getSupabaseConfig } from './supabase.js';
 import { buildRequestHeaders } from './requestHeaders.js';
+import { classifyApiFailure, buildApiFailurePayload, isSupabaseUrl } from './apiFailure.js';
 import { useAppStore } from '@/store/useAppStore';
 import { enqueuePayload, generateUUID } from '@/hooks/useTelemetry';
 
@@ -18,11 +19,6 @@ const WP_API_URL = import.meta.env.VITE_WP_API_URL || 'https://wp.ellars.us.com/
  */
 const supabaseUrl = async () => (await getSupabaseConfig()).url;
 const supabaseApiKey = async () => (await getSupabaseConfig()).anonKey;
-
-// Used to decide whether a 401 is Supabase's own (session expired) rather than
-// some third party's. It replaces a comparison against the removed build-time
-// constant; the resolved base URL is not available synchronously here.
-const SUPABASE_API_HOST_HINT = '.supabase.co';
 
 /**
  * Guards a call that cannot work without a key. Callers return an honest error
@@ -93,26 +89,7 @@ export async function fetchLatestNews(page = 1, perPage = 9) {
     const response = await fetchWithRetry(url, { credentials: "include" });
 
     if (response.isError) {
-      if (typeof window !== 'undefined') { enqueuePayload({
-        telemetry_envelope: {
-          project_id: 'ELLARS_FRONTEND',
-          environment: 'production',
-          timestamp: new Date().toISOString(),
-          idempotency_key: generateUUID(),
-          session: { context_scope: 'public_facing_umbrella' }
-        },
-        event_payload: {
-          event_type: 'wp_feed_fallback_served',
-          severity: 'LOW',
-          component_origin: 'API_UTILITY',
-          error_message: 'WordPress API degraded or timed out',
-          stack_trace: '',
-          metadata: {
-            source: 'fetchLatestNews',
-            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
-          }
-        }
-      }); }
+      reportFeedFallback('fetchLatestNews', response);
       return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
     }
 
@@ -121,48 +98,58 @@ export async function fetchLatestNews(page = 1, perPage = 9) {
 
     const data = await response.json();
     if (data.isError) {
-      if (typeof window !== 'undefined') { enqueuePayload({
-        telemetry_envelope: {
-          project_id: 'ELLARS_FRONTEND',
-          environment: 'production',
-          timestamp: new Date().toISOString(),
-          idempotency_key: generateUUID(),
-          session: { context_scope: 'public_facing_umbrella' }
-        },
-        event_payload: {
-          event_type: 'wp_feed_fallback_served',
-          severity: 'LOW',
-          component_origin: 'API_UTILITY',
-          error_message: 'WordPress API degraded or timed out',
-          stack_trace: '',
-          metadata: {
-            source: 'fetchLatestNews_data',
-            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
-          }
-        }
-      }); }
+      reportFeedFallback('fetchLatestNews_data', response);
       return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
     }
 
     return { data, totalPages, total };
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
+    // fetchWithRetry never throws, so reaching here means the server answered and
+    // the *body* was unusable. That used to be silent; it is now one event.
+    reportApiFailure({ url: `${WP_API_URL}/posts`, transport: 'parse', message: error?.message });
     return { data: FALLBACK_POSTS.slice(0, perPage), totalPages: 1, total: FALLBACK_POSTS.length };
   }
 }
 
 
-function logApiErrorToTelemetry(url, error) {
+/**
+ * Files exactly one error event for a failed request and returns the request id.
+ *
+ * This is the only place a request failure is reported, and `fetchWithRetry` calls
+ * it on both failure paths — a non-ok response and a thrown transport error. It
+ * used to be called from the `catch` only, so every HTTP failure (a 500 on the
+ * feed, a 401 on the Vault) returned before reaching it and filed nothing at all.
+ * See ./apiFailure.js for the measured table and the severity policy.
+ *
+ * Deliberately does not import `window`: the caller has already established a
+ * browser context, and a failure in Node is still worth a queue entry.
+ */
+function reportApiFailure({ url, status = null, transport = null, carriedSession = false, message = '', attempt = 1 }) {
+  const requestId = generateUUID();
   try {
-    if (url.includes('/api/telemetry') || url.includes('v1/telemetry')) {
-      if (import.meta.env.DEV) {
-        console.warn('Telemetry endpoint failed, skipping telemetry logging loop.');
-      } else {
-        localStorage.setItem('telemetry_error_flag', 'true');
-      }
-      return;
-    }
-    const payload = {
+    const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    const classification = classifyApiFailure({ url, status, transport, carriedSession, message });
+    const payload = buildApiFailurePayload({ classification, url, requestId, attempt, online });
+    if (payload) enqueuePayload(payload);
+  } catch (e) {
+    // Reporting must never become the failure it is reporting.
+  }
+  return requestId;
+}
+
+/**
+ * The WordPress feed degraded and cached dispatches were served in its place.
+ *
+ * This is a *consequence*, not a cause: the cause was filed once by
+ * `reportApiFailure`, and `metadata.request_id` is that event's idempotency key, so
+ * the pair is joinable — one broken request, one error, one degradation — instead
+ * of two unlinked rows that an error count reads as two incidents.
+ */
+function reportFeedFallback(source, response) {
+  if (typeof window === 'undefined') return;
+  try {
+    enqueuePayload({
       telemetry_envelope: {
         project_id: 'ELLARS_FRONTEND',
         environment: 'production',
@@ -171,24 +158,34 @@ function logApiErrorToTelemetry(url, error) {
         session: { context_scope: 'public_facing_umbrella' }
       },
       event_payload: {
-        event_type: 'API_FETCH_ERROR',
-        severity: 'HIGH',
+        event_type: 'wp_feed_fallback_served',
+        severity: 'LOW',
         component_origin: 'API_UTILITY',
-        error_message: error.message || 'Unknown API Error',
-        stack_trace: error.stack || '',
+        error_message: 'WordPress API degraded or timed out',
+        stack_trace: '',
         metadata: {
-          url: url,
-          network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline',
+          source,
+          // Joins this row to the API_FETCH_ERROR it followed. Present even when the
+          // cause was not reported (the telemetry loop guard), so its absence is not
+          // read as "there was no cause".
+          request_id: response?.requestId || null,
+          failure_kind: response?.failureKind || null,
+          http_status: response?.status ?? null,
+          network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
         }
       }
-    };
-    enqueuePayload(payload);
-  } catch(e) {
-    // Silent
+    });
+  } catch (e) {
+    // Silent: a full localStorage is not a reason to break the page.
   }
 }
 
 async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
+  // Whether this request carried a session decides how its 401 is read: a rejected
+  // token (the member must be logged out) or a request that had no credential to
+  // begin with (not our session's problem).
+  const carriedSession = Boolean(options?.headers?.Authorization);
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
@@ -220,8 +217,9 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
         // newsletter subscribe — and did a full 'window.location.href' reload,
         // discarding SPA state. The store is cleared instead and ProtectedRoute
         // performs the router-native <Navigate to="/login">.
-        const carriedSession = Boolean(options?.headers?.Authorization);
-        if (carriedSession && url.includes(SUPABASE_API_HOST_HINT) && typeof window !== 'undefined') {
+        // `isSupabaseUrl` parses the hostname; the previous check was a substring
+        // search, which also matched `supabase.co.example.net`.
+        if (carriedSession && isSupabaseUrl(url) && typeof window !== 'undefined') {
           useAppStore.getState().clearAuth();
         }
       }
@@ -229,28 +227,55 @@ async function fetchWithRetry(url, options = {}, retries = 3, attempt = 1) {
         console.warn(`[429 Too Many Requests] Retrying fetch to ${url} (attempt ${attempt}, ${retries} retries left)...`);
         const backoffMs = (2 ** attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, backoffMs));
+        // Headers are rebuilt by the recursion, which is why only `options` travels.
         return fetchWithRetry(url, options, retries - 1, attempt + 1);
       }
       console.error(`[API Error] HTTP ${response.status} from ${url}`);
+      const requestId = reportApiFailure({
+        url,
+        status: response.status,
+        carriedSession,
+        attempt,
+        message: `HTTP ${response.status} from ${url}`
+      });
       const error = new Error("Our systems are currently experiencing high traffic. We are utilizing fallback protocols to serve you.");
       error.status = response.status;
-      return { isError: true, message: error.message || 'An unknown network error occurred.' };
+      return {
+        isError: true,
+        // `status` was absent from this branch entirely, while the catch below set
+        // it — so a caller could not tell a 404 from a 500 without guessing.
+        status: response.status,
+        message: error.message || 'An unknown network error occurred.',
+        requestId,
+        failureKind: response.status >= 500 ? 'http_server' : (response.status === 429 ? 'throttled' : 'http_client'),
+      };
     }
 
     return response;
   } catch (error) {
     let finalError = error;
+    let transport = 'network';
     if (error.name === 'AbortError') {
       finalError = new Error('API request timed out');
+      transport = 'timeout';
     } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
       finalError = new Error('Network offline');
+      transport = 'offline';
     }
-    logApiErrorToTelemetry(url, finalError);
+    const requestId = reportApiFailure({
+      url,
+      transport,
+      carriedSession,
+      attempt,
+      message: finalError.message,
+    });
     return {
       ok: false,
       status: finalError.status || 500,
       isError: true,
       message: finalError.message || 'API request failed',
+      requestId,
+      failureKind: transport,
       json: async () => ({ isError: true, message: finalError.message || 'API request failed' })
     };
   }
@@ -263,52 +288,21 @@ export async function getLatestPosts(limit = 10, categoryId = null) {
 
     const response = await fetchWithRetry(url, { credentials: 'include' });
 
-    if (response.isError) { if (typeof window !== 'undefined') { enqueuePayload({
-        telemetry_envelope: {
-          project_id: 'ELLARS_FRONTEND',
-          environment: 'production',
-          timestamp: new Date().toISOString(),
-          idempotency_key: generateUUID(),
-          session: { context_scope: 'public_facing_umbrella' }
-        },
-        event_payload: {
-          event_type: 'wp_feed_fallback_served',
-          severity: 'LOW',
-          component_origin: 'API_UTILITY',
-          error_message: 'WordPress API degraded or timed out',
-          stack_trace: '',
-          metadata: {
-            source: 'getLatestPosts',
-            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
-          }
-        }
-      }); } return FALLBACK_POSTS.slice(0, limit); }
+    if (response.isError) {
+      reportFeedFallback('getLatestPosts', response);
+      return FALLBACK_POSTS.slice(0, limit);
+    }
     const data = await response.json();
-    if (data.isError) { if (typeof window !== 'undefined') { enqueuePayload({
-        telemetry_envelope: {
-          project_id: 'ELLARS_FRONTEND',
-          environment: 'production',
-          timestamp: new Date().toISOString(),
-          idempotency_key: generateUUID(),
-          session: { context_scope: 'public_facing_umbrella' }
-        },
-        event_payload: {
-          event_type: 'wp_feed_fallback_served',
-          severity: 'LOW',
-          component_origin: 'API_UTILITY',
-          error_message: 'WordPress API degraded or timed out',
-          stack_trace: '',
-          metadata: {
-            source: 'getLatestPosts_data',
-            network_status: (typeof navigator !== 'undefined' && navigator.onLine) ? 'online' : 'offline'
-          }
-        }
-      }); } return FALLBACK_POSTS.slice(0, limit); }
+    if (data.isError) {
+      reportFeedFallback('getLatestPosts_data', response);
+      return FALLBACK_POSTS.slice(0, limit);
+    }
 
     return data;
   } catch (error) {
     console.error("[AXiM Core: Routing Error] Failed to fetch article payload:", error);
     console.warn("API Error, utilizing fallback protocol:", error.message);
+    reportApiFailure({ url: `${WP_API_URL}/posts`, transport: 'parse', message: error?.message });
     return FALLBACK_POSTS.slice(0, limit);
   }
 }
