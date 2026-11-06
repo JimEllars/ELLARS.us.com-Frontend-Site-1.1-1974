@@ -421,6 +421,76 @@ await test('/sitemap.xml → 200 application/xml, cached, with live dispatches',
 });
 
 /* ---------------------------------------------------------------------------
+ * 5b. Every URL the site advertises, answers.
+ *
+ * The sitemap is the site's own claim about what exists: 68 URLs on the last
+ * measurement. It is generated live from WordPress, so an article the archive still
+ * lists and WordPress has since 404'd is advertised and broken at the same time — and
+ * a crawler finds it before anybody does. Nothing checked more than a sample.
+ *
+ * No retries here: a 404 on an advertised URL is a fact, not a transport glitch, and
+ * retrying 68 URLs would turn one slow WordPress into a hanging probe.
+ * ------------------------------------------------------------------------- */
+const mapLimit = async (items, limit, run) => {
+  const queue = [...items];
+  const out = [];
+  const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    for (;;) {
+      const item = queue.shift();
+      if (item === undefined) return;
+      out.push(await run(item));
+    }
+  });
+  await Promise.all(workers);
+  return out;
+};
+
+await test('every URL the sitemap advertises answers 200', async () => {
+  if (sitemapLocs.length === 0) {
+    return ['the sitemap advertised nothing to check — the previous check explains why'];
+  }
+
+  const measured = await mapLimit(sitemapLocs, 5, async (loc) => {
+    const path = loc.replace(expectedOrigin, '') || '/';
+    // A document, because that is what a crawler asks for: `Accept: */*` measures the
+    // SPA fallback instead (see this file's header).
+    try {
+      const response = await fetch(new URL(loc), {
+        redirect: 'follow',
+        headers: {
+          accept: DOCUMENT_ACCEPT,
+          'user-agent': 'ellars-postdeploy-probe/1.0 (+https://ellars.us.com)',
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+      return { path, status: response.status, type: typeOf(response) };
+    } catch (error) {
+      return { path, status: 0, error: error.message };
+    }
+  });
+
+  const broken = measured.filter((entry) => entry.status !== 200);
+  const notHtml = measured.filter((entry) => entry.status === 200 && entry.type !== 'text/html');
+
+  const failures = [];
+  for (const entry of broken) {
+    failures.push(`${entry.path} → ${entry.status || entry.error}, expected 200 (advertised in sitemap.xml)`);
+  }
+  for (const entry of notHtml) {
+    failures.push(`${entry.path} → ${entry.type}, expected text/html`);
+  }
+  if (failures.length > 0) return failures;
+
+  // The count is the non-vacuity of this check: a sitemap that shrank to two URLs
+  // would pass the loop above and prove nothing.
+  const articles = measured.filter((entry) => entry.path.startsWith('/articles/')).length;
+  return {
+    failures,
+    note: `${measured.length} advertised URLs answered 200 (${articles} dispatches)`,
+  };
+});
+
+/* ---------------------------------------------------------------------------
  * 6. A dispatch really serves a dispatch document.
  *
  * Sampled rather than exhaustive: the sitemap carries dozens of posts, and the

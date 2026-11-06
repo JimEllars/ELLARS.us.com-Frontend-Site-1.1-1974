@@ -2288,6 +2288,65 @@ above as its output.
 
 ---
 
+## Sprint 2.36 — The sitemap is a claim, and nothing was checking it
+
+**Branch:** `feat/sitemap-link-integrity` · **Base:** `a1b257c` (main)
+
+### Why this cycle
+
+A manual sweep of production found no broken links: **68 advertised URLs, 68 answered 200**,
+and every PWA asset — manifest, four icons, favicon, social card, robots, both fonts —
+resolved with the right content type. That is a good result and a useless habit, because it
+was a shell loop in a terminal.
+
+The sitemap is the site's own claim about what exists, and it is generated **live from
+WordPress**. An article the archive still lists and WordPress has since dropped is advertised
+and broken at the same moment, and a crawler finds it before a person does. The probe checked
+a sample; nothing checked the claim.
+
+### Shipped — the probe's 33rd check
+
+`every URL the sitemap advertises answers 200` walks all 68 locs at concurrency 5, asserting
+`200` **and** `text/html` for each — a document, because `Accept: */*` measures the SPA
+fallback instead of the page (this file's own warning). Deliberately **no retries**: a 404 on
+an advertised URL is a fact, not a transport glitch, and retrying 68 URLs would turn one slow
+WordPress into a hanging probe. It reports what it measured, which is what makes it
+non-vacuous:
+
+```
+ok   every URL the sitemap advertises answers 200
+       68 advertised URLs answered 200 (57 dispatches)
+```
+
+The whole probe still runs in **7.8 s**.
+
+### Non-vacuity proved by mutating the probe against production
+
+Not a green tick taken on trust — the check was made to fail on demand:
+
+| mutation | result |
+|---|---|
+| one loc appended that does not exist (`/probe-bogus-advertised-url`) | `FAIL … → 404, expected 200 (advertised in sitemap.xml)`, 32 passed / 1 failed |
+
+### Verified
+
+`npm test` → **102 + 289 + 101 = 492 assertions, 0 failed** · `eslint --max-warnings=0` clean ·
+`npm run build` clean, precache 36 · production probe **33/33** (2026-11-06).
+
+### Known limits
+
+- **This proves the URL answers, not that the article is right.** A dispatch whose WordPress
+  record was emptied still returns 200 with a stub — the shape Sprint 2.21 found and Sprint
+  2.26 could not see from the bytes. Asserting content would need a per-article expectation,
+  which is a different (and data-shaped) problem.
+- **68 requests per run, every merge and every six hours.** Cheap now; if the archive grows to
+  several hundred articles this needs a cap or sampling, and that would give up the property
+  that makes it worth running.
+- **`/dashboard` and `/login` are not advertised** (correctly — noindex, item 6 of the meta
+  table), so they are not covered here. They are covered by the DOM suite instead.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
