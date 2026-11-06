@@ -1103,7 +1103,16 @@ describe('the typefaces are self-hosted, and nothing asks Google for them');
   const privacy = readFileSync(new URL('../src/pages/Privacy.jsx', import.meta.url), 'utf8');
   check('the policy no longer discloses a Google Fonts request', !/Google Fonts/.test(privacy));
   check('the policy no longer names Google as a sub-processor', !/fonts\.googleapis/.test(privacy));
-  check('the policy records the revision', /Version 2/.test(privacy));
+  // Asserted where a reader sees it, in the header line — not as "the string Version 2
+  // appears somewhere in the file". That was the previous check, and it kept passing
+  // after a bump to Version 3 simply because the new prose mentioned Version 2 while
+  // explaining what it had left out. A guard that can be satisfied by an accident is
+  // not a guard.
+  check(
+    'the policy records its revision in the header a reader sees',
+    /const LAST_UPDATED = '[^']+';/.test(privacy) &&
+      /Last updated \{LAST_UPDATED\} &middot; Version \d+/.test(privacy)
+  );
 
   // And the files are actually there, are actually WOFF2, and every one is declared.
   // A @font-face whose URL 404s is silent: the browser falls back and nobody notices

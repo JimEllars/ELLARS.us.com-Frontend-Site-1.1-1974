@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
  * the duplicate-metadata defect that Sprint 2.17 removed.
  */
 
-const LAST_UPDATED = '5 November 2026';
+const LAST_UPDATED = '6 November 2026';
 
 const Section = ({ title, children }) => (
   <section className="mb-14">
@@ -42,7 +42,7 @@ const Privacy = () => {
             a template says it should.
           </p>
           <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 mb-16">
-            Last updated {LAST_UPDATED} &middot; Version 2
+            Last updated {LAST_UPDATED} &middot; Version 3
           </p>
 
           <Section title="Who this covers">
@@ -58,13 +58,53 @@ const Privacy = () => {
           <Section title="What we collect, and when">
             <p>
               <strong className="text-white font-medium">If you only read.</strong> We record
-              performance and error telemetry: the type of event, its severity, which part of
-              the site produced it, an error message where one exists, whether your device
-              reported being online, and a project identifier. We do not attach your name,
-              your email, or a cross-site identifier to any of it. We also use Cloudflare&rsquo;s
-              cookie-less web analytics for aggregate visit counts, and Cloudflare Turnstile
-              to tell humans from bots on the forms.
+              telemetry about how the site behaves: the type of event, its severity, which
+              component produced it, the page you were on, whether your device said it was
+              online, an error message where one existed, and a project identifier. When a
+              request fails we also record the origin and path of the address it was sent to,
+              whether it was retried, and a random id that ties the failure to the fallback it
+              caused. We do not attach your name, your email, or a cross-site identifier to any
+              of it.
             </p>
+            <p>
+              Four things are easy to leave out of a sentence like that one, so they are
+              listed rather than omitted. Version 2 of this policy omitted the first two.
+            </p>
+            <ul className="space-y-3 mt-2">
+              <li>
+                <strong className="text-white font-medium">A per-visit engagement score.</strong>{' '}
+                The counters described under <em>Cookies and local storage</em> below &mdash;
+                time on page, how far you scrolled, calculator use, articles finished, newsletter
+                prompts opened &mdash; are turned into a numeric score and a tier, and that score
+                travels with each telemetry event. It is computed in your browser, from this
+                visit only, and it resets when you close the tab. It is not linked to your
+                account or your email and is not shared with anyone, but it does leave your
+                browser. If you would rather it did not, clear session data or browse with
+                storage disabled: with no counters there is no score to send.
+              </li>
+              <li>
+                <strong className="text-white font-medium">
+                  A salted hash of your IP address, and your country.
+                </strong>{' '}
+                Cloudflare records both when a telemetry batch arrives. The hash is salted per
+                deployment, truncated, and cannot be reversed to an address; it exists so that
+                distinct visits can be counted for a day without keeping an identifier for a
+                person. Your browser&rsquo;s user-agent string is <em>not</em> stored.
+              </li>
+              <li>
+                <strong className="text-white font-medium">What you type into the site.</strong>{' '}
+                When you use the site&rsquo;s own search box, the term is recorded with the
+                event; a calculation in the automation calculator records the figures you
+                entered and a per-visit random id. Those records are how the site finds out
+                which questions it fails to answer. Do not type anything into the search box
+                that you would not put in a public comment.
+              </li>
+              <li>
+                <strong className="text-white font-medium">A link you copy.</strong> Using
+                &ldquo;share&rdquo; on the calculator records the address of the page you shared
+                from, including any settings encoded in it.
+              </li>
+            </ul>
             <p>
               <strong className="text-white font-medium">If you subscribe.</strong> We store
               your email address, and a Turnstile token proving the form was filled by a
@@ -85,6 +125,12 @@ const Privacy = () => {
               <strong className="text-white font-medium">If you try to contribute.</strong>{' '}
               Contributions are not open. No payment details are collected anywhere on this
               site, and there is no payment processor connected to it.
+            </p>
+
+            <p>
+              Across all four cases, we also use Cloudflare&rsquo;s cookie-less web analytics for
+              aggregate visit counts, and Cloudflare Turnstile to tell humans from bots on the
+              forms. Neither sets an advertising cookie and neither follows you to another site.
             </p>
           </Section>
 
@@ -134,7 +180,9 @@ const Privacy = () => {
               <li>A session token if you sign in, so you are not asked every visit.</li>
               <li>
                 Page-engagement counters in session storage &mdash; time on page, scroll depth,
-                calculator use &mdash; which are cleared when you close the tab.
+                calculator use &mdash; which are cleared when you close the tab. They are
+                summarised into the score described above, and <em>that</em> is sent; the raw
+                counters stay in your browser until the tab closes.
               </li>
               <li>
                 A service-worker cache of the site&rsquo;s own files, so it works offline and loads
@@ -149,11 +197,14 @@ const Privacy = () => {
 
           <Section title="How long we keep it">
             <p>
-              No fixed retention schedule is claimed here, because one is not yet enforced
-              &mdash; and a number nobody honours is worse than an honest sentence. In practice:
-              telemetry is kept while it remains useful for fixing the site; your email is kept
-              until you unsubscribe; an inquiry is kept until it is resolved; account data is
-              kept until you ask for it to be deleted. You can ask sooner, for any of it.
+              Where a period is enforced, it is stated; where it is not, that is stated too,
+              because a number nobody honours is worse than an honest sentence. Telemetry has
+              two copies: the raw batch expires after <strong className="text-white font-medium">
+              30 days</strong>, and the queryable rows have <strong className="text-white font-medium">
+              no expiry set yet</strong> &mdash; that is a gap, and when a schedule is enforced
+              here it will be published here first. Beyond telemetry: your email is kept until
+              you unsubscribe; an inquiry is kept until it is resolved; account data is kept
+              until you ask for it to be deleted. You can ask sooner, for any of it.
             </p>
           </Section>
 
