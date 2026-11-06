@@ -1917,6 +1917,73 @@ production probe **31/31** (2026-11-06).
 
 ---
 
+## Sprint 2.31 — An outage that read as a wrong password
+
+**Branch:** `fix/auth-outage-reporting` · **Base:** `c651df3` (main)
+
+### Why this cycle
+
+Item 20, recorded while wiring 2.30, in one sentence: `loginUser` mapped every non-ok response to
+the server's `error_description`. A 500 does not carry one, so **`status 500` surfaced as
+"Invalid login credentials"** — the member was told to reset a password that was fine, during an
+outage, and the outage was filed nowhere. A 5xx body is also very often an HTML gateway page,
+and `response.json()` throwing on it turned a server fault into a parse error attributed to the
+person typing.
+
+This is the same shape as the 2.6 defect and the 2.9 one: a single branch collapsing two
+different facts — *the credential is wrong* and *the service cannot answer* — into one message,
+and picking the one that blames the user.
+
+### Shipped — `loginUser` separates the three states
+
+- **Rejected credential (4xx)** — the server's reason passes through unchanged, and **nothing is
+  filed**. A mistyped password is the expected outcome of typing; reporting it would make every
+  member's typo an incident, which is how an error dashboard becomes noise. The 2.28 cases that
+  pin this message stay green.
+- **Unavailable service (5xx / 429)** — one event (HIGH / MEDIUM respectively) with
+  `failure_kind: "http_server"` or `"throttled"`, and the member is told *"Sign-in is
+  temporarily unavailable…"* instead. The result also carries `unavailable: true`, so a caller
+  can distinguish it from a rejection without parsing prose.
+- **Transport failure** — one `network` event, and the platform's own wording ("Failed to
+  fetch") is replaced with a sentence a person can act on.
+- The 4xx body is read defensively. A WAF or CDN in front of the auth endpoint can answer with
+  HTML; the cause is unknown at this layer, so the generic rejection sentence is used rather
+  than a parser's complaint. Recorded as a known limit rather than dressed up.
+- Telemetry for this call never contains the credential: the grant type lives in the query
+  string, and `scrubUrl` (2.29) reports origin + path only. Asserted against the serialised
+  event, not the code.
+
+### The suite is not decorative — proved by mutation
+
+`tests/dom/api-auth-outage.test.jsx` (11 cases). Reverted one at a time:
+
+| mutation | failing cases |
+|---|---|
+| every non-ok mapped to the server's reason (the pre-2.31 shape) | 4 |
+| a rejected credential reported too | 3 |
+| transport failure echoes the platform wording and files nothing | 1 |
+| 4xx body parsed without a fallback | 1 |
+
+### Verified
+
+`npm test` → **102 + 268 + 63 = 433 assertions, 0 failed** (63 DOM cases, up from 52) ·
+`eslint --max-warnings=0` clean · `npm run build` clean, precache 36 · production probe
+**31/31** (2026-11-06).
+
+### Known limits
+
+- **A non-JSON 4xx is indistinguishable from a rejection.** If a proxy refuses with a 403 HTML
+  page, the member is told their password is wrong. The honest fix is a header check or a
+  `cf-mitigated` test, which needs a real instance of the failure to write a true assertion
+  against; recorded, not guessed.
+- **Still nothing at the sink** (item 1b). The event exists, is correctly classified, and is
+  dropped on arrival.
+- **No live auth path is exercised.** `getSupabase` is a stub and there is no Supabase project
+  in CI (item 1c), so `setSession` adoption is asserted against a mock, not a session that
+  survives a refresh.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1942,7 +2009,7 @@ production probe **31/31** (2026-11-06).
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
-| 20 | **A 5xx from the auth endpoint reads as "invalid credentials"** | `loginUser` decision | `loginUser` maps every non-ok response to the server's message, and a 500 from `/auth/v1/token` carries none, so the member is told their password is wrong while the outage is filed nowhere. Sprint 2.30 deliberately kept login off the write policy (a typo must never be an incident). The narrow fix: report **only** `status >= 500` from this one call, as `failure_kind: "http_server"`, and show "Sign-in is temporarily unavailable" instead. Pinned by 2.28's cases, so the change needs one new case there. |
+| 20 | ~~A 5xx from the auth endpoint reads as "invalid credentials"~~ | **Closed in 2.31** | The three states are now distinct: a rejected credential passes the server's reason through and files **nothing**, a 5xx/429 files one event and says "temporarily unavailable", and a transport failure is reported once with a sentence instead of "Failed to fetch". Remaining: a **non-JSON 4xx** (a WAF's HTML page) still reads as a bad password, because the cause is genuinely unknown at this layer. |
 | 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
 
 ---
