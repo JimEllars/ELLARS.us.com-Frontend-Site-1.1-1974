@@ -1647,6 +1647,91 @@ from 16 to **6** (2 low, 4 moderate) as a side effect of the install lifting tra
 
 ---
 
+## Sprint 2.28 — The two protected surfaces, finally under test
+
+**Branch:** `test/dom-auth-surfaces` · **Base:** `b5369a5` (main)
+
+### Why this cycle
+
+The guardrails name four surfaces no change may break: `/login`, `/dashboard`, the live
+stream and continuous audio. 2.27 built the harness that can test them and pointed it at the
+head. This cycle points it at the two that are reachable — and at the branch that has
+already been wrong once.
+
+Sprint 2.6 found that `verifySession()` collapsed a timeout into an authoritative "guest",
+so a slow network logged a member out. That logic has been rewritten twice since and has
+never had a test. It is six lines of conditionals guarding the only thing that decides
+whether someone sees their dashboard.
+
+### Shipped — `tests/dom/protected-route.test.jsx` (7 cases)
+
+- no token → the gateway, no dashboard;
+- verified session → the dashboard;
+- **hard** guest (the server answered, and the answer was no) → session cleared, back to the
+  gateway;
+- **transient** guest (the server did not answer) → **the session survives** and the
+  dashboard renders. This is the 2.6 regression, pinned;
+- offline with a persisted token → dashboard renders, `verifySession` is **never called**,
+  and the "Offline Mode" banner explains why;
+- nothing decided until storage has been read — the skeleton, asserted *after* the
+  validation tick has settled, so the assertion cannot be satisfied by the initial
+  `isValidating` flag;
+- the five-minute heartbeat re-verifies in the background and clears a session the server
+  has since revoked (fake timers, both calls asserted).
+
+### Shipped — `tests/dom/login.test.jsx` (6 cases)
+
+- a rejected credential shows the server's reason, keeps the form, re-enables the button and
+  stores nothing;
+- the *specific* message for a deployment with no anon key bound, and that it is **not**
+  reported as "invalid credentials" — the failure that made an unconfigured deployment look
+  like a user's mistake;
+- success stores the token and lands on `/dashboard`;
+- the credentials reach `loginUser` as typed: the email as the input yields it (the platform
+  strips surrounding whitespace from `<input type="email">` — measured, not assumed) and the
+  password **verbatim**, spaces intact;
+- a thrown transport failure is an error, not a rejection;
+- the form is disabled in flight, so a double submit cannot send the password twice.
+
+### The harness is not decorative — proved by mutation
+
+| mutation | failing tests |
+|---|---|
+| transient failure treated as a logout (the 2.6 defect) | 1 |
+| offline short-circuit removed (asks a server it cannot reach) | 1 |
+| **both** hydration guards removed | 1 |
+| error message not put into state | 2 |
+| token not stored on success | 1 |
+| form not disabled while in flight | 1 |
+
+One honest negative: the two hydration guards — the effect's early return and the `!isHydrated`
+term in the skeleton condition — are **redundant**. The suite fails only when both are
+removed. Each alone keeps the skeleton up, which is the behaviour that matters, so the test
+asserts the behaviour rather than either mechanism. Recorded rather than dressed up as
+coverage of both.
+
+### Verified
+
+`npm test` → **102 + 268 + 21 = 391 assertions, 0 failed**, run three times for flake
+(the heartbeat case uses fake timers) · `eslint --max-warnings=0` clean · `npm run build`
+clean, precache 36 entries · production probe unaffected (**31/31**).
+
+### Known limits
+
+- **The audio player is not testable because it is not reachable.** `GlobalAudioPlayer` renders
+  `<audio>` and reads `audioActiveTrack`, but **nothing in the codebase ever calls
+  `setAudioActiveTrack`** — the "station" can never start, so the SW's audio-safe update
+  prompt (`swPolicy(… audioPlaying …)`) is unreachable in practice. Continuous playback is a
+  guardrail surface with no playback. This is a wiring gap, not a regression, and it needs
+  real audio URLs before it can be closed; recorded as open item 19.
+- **`loginUser` itself is mocked.** These cases cover the form's states, not the token
+  exchange — that needs a live Supabase project, which is item 1c.
+- **The dashboard's own states** (Vault list, publisher draft, media uploads) remain
+  uncovered. They are the natural next use of the same harness, and they need the row-shape
+  contract from item 2b before tests can be written honestly.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
@@ -1672,6 +1757,7 @@ from 16 to **6** (2 low, 4 moderate) as a side effect of the install lifting tra
 | 16 | **A CSP-blocked placeholder video ships** | Editorial (media assets) | `MediaPlaylist.jsx` hard-codes `https://cdn.cloudflare.stream/secure-video-stream.mp4` for two episodes. That host is not Cloudflare Stream (`*.cloudflarestream.com`), it is not in `media-src`, and the browser blocks it: `Content-Security-Policy: ... blocked the loading of a resource (media-src)`. It is the same placeholder family as item 8. Needs real stream IDs; the CSP is correct to refuse this one. |
 | 17 | ~~Self-host the four font families~~ | **Closed in 2.25** | Four families, four variable/static WOFF2 files, 108 kB, generated from the same Google CSS the site imported and declared in `src/fonts.css`. The `@import` is gone, the CSP no longer allows any Google host, the service worker's `google-fonts` route is deleted, and the policy section that disclosed the request is deleted as it said it would be. Guards hold all four in place, and the probe now fetches a font from the origin. |
 | 18 | ~~No post-deploy probe~~ | **Closed in 2.24** | `verify.yml` proves the artifact; nothing proved the deployment, which is where 2.21 (a feed blocked by its own preflight) and 2.22 (a cached sitemap with no dispatches) both lived while CI was green. `npm run probe` now asks the origin 29 questions about identity, statuses, HEAD parity, headers, config and dispatches, and `probe.yml` runs it after every merge, every six hours, and on demand. 29/29 measured against production; 25/29 failed against a foreign origin, so the gate is not decorative. |
+| 19 | **The global audio player can never start** | Wiring + real audio assets | `GlobalAudioPlayer` reads `audioActiveTrack` and renders a player, but **no code path calls `setAudioActiveTrack`** — measured 2026-11-05 by exhaustive grep across `src/`. Every "play" surface (`MediaPlaylist`, `NewsMedia`) uses local `<video>`/visualiser state instead, so the flagship station is unreachable and the service worker's audio-safe update prompt (`swPolicy(… audioPlaying …)`) can never be exercised in production. Needs: real episode URLs, a `setAudioActiveTrack` call from the relevant surface, and a decision on whether the player replaces or coexists with the in-page players. |
 
 ---
 
@@ -1681,7 +1767,7 @@ from 16 to **6** (2 low, 4 moderate) as a side effect of the install lifting tra
 - **Automation Calculator Enhancements**: Embedded a direct integration inside `src/components/intel/AutomationCalculator.jsx` to export projections directly into Vault Drafts (`ellars_dispatch_draft` inside `localStorage`), forwarding the user to the publisher toolkit via `useNavigate`.
 - **Production SEO Metadata**: Verified production-ready metadata, canonicals, and OG/Twitter headers in `index.html`.
 
-## Roadmap Milestones (Sprint 2.28+)
+## Roadmap Milestones (Sprint 2.29+)
 - ~~Restore the WordPress dispatch feed~~ — **closed in 2.21**: the header that broke the
   preflight is gone and the request is simple. First item of 2.22: confirm the restored
   feed **in production**, since WordPress only allows the production origin.
@@ -1696,9 +1782,12 @@ from 16 to **6** (2 low, 4 moderate) as a side effect of the install lifting tra
   real components, and each of the four fixes it covers was reverted one at a time to prove
   the suite fails. Next use of the same harness: the dashboard's Vault states and the audio
   player, which have no coverage at all.
-- **Extend the DOM suite past the head.** The harness exists; the dashboard, the Vault list
-  states and the audio player do not. Those are the surfaces where a regression is a logged-in
-  user's problem rather than a crawler's.
+- ~~Extend the DOM suite to the protected surfaces~~ — **closed in 2.28**: `/login` and
+  `/dashboard` are covered (13 cases), and 2.6's transient-session defect is now pinned by a
+  test that fails if it returns. Next: the dashboard's Vault and publisher states, once item
+  2b gives them a row shape to assert against.
+- **Decide the audio player's fate** (item 19). It is a guardrail surface that cannot start;
+  either wire it or remove it, because the SW's audio-safe update path depends on it.
 - Bind `SUPABASE_ANON_KEY` and prove the auth path end to end (PR #218).
 - ~~Decide the double-metadata question~~ — **closed in 2.17**: one client writer over the edge table, plus a one-time hand-off of the shell's copy.
 - Restore a unit-test floor (`vitest`) for the four silent-failure surfaces.
