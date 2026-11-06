@@ -42,7 +42,7 @@ const Privacy = () => {
             a template says it should.
           </p>
           <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 mb-16">
-            Last updated {LAST_UPDATED} &middot; Version 3
+            Last updated {LAST_UPDATED} &middot; Version 4
           </p>
 
           <Section title="Who this covers">
@@ -93,11 +93,13 @@ const Privacy = () => {
               </li>
               <li>
                 <strong className="text-white font-medium">What you type into the site.</strong>{' '}
-                When you use the site&rsquo;s own search box, the term is recorded with the
-                event; a calculation in the automation calculator records the figures you
-                entered and a per-visit random id. Those records are how the site finds out
-                which questions it fails to answer. Do not type anything into the search box
-                that you would not put in a public comment.
+                When you use the site&rsquo;s own search box, the site records how long the
+                term was, how many words it had, and how many results it returned &mdash; not
+                the term itself, and nothing that can be read back into it. A calculation in
+                the automation calculator records the figures you entered and a per-visit
+                random id. Those records are how the site finds out which questions it fails
+                to answer, which is why a search that finds nothing matters and the words
+                typed into it do not.
               </li>
               <li>
                 <strong className="text-white font-medium">A link you copy.</strong> Using

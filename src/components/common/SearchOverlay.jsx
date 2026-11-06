@@ -5,6 +5,7 @@ import SafeIcon from '@/common/SafeIcon';
 import { useAppStore } from '@/store/useAppStore';
 import { getLatestPosts, stripHtml } from '@/lib/api';
 import { useTelemetry } from '@/hooks/useTelemetry';
+import { summarizeSearch } from '@/lib/searchTelemetry';
 
 
 const SearchOverlay = ({ isOpen, onClose }) => {
@@ -12,6 +13,10 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  // 'idle' means no fetch has been attempted by this overlay: either the archive was
+  // already populated by another component, or nothing has been asked of it yet.
+  const [corpusStatus, setCorpusStatus] = useState('idle');
+  const recordedTerm = useRef(null);
   const inputRef = useRef(null);
   const modalRef = useRef(null);
 
@@ -23,10 +28,15 @@ const SearchOverlay = ({ isOpen, onClose }) => {
     let isMounted = true;
     if (isOpen && articles.length === 0) {
       const fetchArticles = async () => {
+        setCorpusStatus('loading');
         try {
           const posts = await getLatestPosts(50); // Fetch a good amount for search
-          if (isMounted) setArticles(posts);
+          if (isMounted) {
+            setArticles(posts);
+            setCorpusStatus('ready');
+          }
         } catch (err) {
+          if (isMounted) setCorpusStatus('failed');
           console.error("Search fetch failed:", err);
         }
       };
@@ -47,11 +57,6 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   }, [query]);
 
 
-  useEffect(() => {
-    if (debouncedQuery.trim() !== '') {
-      trackEvent('search_execution', { query: debouncedQuery });
-    }
-  }, [debouncedQuery, trackEvent]);
 
   // Trap focus and handle Escape
   useEffect(() => {
@@ -128,6 +133,40 @@ const SearchOverlay = ({ isOpen, onClose }) => {
       return title.includes(lowerQuery) || excerpt.includes(lowerQuery);
     });
   }, [debouncedQuery, articles]);
+
+  /**
+   * What the archive answered, not what was typed.
+   *
+   * The raw term used to be sent here and stored with no expiry (privacy Version 3
+   * disclosed it). `summarizeSearch` carries the term's length and word count and the
+   * number of results — the three things the content-gap question actually needs —
+   * and has no field that could hold a word of it.
+   *
+   * Nothing is recorded until the corpus has settled: a `result_count: 0` measured
+   * while the fetch was still in flight would be read as a gap that does not exist.
+   * `recordedTerm` keeps the settle from filing the same search twice when the
+   * archive arrives and the memo recomputes.
+   */
+  useEffect(() => {
+    const term = debouncedQuery.trim();
+    if (term === '') return;
+
+    const corpusReady = corpusStatus === 'ready' || articles.length > 0;
+    const corpusSettled = corpusReady || corpusStatus === 'failed';
+    if (!corpusSettled) return;
+
+    if (recordedTerm.current === term) return;
+    recordedTerm.current = term;
+
+    trackEvent(
+      'search_execution',
+      summarizeSearch({
+        term,
+        resultCount: filteredArticles.length,
+        corpusLoaded: corpusReady,
+      })
+    );
+  }, [debouncedQuery, corpusStatus, articles.length, filteredArticles.length, trackEvent]);
 
   return (
     <AnimatePresence>
