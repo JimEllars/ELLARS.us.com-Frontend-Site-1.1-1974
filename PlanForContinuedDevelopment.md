@@ -2211,13 +2211,90 @@ without editing the file.
 
 ---
 
+## Sprint 2.35 — A `202` is not proof of storage, and the blocker now has a runbook
+
+**Branch:** `feat/telemetry-sink-visibility` · **Base:** `a6f6ae9` (main)
+
+### Why this cycle
+
+Six cycles this session made the *client* half of telemetry correct: one event per failure,
+severity by meaning, a bounded batch, an honest settlement. All six ended with the same note —
+*item 1b: nothing is watching the queue* — and a note is where it stayed, because the gap is a
+dashboard action rather than a merge.
+
+So the gap became measurable instead of documented. `/api/telemetry` has answered
+`202 {"success":true, …}` since it was written, and **that 202 is identical whether three sinks
+stored the batch or none exist**. Nothing anywhere measured the difference. Now the probe does,
+on every run:
+
+```
+ok   /api/telemetry → names which sinks accepted the batch
+       accepted but stored nowhere: kv, d1, analytics unbound (open item 1b) — the queue is correct, the sink is not
+```
+
+### Shipped — `lib/edge/telemetrySinks.js` (pure, 3 readings)
+
+`sinkVerdict()` classifies the handler's own `sinks` object into **live / unbound / broken**,
+and `sinkNote()` writes the sentence. The distinction that matters:
+
+- **unbound is not broken.** An absent binding is configuration; a pipeline that goes red on
+  every merge for a known external gap stops being read, so it prints as a note.
+- **bound-but-failing is a defect**, and the probe **fails** on it. `partial:7` counts.
+
+### Shipped — the probe's 32nd check
+
+It POSTs one synthetic record — `event_type: probe_binding_check`,
+`component_origin: DEPLOYMENT_PROBE`, `idempotency_key: probe-<ms>` — and asserts the `202`,
+`success:true`, `accepted:1`, `cache-control: no-store`, and that the response **names its
+sinks at all**. A 202 with no sink report is the defect itself, so its absence fails.
+
+### Shipped — `docs/telemetry-and-vault-bindings.md`
+
+The five bindings in the order they unblock each other: **1b → 2b → 2**, with the exact
+variable names, the two migrations to apply, the salt, and a verification step after each.
+Items 1, 1c and 3 are documented as what remains. It is written so the work can be done from
+the repository alone — the blocker had been living in a plan note that only this workspace
+could read.
+
+### The suite is not decorative — proved by mutation
+
+13 new assertions in `smoke-functions.mjs`, which extracts the binding names **from the
+handler** rather than re-typing them. Three mutations:
+
+| mutation | failing checks |
+|---|---|
+| the runbook renames `TELEMETRY_KV` | 1 |
+| unbound reported as broken (a merge-blocking false alarm) | 2 |
+| the degraded note loses the item reference | 1 |
+
+### Verified
+
+`npm test` → **102 + 286 + 101 = 489 assertions, 0 failed** · `eslint --max-warnings=0` clean ·
+`npm run build` clean, precache 36 · production probe **32/32** (2026-11-06), with the note
+above as its output.
+
+### Known limits
+
+- **The binding is still absent.** This cycle makes the gap unmistakable and the fix
+  executable; it cannot make the dashboard change. Every event is still answered and dropped,
+  and `/privacy` Version 3 promised the reader that the queryable rows have "no expiry set
+  yet" — a promise that only becomes relevant once rows exist.
+- **The probe writes one record per run.** Once a sink is bound, `probe_binding_check` rows
+  will appear (about 4–6 a day). They are labelled for filtering and carry nothing about a
+  reader, but they are real writes to the production table and the count will need excluding.
+- **A 202 with `accepted: 0`** would pass the shape check and fail the `accepted: 1` assertion,
+  which is correct — but the handler also drops malformed records silently, so a client bug
+  that produces an unsendable record shows here as `accepted: 0` rather than as a schema error.
+
+---
+
 ## Open items (prioritised, with the blocker on each)
 
 | # | Item | Blocker | Notes |
 |---|---|---|---|
 | 1 | **Supabase env values in the Pages project** | Cloudflare dashboard | The anon key *is* bound (verified: `/api/config` → `configured:true`), but `SUPABASE_URL` **and** `VITE_SUPABASE_URL` are set to `https://<ref>.supabase.co/rest/v1/`. Sprint 2.9 normalises it client- and edge-side; the binding should still be corrected to the bare origin so the guard becomes belt-and-braces. |
 | 1c | **`SUPABASE_ANON_KEY` is not bound for Preview** | Cloudflare dashboard | Measured 2026-11-05 against this cycle's own preview deployment: `/api/config` → `503` (`configured:false`), while production answers `200`. The binding is scoped to Production only, so **every preview deployment runs with auth dead** — `/dashboard` cannot be exercised from a PR at all, and `/login` can only show its honest "unavailable" state. Add the anon key to the Preview environment (never `service_role`); `npm run probe -- --base=<preview>` then verifies it, and removes the note that run currently prints. |
-| 1b | **D1 binding for telemetry** | Cloudflare dashboard | Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. Measured 2026-11-03: `POST /api/telemetry` → `202` with `{"kv":"unbound","d1":"unbound","analytics":"unbound"}`, i.e. **no telemetry is being stored anywhere today**. The 202 is honest, the drop is total. |
+| 1b | **D1 binding for telemetry** | Cloudflare dashboard — **runbook: `docs/telemetry-and-vault-bindings.md` §1** | Now measurable: `npm run probe` prints `accepted but stored nowhere: kv, d1, analytics unbound` on every run, and fails if a binding exists and is *failing*. Without it the handler now reports `d1: "unbound"` and `degraded: true` instead of pretending success. Apply `migrations/0001` + `0002` first. Measured 2026-11-03: `POST /api/telemetry` → `202` with `{"kv":"unbound","d1":"unbound","analytics":"unbound"}`, i.e. **no telemetry is being stored anywhere today**. The 202 is honest, the drop is total. |
 | 2 | **RLS on `axim_vault` + `ellars-media`** | Database access | Every Vault read/write is raw PostgREST with the anon key. If RLS is not user-scoped, `deleteVaultItem` is a one-line deletion for any anon-key holder. Measured 2026-11-03 with the live anon key: `ecosystem_vault` and `telemetry_logs` both answer `200` with `[]`. An empty result does **not** prove RLS is off (a table with RLS on and no policy also returns `[]`), and it does not prove it is on — this needs the service role, not a probe. **Verify before any further Vault work.** |
 | 2b | **`axim_vault` does not exist in the live project** | Database access | Measured 2026-11-03: `GET /rest/v1/axim_vault` → `PGRST205`. The live project has `ecosystem_vault` (columns `id`, `created_at`, `updated_at`; **no tenant column**) and `telemetry_logs`. So **every Vault call from the dashboard 404s in production** — list, create, update, delete — while the public site looks healthy. The client is not repointed at `ecosystem_vault` on purpose (no tenancy column). `0003_axim_vault.sql` exists only in the workspace handoff (`context/axim-vault-migration.sql`), **not in the repo**, so the schema is unversioned: copy it in, then apply it, then set `app_metadata.app_id` on the operator user. |
 | 3 | **JWT trust root** | Infrastructure | `axim-passport-api` and `axim-seo-worker` both hold `SUPABASE_JWT_SECRET`. Any holder can forge tokens that satisfy every RLS policy. Target: asymmetric keys/JWKS, then rotate, then scope the service role. |

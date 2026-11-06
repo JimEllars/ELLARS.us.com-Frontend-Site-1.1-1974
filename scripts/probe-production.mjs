@@ -49,6 +49,7 @@ import {
 } from '../lib/edge/meta.js';
 import { compareDocument, readDocumentIdentity } from '../lib/edge/documentIdentity.js';
 import { DIRECTIVE_SLUGS, STATIC_ROUTES } from '../functions/sitemap.xml.js';
+import { sinkNote, sinkVerdict } from '../lib/edge/telemetrySinks.js';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -82,7 +83,10 @@ const quote = (value) => (value === null || value === undefined ? 'absent' : JSO
 /**
  * One request, with retries only where they cannot mask a defect.
  */
-const request = async (path, { method = 'GET', accept = DOCUMENT_ACCEPT, acceptStatuses = [] } = {}) => {
+const request = async (
+  path,
+  { method = 'GET', accept = DOCUMENT_ACCEPT, acceptStatuses = [], body = undefined, extraHeaders = {} } = {}
+) => {
   const url = new URL(path, BASE).toString();
   let lastError = null;
 
@@ -91,7 +95,12 @@ const request = async (path, { method = 'GET', accept = DOCUMENT_ACCEPT, acceptS
       const response = await fetch(url, {
         method,
         redirect: 'follow',
-        headers: { accept, 'user-agent': 'ellars-postdeploy-probe/1.0 (+https://ellars.us.com)' },
+        headers: {
+          accept,
+          'user-agent': 'ellars-postdeploy-probe/1.0 (+https://ellars.us.com)',
+          ...extraHeaders,
+        },
+        ...(body === undefined ? {} : { body }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       // A platform 5xx or a rate limit is transient; a 404 or a 200 is an answer, and
@@ -289,6 +298,80 @@ await test('/api/config → configured:true with a normalised project origin', a
     failures.push('the served key has role service_role — a live RLS bypass');
   }
   return failures;
+});
+
+/* ---------------------------------------------------------------------------
+ * 4b. `/api/telemetry` names where the batch ended up — and it is not always
+ *     anywhere.
+ *
+ * The handler answers `202 {"success":true}` whether a sink stored the batch or no
+ * sink exists at all, and for most of this site's life all three reported `unbound`:
+ * every event, accepted and discarded. Nothing measured the difference, so the gap
+ * survived four separate cycles that made the *client* side of telemetry correct.
+ *
+ * A degraded reading is a **note**, not a failure: binding D1, KV or Analytics Engine
+ * is a dashboard action (open item 1b), and a gate that goes red on every merge for a
+ * known external gap gets ignored. A sink that is bound and *failing* is a defect of
+ * the deployment, and that fails.
+ * ------------------------------------------------------------------------- */
+await test('/api/telemetry → names which sinks accepted the batch', async () => {
+  // A synthetic, clearly-labelled record. It carries nothing about a reader — the
+  // handler hashes the runner's IP and stores the country, exactly as it would for any
+  // client, and the event_type makes it unmistakable in the table.
+  const payload = [
+    {
+      telemetry_envelope: {
+        project_id: 'ELLARS_FRONTEND',
+        environment: 'production',
+        timestamp: new Date().toISOString(),
+        idempotency_key: `probe-${Date.now()}`,
+        session: { context_scope: 'deployment_probe' },
+      },
+      event_payload: {
+        event_type: 'probe_binding_check',
+        severity: 'LOW',
+        component_origin: 'DEPLOYMENT_PROBE',
+        error_message: '',
+        stack_trace: '',
+        metadata: { source: 'probe-production.mjs' },
+      },
+    },
+  ];
+
+  const response = await request('/api/telemetry', {
+    method: 'POST',
+    accept: 'application/json',
+    extraHeaders: { 'content-type': 'application/json', 'x-project-scope': 'ELLARS_FRONTEND' },
+    body: JSON.stringify(payload),
+  });
+
+  const failures = [];
+  if (response.status !== 202) {
+    failures.push(`answered ${response.status}, expected 202 (the handler's documented status)`);
+    return failures;
+  }
+
+  if ((response.headers.get('cache-control') || '') !== 'no-store') {
+    failures.push(`cache-control ${quote(response.headers.get('cache-control'))}, expected no-store`);
+  }
+
+  const body = await response.json();
+  if (body.success !== true) failures.push(`success ${quote(body.success)}, expected true`);
+  if (body.accepted !== 1) failures.push(`accepted ${quote(body.accepted)}, expected 1`);
+  if (!body.sinks || typeof body.sinks !== 'object') {
+    failures.push('the response did not name its sinks — a 202 with no storage behind it is the whole defect');
+    return failures;
+  }
+
+  const verdict = sinkVerdict(body.sinks);
+
+  // A binding that exists and is failing is a deployment defect.
+  if (verdict.broken.length > 0) {
+    failures.push(`${verdict.broken.join(', ')} bound but failing — ${sinkNote(verdict)}`);
+    return failures;
+  }
+
+  return { failures, note: sinkNote(verdict) };
 });
 
 /* ---------------------------------------------------------------------------
