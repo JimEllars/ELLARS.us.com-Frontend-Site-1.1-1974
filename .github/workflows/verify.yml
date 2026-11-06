@@ -34,9 +34,17 @@ jobs:
         run: npx eslint . --max-warnings=0
 
       - name: Unit tests
-        # Edge functions (auth credential resolution, sitemap entities and zones,
-        # asset 404s) plus the PWA update policy. The failure surfaces covered here
-        # are the ones that are silent in production.
+        # Three suites, all of them for surfaces that fail silently in production:
+        #   smoke-client     - pure decisions: SW update policy, the head dedupe plan,
+        #                      the per-target request-header policy.
+        #   smoke-functions  - edge handlers: config resolution, sitemap entities,
+        #                      zones and cache, asset 404s, middleware statuses.
+        #   dom (vitest+jsdom) - the head AFTER hydration, with the real components
+        #                      mounted. Nothing else in this pipeline runs JavaScript:
+        #                      the probe fetches bytes and the other two suites have
+        #                      no DOM, which is how three head defects reached main.
+        # `test:dom` sets NODE_ENV=test itself, because an ambient NODE_ENV=production
+        # resolves React's production build, whose `act` is a no-op.
         run: npm test
 
       - name: Build (Vite + Cloudflare SPA fallback)
